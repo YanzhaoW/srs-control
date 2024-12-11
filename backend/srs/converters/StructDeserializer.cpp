@@ -1,8 +1,6 @@
-#include <algorithm>
-#include <bitset>
 #include <srs/converters/StructDeserializer.hpp>
 
-namespace srs
+namespace srs::process
 {
     namespace
     {
@@ -12,10 +10,10 @@ namespace srs
         auto convert_to(const DataElementType& raw_data) -> T
         {
             constexpr auto struct_size = sizeof(uint64_t);
-            static_assert(HIT_DATA_BIT_LENGTH <= BYTE_BIT_LENGTH * struct_size);
+            static_assert(common::HIT_DATA_BIT_LENGTH <= common::BYTE_BIT_LENGTH * struct_size);
             static_assert(sizeof(T) == struct_size);
-            auto expanded_raw_data = std::bitset<BYTE_BIT_LENGTH * struct_size>(raw_data.to_ullong());
-            constexpr auto shifted_bits = (struct_size * BYTE_BIT_LENGTH) - HIT_DATA_BIT_LENGTH;
+            auto expanded_raw_data = std::bitset<common::BYTE_BIT_LENGTH * struct_size>(raw_data.to_ullong());
+            constexpr auto shifted_bits = (struct_size * common::BYTE_BIT_LENGTH) - common::HIT_DATA_BIT_LENGTH;
             expanded_raw_data = expanded_raw_data << shifted_bits;
             return std::bit_cast<T>(expanded_raw_data.to_ullong());
         }
@@ -35,22 +33,22 @@ namespace srs
         struct MarkerDataCompact
         {
             uint16_t : 16;
-            uint16_t timestamp_low_bits : SRS_TIMESTAMP_LOW_BIT_LENGTH;
+            uint16_t timestamp_low_bits : common::SRS_TIMESTAMP_LOW_BIT_LENGTH;
             uint16_t vmm_id : 5;
             uint16_t flag : 1;
-            uint32_t timestamp_high_bits : SRS_TIMESTAMP_HIGH_BIT_LENGTH;
+            uint32_t timestamp_high_bits : common::SRS_TIMESTAMP_HIGH_BIT_LENGTH;
         };
 
         void array_to_marker(const DataElementType& raw_data, MarkerData& marker_data)
         {
             auto marker_data_compact = convert_to<MarkerDataCompact>(raw_data);
 
-            auto timestamp_high_bits = std::bitset<SRS_TIMESTAMP_HIGH_BIT_LENGTH>(
+            auto timestamp_high_bits = std::bitset<common::SRS_TIMESTAMP_HIGH_BIT_LENGTH>(
                 static_cast<uint32_t>(marker_data_compact.timestamp_high_bits));
-            auto timestamp_low_bits = std::bitset<SRS_TIMESTAMP_LOW_BIT_LENGTH>(
+            auto timestamp_low_bits = std::bitset<common::SRS_TIMESTAMP_LOW_BIT_LENGTH>(
                 static_cast<uint32_t>(marker_data_compact.timestamp_low_bits));
             marker_data.srs_timestamp = static_cast<decltype(marker_data.srs_timestamp)>(
-                merge_bits(timestamp_high_bits, timestamp_low_bits).to_ullong());
+                common::merge_bits(timestamp_high_bits, timestamp_low_bits).to_ullong());
             marker_data.vmm_id = static_cast<decltype(marker_data.vmm_id)>(marker_data_compact.vmm_id);
         }
 
@@ -66,7 +64,7 @@ namespace srs
             hit_data.vmm_id = static_cast<decltype(hit_data.vmm_id)>(hit_data_compact.vmm_id);
             hit_data.adc = static_cast<decltype(hit_data.adc)>(hit_data_compact.adc);
             hit_data.bc_id = static_cast<decltype(hit_data.bc_id)>(hit_data_compact.bc_id);
-            hit_data.bc_id = gray_to_binary(hit_data.bc_id);
+            hit_data.bc_id = common::gray_to_binary(hit_data.bc_id);
         }
     }; // namespace
 
@@ -103,7 +101,7 @@ namespace srs
 
         auto read_bytes = binary_data.size() * sizeof(BufferElementType);
         constexpr auto header_bytes = sizeof(output_data_.header);
-        constexpr auto element_bytes = HIT_DATA_BIT_LENGTH / BYTE_BIT_LENGTH;
+        constexpr auto element_bytes = common::HIT_DATA_BIT_LENGTH / common::BYTE_BIT_LENGTH;
         auto vector_size = (read_bytes - header_bytes) / element_bytes;
         if (vector_size < 0)
         {
@@ -146,7 +144,7 @@ namespace srs
         // TODO: This is current due to a bug from zpp_bits. The reversion is not needed if it's fixed.
         for (auto& element : receive_raw_data_)
         {
-            element = byte_swap(element);
+            element = common::byte_swap(element);
         }
     }
 

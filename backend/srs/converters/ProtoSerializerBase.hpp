@@ -4,7 +4,7 @@
 #include <srs/converters/StructDeserializer.hpp>
 #include <utility>
 
-namespace srs
+namespace srs::process
 {
     template <typename Converter>
     class ProtoSerializerBase : public DataConverterBase<const proto::Data*, std::string_view>

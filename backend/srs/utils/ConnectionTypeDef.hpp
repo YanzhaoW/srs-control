@@ -5,7 +5,10 @@
 namespace srs
 {
     class App;
+}
 
+namespace srs::connection
+{
     using udp = boost::asio::ip::udp;
 
     template <typename T>
@@ -20,9 +23,9 @@ namespace srs
     template <typename T>
     concept SharedConnectionPtr = is_shared_ptr<T>::value and requires(T obj) { obj->get_name(); };
 
-    struct ConnectionInfo
+    struct Info
     {
-        explicit ConnectionInfo(App* control_ptr)
+        explicit Info(App* control_ptr)
             : control{ control_ptr }
         {
         }
@@ -30,4 +33,4 @@ namespace srs
         int local_port_number = 0;
     };
 
-} // namespace srs
+} // namespace srs::connection

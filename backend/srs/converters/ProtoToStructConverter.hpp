@@ -3,7 +3,7 @@
 #include <srs/data/SRSDataStructs.hpp>
 #include <srs/data/message.pb.h>
 
-namespace srs
+namespace srs::process
 {
     class Proto2StructConverter
     {

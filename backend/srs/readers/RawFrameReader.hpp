@@ -6,13 +6,13 @@
 #include <string>
 #include <vector>
 
-namespace srs
+namespace srs::reader
 {
-    class RawFrameReader
+    class RawFrame
     {
       public:
         //! Default Constructor. No memory allocation.
-        explicit RawFrameReader() = default;
+        explicit RawFrame() = default;
 
         /**
          * \brief Constructor that opens a file with the given filename.
@@ -20,13 +20,13 @@ namespace srs
          * @param filename The file name of the input binary
          *
          */
-        explicit RawFrameReader(const std::string& filename);
+        explicit RawFrame(const std::string& filename);
 
         /**
          *
          * \brief Read one frame of the bianry data to a vector.
          *
-         * The input vector is first reserved with #srs::LARGE_READ_MSG_BUFFER_SIZE elements and then resized with the
+         * The input vector is first reserved with #srs::common::LARGE_READ_MSG_BUFFER_SIZE elements and then resized with the
          * \a size value, which is read from the binary file in the beginning. The vector is then set with \a size bytes
          * of data from the file.
          *
@@ -38,11 +38,11 @@ namespace srs
 
         /**
          *
-         * \brief Read one frame of the binary data from a file specified by the constructor \ref RawFrameReader(const
+         * \brief Read one frame of the binary data from a file specified by the constructor \ref RawFrame(const
          * std::string&).
          *
          * The binary data frame is written to the internal member variable #input_buffer_;
-         * #srs::LARGE_READ_MSG_BUFFER_SIZE bytes of memory will be reserved for the vector.
+         * #srs::common::LARGE_READ_MSG_BUFFER_SIZE bytes of memory will be reserved for the vector.
          *
          * @return Non-owning binary data.
          *
@@ -57,4 +57,4 @@ namespace srs
         std::ifstream input_file_;       //!< Input binary file handler
         std::vector<char> input_buffer_; //!< internal binary data buffer
     };
-} // namespace srs
+} // namespace srs::reader

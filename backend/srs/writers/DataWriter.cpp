@@ -1,14 +1,12 @@
-#include <algorithm>
 #include <boost/asio/ip/address.hpp>
-#include <spdlog/spdlog.h>
-#include <srs/analysis/DataProcessor.hpp>
+
+#include <srs/workflow/Handler.hpp>
 #include <srs/writers/BinaryFileWriter.hpp>
-#include <srs/writers/DataWriter.hpp>
 #include <srs/writers/JsonWriter.hpp>
 #include <srs/writers/RootFileWriter.hpp>
 #include <srs/writers/UDPWriter.hpp>
 
-namespace srs
+namespace srs::writer
 {
     namespace
     {
@@ -49,14 +47,14 @@ namespace srs
 
     } // namespace
 
-    DataWriter::DataWriter(DataProcessor* processor)
-        : data_processor_{ processor }
+    Manager::Manager(workflow::Handler* processor)
+        : workflow_handler_{ processor }
     {
     }
 
-    DataWriter::~DataWriter() = default;
+    Manager::~Manager() = default;
 
-    auto DataWriter::is_convert_required(DataConvertOptions dependee) const -> bool
+    auto Manager::is_convert_required(process::DataConvertOptions dependee) const -> bool
     {
         return std::ranges::any_of(
             convert_count_map_,
@@ -64,51 +62,50 @@ namespace srs
             { return option_count.second > 0 && convert_option_has_dependency(dependee, option_count.first); });
     }
 
-    void DataWriter::wait_for_finished() { boost::wait_for_all(write_futures_.begin(), write_futures_.end()); }
+    void Manager::wait_for_finished() { boost::wait_for_all(write_futures_.begin(), write_futures_.end()); }
 
-    auto DataWriter::add_binary_file(const std::string& filename, DataConvertOptions deser_mode) -> bool
+    auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool
     {
-        auto& app = data_processor_->get_app();
+        auto& app = workflow_handler_->get_app();
         return binary_files_
-            .try_emplace(filename, std::make_unique<BinaryFileWriter>(app.get_io_context(), filename, deser_mode))
+            .try_emplace(filename, std::make_unique<BinaryFile>(app.get_io_context(), filename, deser_mode))
             .second;
     }
 
-    auto DataWriter::add_udp_file(const std::string& filename, DataConvertOptions deser_mode) -> bool
+    auto Manager::add_udp_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool
     {
-        auto& app = data_processor_->get_app();
+        auto& app = workflow_handler_->get_app();
         auto endpoint = convert_str_to_endpoint(app.get_io_context(), filename);
         if (endpoint.has_value())
         {
-            return udp_files_
-                .try_emplace(filename, std::make_unique<UDPWriter>(app, std::move(endpoint.value()), deser_mode))
+            return udp_files_.try_emplace(filename, std::make_unique<UDP>(app, std::move(endpoint.value()), deser_mode))
                 .second;
         }
         return false;
     }
 
     // NOLINTNEXTLINE
-    auto DataWriter::add_root_file(const std::string& filename) -> bool
+    auto Manager::add_root_file(const std::string& filename) -> bool
     {
 #ifdef HAS_ROOT
-        auto& app = data_processor_->get_app();
+        auto& app = workflow_handler_->get_app();
         return root_files_
-            .try_emplace(filename, std::make_unique<RootFileWriter>(app.get_io_context(), filename.c_str(), "RECREATE"))
+            .try_emplace(filename, std::make_unique<RootFile>(app.get_io_context(), filename.c_str(), "RECREATE"))
             .second;
 #else
         return false;
 #endif
     }
 
-    auto DataWriter::add_json_file(const std::string& filename) -> bool
+    auto Manager::add_json_file(const std::string& filename) -> bool
     {
-        auto& app = data_processor_->get_app();
-        return json_files_.try_emplace(filename, std::make_unique<JsonWriter>(app.get_io_context(), filename)).second;
+        auto& app = workflow_handler_->get_app();
+        return json_files_.try_emplace(filename, std::make_unique<Json>(app.get_io_context(), filename)).second;
     }
 
-    void DataWriter::set_output_filenames(const std::vector<std::string>& filenames)
+    void Manager::set_output_filenames(const std::vector<std::string>& filenames)
     {
-        auto& app = data_processor_->get_app();
+        auto& app = workflow_handler_->get_app();
 
         for (const auto& filename : filenames)
         {
@@ -151,4 +148,4 @@ namespace srs
             }
         }
     }
-} // namespace srs
+} // namespace srs::writer

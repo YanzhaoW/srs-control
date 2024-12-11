@@ -5,7 +5,7 @@
 #include <srs/utils/CommonAlias.hpp>
 #include <zpp_bits.h>
 
-namespace srs
+namespace srs::process
 {
     class SerializableMsgBuffer
     {

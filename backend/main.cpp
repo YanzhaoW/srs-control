@@ -16,7 +16,7 @@ auto main(int argc, char** argv) -> int
         argv = cli_args.ensure_utf8(argv);
 
         auto spdlog_level = spdlog::level::info;
-        auto print_mode = srs::DataPrintMode::print_speed;
+        auto print_mode = srs::common::DataPrintMode::print_speed;
         auto output_filenames = std::vector<std::string>{ "output.bin" };
         auto is_version_print = false;
         auto is_root_version_print = false;
@@ -53,14 +53,14 @@ auto main(int argc, char** argv) -> int
         spdlog::set_level(spdlog_level);
 
         auto app = srs::App{};
-        app.set_remote_endpoint(srs::DEFAULT_SRS_IP, srs::DEFAULT_SRS_CONTROL_PORT);
+        app.set_remote_endpoint(srs::common::DEFAULT_SRS_IP, srs::common::DEFAULT_SRS_CONTROL_PORT);
         app.set_print_mode(print_mode);
         app.set_output_filenames(output_filenames);
 
         app.init();
         app.read_data();
         app.switch_on();
-        app.start_analysis();
+        app.start_workflow();
         // app.wait_for_finish();
     }
     catch (const CLI::ParseError& e)

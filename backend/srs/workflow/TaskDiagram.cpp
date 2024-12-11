@@ -1,12 +1,12 @@
-#include <srs/analysis/DataProcessManager.hpp>
+#include <srs/workflow/TaskDiagram.hpp>
 #include <srs/writers/BinaryFileWriter.hpp>
 #include <srs/writers/JsonWriter.hpp>
 #include <srs/writers/RootFileWriter.hpp>
 #include <srs/writers/UDPWriter.hpp>
 
-namespace srs
+namespace srs::workflow
 {
-    DataProcessManager::DataProcessManager(DataProcessor* data_processor, asio::thread_pool& thread_pool)
+    TaskDiagram::TaskDiagram(Handler* data_processor, asio::thread_pool& thread_pool)
         : raw_to_delim_raw_converter_{ thread_pool }
         , struct_deserializer_{ thread_pool }
         , struct_proto_converter_{ thread_pool }
@@ -15,11 +15,11 @@ namespace srs
         , writers_{ data_processor }
     {
         coro_ = generate_starting_coro(thread_pool.get_executor());
-        coro_sync_start(coro_, false, asio::use_awaitable);
+        common::coro_sync_start(coro_, false, asio::use_awaitable);
     }
 
-    auto DataProcessManager::analysis_one(tbb::concurrent_bounded_queue<SerializableMsgBuffer>& data_queue,
-                                          bool is_blocking) -> bool
+    auto TaskDiagram::analysis_one(tbb::concurrent_bounded_queue<process::SerializableMsgBuffer>& data_queue,
+                                   bool is_blocking) -> bool
     {
         auto pop_res = true;
         reset();
@@ -42,7 +42,7 @@ namespace srs
         return pop_res;
     }
 
-    DataProcessManager::~DataProcessManager()
+    TaskDiagram::~TaskDiagram()
     {
         spdlog::debug("Closing analysis task workflows ...");
         reset();
@@ -53,9 +53,9 @@ namespace srs
         }
     }
 
-    auto DataProcessManager::run_processes(bool is_stopped) -> std::expected<void, std::string_view>
+    auto TaskDiagram::run_processes(bool is_stopped) -> std::expected<void, std::string_view>
     {
-        auto starting_fut = create_coro_future(coro_, is_stopped).share();
+        auto starting_fut = common::create_coro_future(coro_, is_stopped).share();
         auto raw_to_delim_raw_fut = raw_to_delim_raw_converter_.create_future(starting_fut, writers_);
         auto struct_deser_fut = struct_deserializer_.create_future(starting_fut, writers_);
         auto proto_converter_fut = struct_proto_converter_.create_future(struct_deser_fut, writers_);
@@ -102,7 +102,7 @@ namespace srs
     }
 
     // NOLINTNEXTLINE(readability-static-accessed-through-instance)
-    auto DataProcessManager::generate_starting_coro(asio::any_io_executor /*unused*/) -> StartingCoroType
+    auto TaskDiagram::generate_starting_coro(asio::any_io_executor /*unused*/) -> StartingCoroType
     {
         while (true)
         {
@@ -116,14 +116,14 @@ namespace srs
         }
     }
 
-    void DataProcessManager::reset()
+    void TaskDiagram::reset()
     {
         writers_.reset();
         binary_data_.clear();
     }
 
-    void DataProcessManager::set_output_filenames(const std::vector<std::string>& filenames)
+    void TaskDiagram::set_output_filenames(const std::vector<std::string>& filenames)
     {
         writers_.set_output_filenames(filenames);
     }
-} // namespace srs
+} // namespace srs::workflow

@@ -1,9 +1,11 @@
-#include "Application.hpp"
+#include <string_view>
+
 #include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
-#include <srs/analysis/DataProcessor.hpp>
+
+#include <srs/Application.hpp>
 #include <srs/utils/Connections.hpp>
-#include <string_view>
+#include <srs/workflow/Handler.hpp>
 
 namespace srs
 {
@@ -12,7 +14,7 @@ namespace srs
     {
         spdlog::set_pattern("[%H:%M:%S] [%^%=7l%$] [thread %t] %v");
         spdlog::info("Welcome to SRS Application");
-        data_processor_ = std::make_unique<DataProcessor>(this);
+        workflow_handler_ = std::make_unique<workflow::Handler>(this);
     }
 
     AppExitHelper::~AppExitHelper() noexcept { app_->end_of_work(); }
@@ -107,13 +109,13 @@ namespace srs
         spdlog::debug("App::exit is called");
         status_.is_on_exit.store(true);
         wait_for_reading_finish();
-        data_processor_->stop();
+        workflow_handler_->stop();
     }
 
-    void App::set_print_mode(DataPrintMode mode) { data_processor_->set_print_mode(mode); }
+    void App::set_print_mode(common::DataPrintMode mode) { workflow_handler_->set_print_mode(mode); }
     void App::set_output_filenames(const std::vector<std::string>& filenames)
     {
-        data_processor_->set_output_filenames(filenames);
+        workflow_handler_->set_output_filenames(filenames);
     }
 
     void App::set_remote_endpoint(std::string_view remote_ip, int port_number)
@@ -126,30 +128,30 @@ namespace srs
 
     void App::switch_on()
     {
-        auto connection_info = ConnectionInfo{ this };
+        auto connection_info = connection::Info{ this };
         connection_info.local_port_number = configurations_.fec_control_local_port;
-        auto connection = std::make_shared<Starter>(connection_info);
+        auto connection = std::make_shared<connection::Starter>(connection_info);
         connection->set_remote_endpoint(remote_endpoint_);
         connection->acq_on();
     }
 
     void App::switch_off()
     {
-        auto connection_info = ConnectionInfo{ this };
+        auto connection_info = connection::Info{ this };
         connection_info.local_port_number = configurations_.fec_control_local_port;
-        auto connection = std::make_shared<Stopper>(connection_info);
+        auto connection = std::make_shared<connection::Stopper>(connection_info);
         connection->set_remote_endpoint(remote_endpoint_);
         connection->acq_off();
     }
 
     void App::read_data(bool is_non_stop)
     {
-        auto connection_info = ConnectionInfo{ this };
+        auto connection_info = connection::Info{ this };
         connection_info.local_port_number = configurations_.fec_data_receive_port;
-        data_reader_ = std::make_shared<DataReader>(connection_info, data_processor_.get());
+        data_reader_ = std::make_shared<connection::DataReader>(connection_info, workflow_handler_.get());
         data_reader_->start(is_non_stop);
     }
 
-    void App::start_analysis(bool is_blocking) { data_processor_->start(is_blocking); }
+    void App::start_workflow(bool is_blocking) { workflow_handler_->start(is_blocking); }
     void App::wait_for_finish() { working_thread_.join(); }
 } // namespace srs

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-#include <srs/converters/DataConverterBase.hpp>
 #include <zpp_bits.h>
 
-namespace srs
+#include <srs/converters/DataConverterBase.hpp>
+
+namespace srs::process
 {
     class Raw2DelimRawConverter : public DataConverterBase<std::string_view, std::string_view>
     {
@@ -14,7 +14,7 @@ namespace srs
         {
         }
 
-        using SizeType = RawDelimSizeType;
+        using SizeType = common::RawDelimSizeType;
         static constexpr auto ConverterOption = std::array{ raw_frame };
 
         [[nodiscard]] auto data() const -> OutputType

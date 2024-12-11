@@ -17,7 +17,7 @@ namespace srs::test
         explicit SRSEmulator(std::string_view filename, int port, App& app)
             : source_filename_{ filename }
             , frame_reader_{ source_filename_ }
-            , udp_writer_{ app, asio::ip::udp::endpoint{ udp::v4(), static_cast<asio::ip::port_type>(port) } }
+            , udp_writer_{ app, asio::ip::udp::endpoint{ asio::ip::udp::v4(), static_cast<asio::ip::port_type>(port) } }
         {
         }
 
@@ -42,7 +42,7 @@ namespace srs::test
 
       private:
         std::string source_filename_;
-        RawFrameReader frame_reader_;
-        UDPWriter udp_writer_;
+        reader::RawFrame frame_reader_;
+        writer::UDP udp_writer_;
     };
 } // namespace srs::test

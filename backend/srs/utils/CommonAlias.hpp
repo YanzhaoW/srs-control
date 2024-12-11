@@ -5,8 +5,8 @@
 
 namespace srs
 {
-    /**  \addtogroup <CommonAliases>
-     *  @{
+    /**  \defgroup CommonAliases Common aliases
+     *   @{
      */
 
     namespace asio = boost::asio;
@@ -16,7 +16,7 @@ namespace srs
     using BufferElementType = char;
     using BinaryData = std::vector<BufferElementType>;
 
-    template <int buffer_size = SMALL_READ_MSG_BUFFER_SIZE>
+    template <int buffer_size = common::SMALL_READ_MSG_BUFFER_SIZE>
     using ReadBufferType = std::array<BufferElementType, buffer_size>;
 
     using CommunicateEntryType = uint32_t;

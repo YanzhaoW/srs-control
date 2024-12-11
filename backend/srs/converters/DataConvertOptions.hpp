@@ -6,7 +6,7 @@
 #include <fmt/format.h>
 #include <string_view>
 
-namespace srs
+namespace srs::process
 {
     enum class DataConvertOptions : uint8_t
     {
@@ -98,14 +98,14 @@ namespace srs
 } // namespace srs
 
 template <>
-class fmt::formatter<srs::DataConvertOptions>
+class fmt::formatter<srs::process::DataConvertOptions>
 {
   public:
     static constexpr auto parse(format_parse_context& ctx) { return ctx.end(); }
     template <typename FmtContent>
-    constexpr auto format(srs::DataConvertOptions option, FmtContent& ctn) const
+    constexpr auto format(srs::process::DataConvertOptions option, FmtContent& ctn) const
     {
-        using enum srs::DataConvertOptions;
+        using enum srs::process::DataConvertOptions;
         switch (option)
         {
             case none:

@@ -9,7 +9,7 @@ SRS-control is a program containing a command line tool `srs_control` and additi
 
 Please check the full documentation of this project: [srs-contorl documentation](<https://yanzhaow.github.io/srs-control/>).
 
-Reference of the internal code implementation can be checked from this [Doxygen documentation](https://apps.ikp.uni-koeln.de/~ywang/srs/).
+Reference of the internal code implementation can be checked from this [Doxygen documentation](https://web-docs.gsi.de/~yanwang/srs).
 
 ## `srs_control` preview
 

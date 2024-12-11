@@ -2,10 +2,10 @@
 #include <srs/readers/RawFrameReader.hpp>
 #include <zpp_bits.h>
 
-namespace srs
+namespace srs::reader
 {
 
-    RawFrameReader::RawFrameReader(const std::string& filename)
+    RawFrame::RawFrame(const std::string& filename)
         : input_filename_{ filename }
         , input_file_{ filename, std::ios::binary }
     {
@@ -16,16 +16,16 @@ namespace srs
         spdlog::debug("Open the binary file {:?}", input_filename_);
     }
 
-    auto RawFrameReader::read_one_frame(std::vector<char>& binary_data, std::ifstream& input_file) -> std::size_t
+    auto RawFrame::read_one_frame(std::vector<char>& binary_data, std::ifstream& input_file) -> std::size_t
     {
         if (not input_file.is_open())
         {
             spdlog::critical("The input file is not open!");
             return 0;
         }
-        binary_data.reserve(LARGE_READ_MSG_BUFFER_SIZE);
-        std::array<char, sizeof(RawDelimSizeType)> size_buffer{};
-        auto size = RawDelimSizeType{};
+        binary_data.reserve(common::LARGE_READ_MSG_BUFFER_SIZE);
+        std::array<char, sizeof(common::RawDelimSizeType)> size_buffer{};
+        auto size = common::RawDelimSizeType{};
         if (input_file.eof())
         {
             spdlog::info("End of the binary file.");
@@ -46,9 +46,9 @@ namespace srs
         return read_size;
     }
 
-    auto RawFrameReader::read_one_frame() -> std::string_view
+    auto RawFrame::read_one_frame() -> std::string_view
     {
         read_one_frame(input_buffer_, input_file_);
         return std::string_view{ input_buffer_.data(), input_buffer_.size() };
     }
-} // namespace srs
+} // namespace srs::reader

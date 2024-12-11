@@ -4,12 +4,13 @@
 #include <TFile.h>
 #include <TSystem.h>
 #include <TTree.h>
-#include <srs/analysis/DataProcessManager.hpp>
-#include <srs/data/SRSDataStructs.hpp>
 
-namespace srs
+#include <srs/data/SRSDataStructs.hpp>
+#include <srs/workflow/TaskDiagram.hpp>
+
+namespace srs::writer
 {
-    class RootFileWriter
+    class RootFile
     {
       public:
         using InputType = const StructData*;
@@ -19,19 +20,19 @@ namespace srs
         using OutputFuture = boost::unique_future<std::optional<OutputType>>;
         static constexpr auto IsStructType = true;
 
-        explicit RootFileWriter(asio::thread_pool& thread_pool, auto&&... args)
+        explicit RootFile(asio::thread_pool& thread_pool, auto&&... args)
             : root_file{ std::forward<decltype(args)>(args)... }
         {
             spdlog::debug("Root file {:?} has been opened.", root_file.GetName());
             tree.SetDirectory(&root_file);
             tree.Branch("srs_frame_data", &output_buffer_);
             coro_ = generate_coro(thread_pool.get_executor());
-            coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
+            common::coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
             // spdlog::trace("ROOT INCLUDE DIRS: {}", gSystem->GetIncludePath());
             // spdlog::trace("ROOT LIBRARIES: {}", gSystem->GetLibraries());
         }
 
-        ~RootFileWriter()
+        ~RootFile()
         {
             if (not is_closed_)
             {
@@ -40,8 +41,11 @@ namespace srs
             }
         }
 
-        auto write(auto pre_future) -> OutputFuture { return create_coro_future(coro_, pre_future); }
-        [[nodiscard]] static auto get_convert_mode() -> DataConvertOptions { return DataConvertOptions::structure; }
+        auto write(auto pre_future) -> OutputFuture { return common::create_coro_future(coro_, pre_future); }
+        [[nodiscard]] static auto get_convert_mode() -> process::DataConvertOptions
+        {
+            return process::DataConvertOptions::structure;
+        }
 
       private:
         bool is_closed_ = false;
@@ -80,12 +84,12 @@ namespace srs
         }
 
       public:
-        RootFileWriter(const RootFileWriter&) = delete;
-        RootFileWriter(RootFileWriter&&) = delete;
-        RootFileWriter& operator=(const RootFileWriter&) = delete;
-        RootFileWriter& operator=(RootFileWriter&&) = delete;
+        RootFile(const RootFile&) = delete;
+        RootFile(RootFile&&) = delete;
+        RootFile& operator=(const RootFile&) = delete;
+        RootFile& operator=(RootFile&&) = delete;
     };
 
-} // namespace srs
+} // namespace srs::writer
 
 #endif
