@@ -88,6 +88,7 @@ jobs:
           source $PARENT_DIR/miniconda3/bin/activate
           conda activate srs
           mkdir srs-download
+          conan remote update conancenter --url https://center2.conan.io
           cmake --preset ${{ matrix.preset}} -DCMAKE_INSTALL_PREFIX="./srs-download" -DNO_ROOT=$DISABLE_ROOT
           cmake --build ./build --target install -- -j2
           tar czf "srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz" "./srs-download"
