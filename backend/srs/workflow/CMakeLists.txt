@@ -1,4 +1,4 @@
-target_sources(srscpp PRIVATE DataProcessor.cpp DataProcessManager.cpp)
+target_sources(srscpp PRIVATE Handler.cpp TaskDiagram.cpp)
 
 target_link_libraries(srscpp PRIVATE $<BUILD_LOCAL_INTERFACE:TBB::tbb>)
 
@@ -7,5 +7,5 @@ target_sources(
     PRIVATE FILE_SET
             privateHeaders
             FILES
-            DataProcessManager.hpp
-            DataProcessor.hpp)
+            TaskDiagram.hpp
+            Handler.hpp)

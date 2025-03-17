@@ -2,7 +2,7 @@
 
 #include <srs/converters/ProtoSerializerBase.hpp>
 
-namespace srs
+namespace srs::process
 {
     const auto protobuf_deserializer_converter = [](const proto::Data& proto_data, std::string& output_data) -> int
     {

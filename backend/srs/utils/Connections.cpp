@@ -1,7 +1,7 @@
-#include "Connections.hpp"
-#include <srs/analysis/DataProcessor.hpp>
+#include <srs/utils/Connections.hpp>
+#include <srs/workflow/Handler.hpp>
 
-namespace srs
+namespace srs::connection
 {
     void Starter::close()
     {
@@ -28,7 +28,7 @@ namespace srs
             throw std::runtime_error("TIMEOUT during waiting for status is_acq_on true.");
         }
         const auto data = std::vector<CommunicateEntryType>{ 0, 15, 0 };
-        communicate(data, NULL_ADDRESS);
+        communicate(data, common::NULL_ADDRESS);
     }
 
     void DataReader::close()
@@ -45,6 +45,6 @@ namespace srs
     void DataReader::read_data_handle(std::span<BufferElementType> read_data)
     {
 
-        data_processor_->read_data_once(read_data);
+        workflow_handler_->read_data_once(read_data);
     }
-} // namespace srs
+} // namespace srs::connection

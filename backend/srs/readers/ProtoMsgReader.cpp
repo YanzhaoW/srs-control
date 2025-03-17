@@ -2,23 +2,23 @@
 #include <srs/converters/ProtoToStructConverter.hpp>
 #include <srs/readers/ProtoMsgReader.hpp>
 
-namespace srs
+namespace srs::reader
 {
-    ProtoMsgReader::ProtoMsgReader()
-        : proto_to_struct_converter_{ std::make_unique<Proto2StructConverter>() }
-        , proto_deserializer_{ std::make_unique<ProtoDeserializer>() }
+    ProtoMsg::ProtoMsg()
+        : proto_to_struct_converter_{ std::make_unique<process::Proto2StructConverter>() }
+        , proto_deserializer_{ std::make_unique<process::ProtoDeserializer>() }
     {
     }
 
-    ProtoMsgReader::~ProtoMsgReader() = default;
+    ProtoMsg::~ProtoMsg() = default;
 
-    auto ProtoMsgReader::convert(std::string_view msg, StructData& struct_data)
+    void ProtoMsg::convert(std::string_view msg, StructData& struct_data)
     {
         const auto& prot_struct = proto_deserializer_->convert(msg);
-        srs::Proto2StructConverter::convert(prot_struct, struct_data);
+        process::Proto2StructConverter::convert(prot_struct, struct_data);
     }
 
-    auto ProtoMsgReader::convert(std::string_view msg) -> const StructData&
+    auto ProtoMsg::convert(std::string_view msg) -> const StructData&
     {
         const auto& prot_struct = proto_deserializer_->convert(msg);
         return proto_to_struct_converter_->convert(prot_struct);

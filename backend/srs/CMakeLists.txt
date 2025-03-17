@@ -29,7 +29,7 @@ add_subdirectory(converters)
 add_subdirectory(writers)
 add_subdirectory(readers)
 add_subdirectory(devices)
-add_subdirectory(analysis)
+add_subdirectory(workflow)
 
 target_sources(
     srscpp

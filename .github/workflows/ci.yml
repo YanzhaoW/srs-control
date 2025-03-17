@@ -26,6 +26,7 @@ jobs:
           submodules: 'true'
       - name: install and env vars
         run: |
+          dnf upgrade -y
           dnf install -y conan nodejs
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV

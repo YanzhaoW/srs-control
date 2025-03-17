@@ -3,7 +3,7 @@
 #include <google/protobuf/message_lite.h>
 #include <srs/data/message.pb.h>
 
-namespace srs
+namespace srs::process
 {
     class ProtoDeserializer
     {

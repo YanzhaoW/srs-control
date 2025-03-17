@@ -57,9 +57,9 @@ class CompressorRecipe(ConanFile):
     def requirements(self):
         self.requires("gsl-lite/0.41.0")
         self.requires("cli11/2.4.2")
-        self.requires("spdlog/1.14.1")
+        self.requires("spdlog/1.15.1")
         self.requires("zpp_bits/4.4.24")
-        self.requires("fmt/11.0.1", override=True)
+        self.requires("fmt/11.1.4", override=True)
         self.requires("boost/1.86.0", options=BOOST_OPTIONS)
         if platform != "darwin":
             self.requires("protobuf/5.27.0", options={"with_zlib": True, "fPIC": True, "shared": False, "lite": False})

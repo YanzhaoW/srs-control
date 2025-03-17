@@ -1,14 +1,12 @@
 #pragma once
 
-#include <algorithm>
 #include <boost/asio/experimental/coro.hpp>
-#include <srs/converters/DataConvertOptions.hpp>
+#include <fmt/ranges.h>
+
 #include <srs/utils/CommonFunctions.hpp>
 #include <srs/writers/DataWriter.hpp>
 
-#include <fmt/ranges.h>
-
-namespace srs
+namespace srs::process
 {
     template <typename Input, typename Output>
     class DataConverterBase
@@ -25,15 +23,15 @@ namespace srs
         explicit DataConverterBase(auto coro)
             : coro_(std::move(coro))
         {
-            coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
+            common::coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
         }
 
-        auto create_future(this auto&& self, InputFuture& pre_fut, DataWriter& writers) -> OutputFuture
+        auto create_future(this auto&& self, InputFuture& pre_fut, writer::Manager& writers) -> OutputFuture
         {
             constexpr auto converter_options = std::remove_cvref_t<decltype(self)>::ConverterOption;
             auto is_needed = std::ranges::any_of(
                 converter_options, [&writers](auto option) { return writers.is_convert_required(option); });
-            return is_needed ? create_coro_future(self.coro_, pre_fut) : OutputFuture{};
+            return is_needed ? common::create_coro_future(self.coro_, pre_fut) : OutputFuture{};
         }
 
       private:

@@ -64,11 +64,11 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with: 
           source: srs
-          host: ${{ vars.DOXY_HOST}}
-          username: ${{ vars.DOXY_USERNAME }}
+          host: ${{ secrets.DOXY_HOST}}
+          username: ${{ secrets.DOXY_USERNAME }}
           password: ${{ secrets.DOXY_HOST_PASSWORD }}
-          target: ${{ vars.DOXY_LOCATION }}
+          target: ${{ secrets.DOXY_LOCATION }}
           proxy_host: ${{ secrets.DOXY_PROXY_SERVER }}
-          proxy_username: ${{ vars.DOXY_USERNAME }}
+          proxy_username: ${{ secrets.DOXY_USERNAME }}
           proxy_password: ${{ secrets.DOXY_HOST_PASSWORD }}
           overwrite: true

@@ -1,28 +1,29 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
+#include <span>
+
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <chrono>
 #include <gsl/gsl-lite.hpp>
-#include <span>
 #include <spdlog/logger.h>
-#include <srs/analysis/DataProcessManager.hpp>
-#include <srs/converters/SerializableBuffer.hpp>
-#include <srs/converters/StructDeserializer.hpp>
-#include <srs/data/SRSDataStructs.hpp>
-#include <srs/writers/DataWriter.hpp>
-#include <tbb/concurrent_queue.h>
+
+#include <srs/workflow/TaskDiagram.hpp>
 
 namespace srs
 {
-    class DataProcessor;
     class App;
+}
+
+namespace srs::workflow
+{
+    class Handler;
 
     class DataMonitor
     {
       public:
-        explicit DataMonitor(DataProcessor* processor, io_context_type* io_context);
+        explicit DataMonitor(Handler* processor, io_context_type* io_context);
         void show_data_speed(bool val = true) { is_shown_ = val; }
         void set_display_period(std::chrono::milliseconds duration) { period_ = duration; }
         void start();
@@ -36,14 +37,14 @@ namespace srs
 
       private:
         bool is_shown_ = true;
-        gsl::not_null<DataProcessor*> processor_;
+        gsl::not_null<Handler*> processor_;
         gsl::not_null<io_context_type*> io_context_;
         std::shared_ptr<spdlog::logger> console_;
         asio::steady_timer clock_;
         std::atomic<uint64_t> last_read_data_bytes_ = 0;
         std::atomic<uint64_t> last_processed_hit_num_ = 0;
         std::chrono::time_point<std::chrono::steady_clock> last_print_time_ = std::chrono::steady_clock::now();
-        std::chrono::milliseconds period_ = DEFAULT_DISPLAY_PERIOD;
+        std::chrono::milliseconds period_ = common::DEFAULT_DISPLAY_PERIOD;
         std::atomic<double> current_received_bytes_MBps_;
         std::atomic<double> current_hits_ps_;
         std::string speed_string_;
@@ -52,16 +53,16 @@ namespace srs
         auto print_cycle() -> asio::awaitable<void>;
     };
 
-    class DataProcessor
+    class Handler
     {
       public:
-        explicit DataProcessor(App* control);
+        explicit Handler(App* control);
 
-        DataProcessor(const DataProcessor&) = delete;
-        DataProcessor(DataProcessor&&) = delete;
-        DataProcessor& operator=(const DataProcessor&) = delete;
-        DataProcessor& operator=(DataProcessor&&) = delete;
-        ~DataProcessor();
+        Handler(const Handler&) = delete;
+        Handler(Handler&&) = delete;
+        Handler& operator=(const Handler&) = delete;
+        Handler& operator=(Handler&&) = delete;
+        ~Handler();
 
         // From socket interface. Need to be fast return
         void read_data_once(std::span<BufferElementType> read_data);
@@ -78,7 +79,7 @@ namespace srs
         [[nodiscard]] auto get_app() -> auto& { return *app_; }
 
         // setters:
-        void set_print_mode(DataPrintMode mode) { print_mode_ = mode; }
+        void set_print_mode(common::DataPrintMode mode) { print_mode_ = mode; }
         void set_show_data_speed(bool val = true) { monitor_.show_data_speed(val); }
         void set_monitor_display_period(std::chrono::milliseconds duration) { monitor_.set_display_period(duration); }
         void set_output_filenames(const std::vector<std::string>& filenames)
@@ -89,19 +90,19 @@ namespace srs
         void stop();
 
       private:
-        using enum DataPrintMode;
+        using enum common::DataPrintMode;
 
         std::atomic<bool> is_stopped_{ false };
         std::size_t received_data_size_{};
-        DataPrintMode print_mode_ = DataPrintMode::print_speed;
+        common::DataPrintMode print_mode_ = common::DataPrintMode::print_speed;
         std::atomic<uint64_t> total_read_data_bytes_ = 0;
         std::atomic<uint64_t> total_processed_hit_numer_ = 0;
         gsl::not_null<App*> app_;
         DataMonitor monitor_;
 
         // Data buffer
-        tbb::concurrent_bounded_queue<SerializableMsgBuffer> data_queue_;
-        DataProcessManager data_processes_;
+        tbb::concurrent_bounded_queue<process::SerializableMsgBuffer> data_queue_;
+        TaskDiagram data_processes_;
 
         // should run on a different task
         void analysis_loop(bool is_blocking);
@@ -111,4 +112,4 @@ namespace srs
         void clear_data_buffer();
     };
 
-} // namespace srs
+} // namespace srs::workflow

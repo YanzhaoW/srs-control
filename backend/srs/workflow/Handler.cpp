@@ -2,18 +2,15 @@
 #include <boost/asio/detached.hpp>
 #include <fmt/chrono.h>
 #include <fmt/color.h>
-#include <fmt/ranges.h>
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
-#include <srs/Application.hpp>
-#include <srs/analysis/DataProcessor.hpp>
-#include <srs/data/DataStructsFormat.hpp>
-#include <srs/data/SRSDataStructs.hpp>
 
-namespace srs
+#include <srs/data/DataStructsFormat.hpp>
+#include <srs/workflow/Handler.hpp>
+
+namespace srs::workflow
 {
-    DataMonitor::DataMonitor(DataProcessor* processor, io_context_type* io_context)
+    DataMonitor::DataMonitor(Handler* processor, io_context_type* io_context)
         : processor_{ processor }
         , io_context_{ io_context }
         , clock_{ *io_context_ }
@@ -77,43 +74,43 @@ namespace srs
         spdlog::debug("DataMonitor: rate polling clock is killed.");
     }
 
-    DataProcessor::DataProcessor(App* control)
+    Handler::Handler(App* control)
         : app_{ control }
         , monitor_{ this, &(control->get_io_context()) }
         , data_processes_{ this, control->get_io_context() }
     {
     }
 
-    void DataProcessor::start(bool is_blocking)
+    void Handler::start(bool is_blocking)
     {
         is_stopped_.store(false);
-        spdlog::debug("Data processor starts.");
+        spdlog::debug("Workflow starts.");
         if (print_mode_ == print_speed)
         {
             monitor_.start();
         }
         analysis_loop(is_blocking);
-        spdlog::trace("Data processor exit start().");
+        spdlog::trace("Workflow exit start().");
     }
 
-    DataProcessor::~DataProcessor() { stop(); }
+    Handler::~Handler() { stop(); }
     // DataProcessor::~DataProcessor() = default;
 
-    void DataProcessor::stop()
+    void Handler::stop()
     {
         // CAS operation to guarantee the thread safty
         auto expected = false;
-        spdlog::trace("Try to stop the data processor. Current is_stopped status: {}", is_stopped_.load());
+        spdlog::trace("Try to stop the workflow. Current is_stopped status: {}", is_stopped_.load());
         if (is_stopped_.compare_exchange_strong(expected, true))
         {
             spdlog::trace("Try to stop data monitor");
             monitor_.stop();
             data_queue_.abort();
-            spdlog::trace("Data processor is stopped");
+            spdlog::trace("Workflow is stopped");
         }
     }
 
-    void DataProcessor::read_data_once(std::span<BufferElementType> read_data)
+    void Handler::read_data_once(std::span<BufferElementType> read_data)
     {
         total_read_data_bytes_ += read_data.size();
         auto is_success = data_queue_.try_emplace(read_data);
@@ -123,11 +120,11 @@ namespace srs
         }
     }
 
-    void DataProcessor::analysis_loop(bool is_blocking)
+    void Handler::analysis_loop(bool is_blocking)
     {
         try
         {
-            spdlog::trace("entering analysis loop");
+            spdlog::trace("entering workflow loop");
             // TODO: Use direct binary data
 
             while (true)
@@ -149,7 +146,7 @@ namespace srs
         }
         catch (tbb::user_abort& ex)
         {
-            spdlog::trace("Data processing: {}", ex.what());
+            spdlog::trace("Workflow: {}", ex.what());
         }
         catch (std::exception& ex)
         {
@@ -157,10 +154,10 @@ namespace srs
             app_->set_error_string(ex.what());
             // app_->exit();
         }
-        spdlog::debug("Analysis loop is done.\n");
+        spdlog::debug("Workflow loop is done.\n");
     }
 
-    void DataProcessor::update_monitor()
+    void Handler::update_monitor()
     {
         const auto& struct_data = data_processes_.get_struct_data();
 
@@ -168,10 +165,10 @@ namespace srs
         monitor_.update(struct_data);
     }
 
-    void DataProcessor::print_data()
+    void Handler::print_data()
     {
         const auto& export_data = data_processes_.get_struct_data();
-        const auto& raw_data = data_processes_.get_data<DataProcessManager::raw>();
+        const auto& raw_data = data_processes_.get_data<TaskDiagram::raw>();
         if (print_mode_ == print_raw)
         {
             spdlog::info("data: {:x}", fmt::join(raw_data, ""));
@@ -193,4 +190,4 @@ namespace srs
             }
         }
     }
-} // namespace srs
+} // namespace srs::workflow

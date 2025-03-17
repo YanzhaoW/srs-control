@@ -4,7 +4,7 @@
 #include <google/protobuf/util/delimited_message_util.h>
 #include <srs/converters/ProtoSerializerBase.hpp>
 
-namespace srs
+namespace srs::process
 {
     const auto protobuf_delim_deserializer_converter = [](const proto::Data& proto_data,
                                                           std::string& output_data) -> int
@@ -13,10 +13,10 @@ namespace srs
         namespace io = protobuf::io;
         auto output_stream = io::StringOutputStream{ &output_data };
 
-        if constexpr (PROTOBUF_ENABLE_GZIP)
+        if constexpr (common::PROTOBUF_ENABLE_GZIP)
         {
             auto option = io::GzipOutputStream::Options{};
-            option.compression_level = GZIP_DEFAULT_COMPRESSION_LEVEL;
+            option.compression_level = common::GZIP_DEFAULT_COMPRESSION_LEVEL;
             auto gzip_output = io::GzipOutputStream{ &output_stream, option };
             protobuf::util::SerializeDelimitedToZeroCopyStream(proto_data, &gzip_output);
             gzip_output.Flush();

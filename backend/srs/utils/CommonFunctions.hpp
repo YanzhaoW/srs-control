@@ -6,10 +6,10 @@
 #include <boost/thread/future.hpp>
 #include <srs/utils/CommonAlias.hpp>
 
-namespace srs
+namespace srs::common
 {
-    /**  \addtogroup <CommonFunctions>
-     *  @{
+    /**  \defgroup CommonFunctions Common functions
+     *   @{
      */
 
     // subbits from a half open range [min, max)
@@ -43,7 +43,7 @@ namespace srs
     constexpr auto byte_swap(const std::bitset<bit_size>& bits)
     {
         auto val = bits.to_ullong();
-        val = val << (sizeof(uint64_t) * BYTE_BIT_LENGTH - bit_size);
+        val = val << (sizeof(uint64_t) * common::BYTE_BIT_LENGTH - bit_size);
         val = std::byteswap(val);
         return std::bitset<bit_size>(val);
     }

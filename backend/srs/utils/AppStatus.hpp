@@ -15,7 +15,7 @@ namespace srs
         // std::atomic<bool> is_already_exit = false;
         std::condition_variable status_change;
 
-        auto wait_for_status(auto&& condition, std::chrono::seconds time_duration = DEFAULT_STATUS_WAITING_TIME_SECONDS)
+        auto wait_for_status(auto&& condition, std::chrono::seconds time_duration = common::DEFAULT_STATUS_WAITING_TIME_SECONDS)
             -> bool
         {
             using namespace std::string_literals;

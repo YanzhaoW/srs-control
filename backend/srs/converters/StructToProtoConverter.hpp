@@ -4,7 +4,7 @@
 #include <srs/data/message.pb.h>
 #include <srs/converters/StructDeserializer.hpp>
 
-namespace srs
+namespace srs::process
 {
     class Struct2ProtoConverter : public DataConverterBase<const StructData*, const proto::Data*>
     {
