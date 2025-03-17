@@ -1,5 +1,5 @@
 #####################################
-Welcome to SRS-DAQ documentation
+Welcome to SRS-control documentation
 #####################################
 
 .. toctree::

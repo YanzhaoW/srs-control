@@ -26,7 +26,7 @@ html_show_sourcelink = False
 html_context = {
   'display_github': True,
   'github_user': 'YanzhaoW',
-  'github_repo': 'srs-daq',
+  'github_repo': 'srs-control',
   'github_version': 'dev/doc/',
 }
 

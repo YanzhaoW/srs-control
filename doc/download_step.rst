@@ -2,7 +2,7 @@
 Download the project
 ###########################
 
-Please visit the `release page <https://github.com/YanzhaoW/srs-daq/releases>`_ and download the latest release for your operating system:
+Please visit the `release page <https://github.com/YanzhaoW/srs-control/releases>`_ and download the latest release for your operating system:
 
 .. code-block:: bash
 

@@ -1,13 +1,13 @@
-# SRS-DAQ - A data acquisition program for SRS FEC & VMM3
+# SRS-control - A data acquisition program for SRS FEC & VMM3
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/7e8c956af1bc46c7836524f1ace32c11)](https://app.codacy.com/gh/YanzhaoW/srs-daq/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![CI pipeline](https://github.com/YanzhaoW/srs-daq/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/YanzhaoW/srs-daq/actions?query=branch%3Adev)
-[![Github Releases](https://img.shields.io/github/release/YanzhaoW/srs-daq.svg)](https://github.com/YanzhaoW/srs-daq/releases)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/7e8c956af1bc46c7836524f1ace32c11)](https://app.codacy.com/gh/YanzhaoW/srs-control/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![CI pipeline](https://github.com/YanzhaoW/srs-control/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/YanzhaoW/srs-control/actions?query=branch%3Adev)
+[![Github Releases](https://img.shields.io/github/release/YanzhaoW/srs-control.svg)](https://github.com/YanzhaoW/srs-control/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-SRS-DAQ is a program containing a command line tool `srs_control` and additional library APIs that can be used to communicate with SRS system and interpret the received data in your own program.
+SRS-control is a program containing a command line tool `srs_control` and additional library APIs that can be used to communicate with SRS system and interpret the received data in your own program.
 
-Please check the full documentation of this project: [SRS-DAQ documentation](<https://yanzhaow.github.io/srs-daq/>).
+Please check the full documentation of this project: [srs-contorl documentation](<https://yanzhaow.github.io/srs-control/>).
 
 Reference of the internal code implementation can be checked from this [Doxygen documentation](https://apps.ikp.uni-koeln.de/~ywang/srs/).
 

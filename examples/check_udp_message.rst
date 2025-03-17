@@ -11,7 +11,7 @@ Synopsis
 Description
 -------------------
 
-The executable opens up a UDP socket to listen the message sent from :ref:`srs_control <executable:Synopsis>`. Check the `source file <https://github.com/YanzhaoW/srs-daq/blob/master/examples/check_udp_message.py>`_ for the full details.
+The executable opens up a UDP socket to listen the message sent from :ref:`srs_control <executable:Synopsis>`. Check the `source file <https://github.com/YanzhaoW/srs-control/blob/master/examples/check_udp_message.py>`_ for the full details.
 
 Options
 -------------------
@@ -33,4 +33,4 @@ Example
 
   ./srs_check_udp --port [port number] --ip "localhost"
 
-See the source file `check_udp_message.py <https://github.com/YanzhaoW/srs-daq/blob/master/examples/check_udp_message.py>`_.
+See the source file `check_udp_message.py <https://github.com/YanzhaoW/srs-control/blob/master/examples/check_udp_message.py>`_.

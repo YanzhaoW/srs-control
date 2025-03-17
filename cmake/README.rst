@@ -60,10 +60,10 @@ Options
 Example
 #############
 
-To build and install the project at ``/home/usr_name/software/srs-daq`` without ROOT dependency:
+To build and install the project at ``/home/usr_name/software/srs-control`` without ROOT dependency:
 
 .. code-block:: bash
 
   cmake --preset default . -DNO_ROOT=TRUE \
-        -DCMAKE_INSTALL_PREFIX="/home/user_name/software/srs-daq"
+        -DCMAKE_INSTALL_PREFIX="/home/user_name/software/srs-control"
 

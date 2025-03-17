@@ -3,7 +3,7 @@ Deserialization of the UDP binary data
 
 The class :cpp:class:`srs::ProtoMsgReader` is responsible for the deserialization of the UDP binary data, which converts the Protobuf binary data sent by a UDP socket to a C++ data structure. All memory allocation of this class is done in its constructor. If the conversion are repeated many times, the object should be kept alive to reduce the memory allocation.
 
-The full example can be found in this `script <https://github.com/YanzhaoW/srs-daq/blob/master/examples/readUDP/main.cpp>`_ .
+The full example can be found in this `script <https://github.com/YanzhaoW/srs-control/blob/master/examples/readUDP/main.cpp>`_ .
 
 **Minimum example:**
 

@@ -7,7 +7,7 @@ include(option_settings)
 set(ENV{CMAKE_ENABLE_TEST} ${ENABLE_TEST})
 
 project(
-    SRS-DAQ
+    SRS-control
     VERSION 0.1.3
     LANGUAGES CXX C)
 

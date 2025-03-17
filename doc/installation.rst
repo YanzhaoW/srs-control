@@ -85,8 +85,8 @@ Step 1: Clone the latest version
 
 .. code-block:: bash
 
-  git clone -b [latest version] https://github.com/YanzhaoW/srs-daq.git
-  cd srs-daq
+  git clone -b [latest version] https://github.com/YanzhaoW/srs-control.git
+  cd srs-control
   git submodule update --init
 
 Step 2: Build the source
