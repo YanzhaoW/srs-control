@@ -40,3 +40,5 @@ else()
         add_subdirectory(test)
     endif()
 endif()
+
+include(project_packaging)

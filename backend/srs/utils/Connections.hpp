@@ -20,14 +20,17 @@ namespace srs::connection
         void close();
         void acq_on()
         {
+            spdlog::info("Requesting data from the FEC with the IP: {}", get_remote_endpoint().address().to_string());
             const auto data = std::vector<CommunicateEntryType>{ 0, 15, 1 };
             communicate(data, common::NULL_ADDRESS);
         }
         void on_fail()
         {
+            set_connection_bad();
             const auto& endpoint = get_remote_endpoint();
-            spdlog::critical(
-                "Cannot start the system: No connection to {}:{}!", endpoint.address().to_string(), endpoint.port());
+            spdlog::critical("Cannot establish a connection to the FEC with the IP: \"{}:{}\"!",
+                             endpoint.address().to_string(),
+                             endpoint.port());
         }
     };
 
@@ -70,16 +73,16 @@ namespace srs::connection
          * The destructor change the Status::is_acq_off to be true
          * @see Status
          */
-        ~Stopper()
-        {
-            spdlog::info("SRS system is turned off");
-            get_app().set_status_acq_off();
-        }
+        ~Stopper() = default;
 
         /**
          * \brief called if an error occurs
          */
-        static void on_fail() { spdlog::debug("on_fail of stopper is called"); }
+        void on_fail()
+        {
+            spdlog::debug("on_fail of stopper is called");
+            set_connection_bad();
+        }
 
         /**
          * \brief Turn off the data acquisition from SRS system
@@ -117,6 +120,7 @@ namespace srs::connection
             if (not is_on_exit.load())
             {
                 get_app().set_status_is_reading(true);
+                spdlog::info("UDP data reading has been started");
                 listen(is_non_stop);
             }
             else

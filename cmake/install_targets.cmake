@@ -37,7 +37,7 @@ install(
     NAMESPACE srs::
     FILE srsConfig-targets.cmake)
 
-install(IMPORTED_RUNTIME_ARTIFACTS TBB::tbb LIBRARY)
+# install(IMPORTED_RUNTIME_ARTIFACTS TBB::tbb LIBRARY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/srsConfig.cmake
               ${CMAKE_CURRENT_BINARY_DIR}/srsConfig-version.cmake

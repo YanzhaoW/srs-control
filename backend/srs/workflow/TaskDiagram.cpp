@@ -96,7 +96,7 @@ namespace srs::workflow
         writers_.wait_for_finished();
         if (is_stopped)
         {
-            spdlog::info("All data consumers are finished.");
+            spdlog::info("All data consumers have been finished");
         }
         return {};
     }
@@ -110,7 +110,7 @@ namespace srs::workflow
             auto is_terminated = co_yield (data);
             if (is_terminated)
             {
-                spdlog::debug("Shutting down starting coroutine.");
+                spdlog::debug("Shutting down starting coroutine");
                 co_return;
             }
         }

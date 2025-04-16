@@ -63,9 +63,12 @@ namespace srs::connection
         auto new_shared_socket(int port_number) -> std::unique_ptr<udp::socket>;
         void close_socket();
         void set_continuous(bool is_continuous = true) { is_continuous_ = is_continuous; }
+        void set_connection_bad() { is_connection_ok_ = false; }
+        auto is_connection_ok() -> bool { return is_connection_ok_; }
 
       private:
         bool is_continuous_ = false;
+        bool is_connection_ok_ = true;
         int local_port_number_ = 0;
         std::atomic<bool> is_socket_closed_{ false };
         uint32_t counter_ = common::INIT_COUNT_VALUE;
@@ -244,15 +247,29 @@ namespace srs::connection
         spdlog::trace("Connection {}: spawned listen coroutine", self.name_);
     }
 
+    // TODO: utilize listen function
     template <int buffer_size>
     void Base<buffer_size>::communicate(this auto&& self,
                                         const std::vector<CommunicateEntryType>& data,
                                         uint16_t address)
     {
-        self.listen();
+        using asio::experimental::awaitable_operators::operator||;
+        if (self.socket_ == nullptr)
+        {
+            self.socket_ = self.new_shared_socket(self.local_port_number_);
+        }
+
+        auto listen_action = co_spawn(self.app_->get_io_context(),
+                                      signal_handling(common::get_shared_from_this(self)) ||
+                                          listen_message(common::get_shared_from_this(self), false),
+                                      asio::deferred);
+
         self.encode_write_msg(data, address);
-        co_spawn(self.app_->get_io_context(), send_message(self.shared_from_this()), asio::detached);
-        spdlog::trace("Connection {}: spawned write coroutine", self.name_);
+        auto send_action = co_spawn(self.app_->get_io_context(), send_message(self.shared_from_this()), asio::deferred);
+        auto group = asio::experimental::make_parallel_group(std::move(listen_action), std::move(send_action));
+        auto fut = group.async_wait(asio::experimental::wait_for_all(), asio::use_future);
+        spdlog::trace("Connection {}: start communication", self.name_);
+        fut.get();
     }
 
     template <int buffer_size>
@@ -266,7 +283,7 @@ namespace srs::connection
             socket_->close();
             if (signal_set_ != nullptr)
             {
-                spdlog::trace("Connection {}: cannelling signal ...", name_);
+                spdlog::trace("Connection {}: cancelling signal ...", name_);
                 signal_set_->cancel();
                 spdlog::trace("Connection {}: signal is cancelled.", name_);
             }

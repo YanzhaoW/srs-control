@@ -150,7 +150,7 @@ namespace srs::writer
 
             data_buffer_.set_value(data_struct);
             auto error_code =
-                glz::write<glz::opts{ .prettify = 1, .new_lines_in_arrays = 0 }>(data_buffer_, string_buffer_);
+                glz::write<glz::opts{ .prettify = true, .new_lines_in_arrays = false }>(data_buffer_, string_buffer_);
             if (error_code)
             {
                 spdlog::critical("JsonWriter: cannot interpret data struct to json. Error: {}",

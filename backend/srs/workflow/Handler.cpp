@@ -49,7 +49,7 @@ namespace srs::workflow
             current_hits_ps_.store(hits_processed / time_duration_double * 1e6);
 
             set_speed_string(current_received_bytes_MBps_.load());
-            console_->info("Data reading rate: {}. Press \"Ctrl-C\" to stop the program.\r", speed_string_);
+            console_->info("Data reading rate: {}. Press \"Ctrl-C\" to stop the program \r", speed_string_);
         }
     }
 
