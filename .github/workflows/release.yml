@@ -5,6 +5,7 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
     branches:
       - master
+      # - dev
   workflow_dispatch:
 
 permissions: write-all
@@ -35,6 +36,8 @@ jobs:
 
   build-artifacts:
     runs-on: ubuntu-latest
+    outputs:
+      package_filename: ${{ steps.packaging.outputs.package_filename }}
     defaults:
       run:
         shell: bash
@@ -47,8 +50,10 @@ jobs:
         include:
           - os: debian-bullseye
             preset: static
+            pack: true
           - os: fedora-41
             preset: default
+            pack: false
     name: ${{ matrix.os }}-${{ matrix.root }}
     env:
       CMAKE_GENERATOR: Ninja
@@ -89,15 +94,82 @@ jobs:
           conda activate srs
           mkdir srs-download
           conan remote update conancenter --url https://center2.conan.io
+          export LD_LIBRARY_PATH="/usr/local/lib64:${LD_LIBRARY_PATH}"
           cmake --preset ${{ matrix.preset}} -DCMAKE_INSTALL_PREFIX="./srs-download" -DNO_ROOT=$DISABLE_ROOT
           cmake --build ./build --target install -- -j2
           tar czf "srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz" "./srs-download"
 
+      - name: cpack
+        if: ${{ matrix.pack }}
+        id: packaging
+        run: |
+          apt install -y file
+          cd build
+          cpack
+          cd package
+          export package_filename=$(ls srs-control*)
+          echo "package_filename=${package_filename}" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ matrix.pack }}
+        with:
+          name: package-${{ matrix.os}}-${{ matrix.root }}
+          path: build/package/${{ steps.packaging.outputs.package_filename }}
+          retention-days: 1
+
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os}}-${{ env.TAG_NAME }}-${{ matrix.root }}
+          name: download-${{ matrix.os}}-${{ env.TAG_NAME }}-${{ matrix.root }}
           path: srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz
           retention-days: 1
+
+  # publish-deb-package:
+  #   runs-on: ubuntu-24.04
+  #   needs: [setup, build-artifacts]
+  #   strategy:
+  #     matrix:
+  #       os: [debian-bullseye]
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       id: artifacts-download
+  #       with:
+  #         pattern: package-${{ matrix.os}}-*
+  #         path: ${{ github.workspace }}/package
+  #         merge-multiple: true
+
+  #     - name: install aptly
+  #       run: |
+  #         sudo apt update -y
+  #         sudo apt install -y wget tree
+  #         sudo wget -O /etc/apt/keyrings/aptly.asc https://www.aptly.info/pubkey.txt
+  #         echo "deb [signed-by=/etc/apt/keyrings/aptly.asc] http://repo.aptly.info/release noble main" | sudo tee -a /etc/apt/sources.list.d/aptly.list
+  #         sudo apt update -y
+  #         sudo apt install -y aptly
+
+  #     - name: import keys
+  #       run: |
+  #         wget -O public_key.txt https://apps.ikp.uni-koeln.de/~ywang/repos/public_key.txt
+  #         echo "${{ secrets.SIGN_KEY_SECRET }}" > private_key.txt
+
+  #     - name: create package
+  #       run: |
+  #         ls
+  #         tree
+  #         gpg --allow-secret-key-import --import private_key.txt
+  #         gpg --no-default-keyring --keyring trustedkeys.gpg --import public_key.txt
+  #         aptly mirror create srs-control https://apps.ikp.uni-koeln.de/~ywang/repos/srs_control/debian bullseye
+  #         aptly mirror update srs-control
+  #         aptly repo create srs-control
+  #         aptly repo import srs-control srs-control srs-control
+  #         aptly repo add -force-replace srs-control package/srs-control_0.1.4_amd64.deb
+  #         aptly publish repo -skip-contents -distribution="bullseye" srs-control
+  #         cd ~/.aptly
+  #         ls
+  #         scp -r -o ProxyJump=ywang@hermes1.ikp.uni-koeln.de srs_control ywang@apps.ikp.uni-koeln.de:/home/ywang/public_html/repos
+
 
   publish-release:
     runs-on: ubuntu-latest
@@ -130,6 +202,7 @@ jobs:
       - uses: actions/download-artifact@v4
         id: artifacts-download
         with:
+          pattern: download-*
           path: ${{ env.DOWNLOAD_DIR }}
 
       - name: clean old releases

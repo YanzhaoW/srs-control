@@ -4,6 +4,7 @@
 
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
 
 // #include <srs/devices/Fec.hpp>
@@ -79,12 +80,14 @@ namespace srs
         void set_print_mode(common::DataPrintMode mode);
         void set_output_filenames(const std::vector<std::string>& filenames);
         void set_error_string(std::string_view err_msg) { error_string_ = err_msg; }
+        void set_options(Config options) { configurations_ = std::move(options); }
 
         // getters:
         [[nodiscard]] auto get_channel_address() const -> uint16_t { return channel_address_; }
         // [[nodiscard]] auto get_fec_config() const -> const auto& { return fec_config_; }
         [[nodiscard]] auto get_status() const -> const auto& { return status_; }
         [[nodiscard]] auto get_io_context() -> auto& { return io_context_; }
+        [[nodiscard]] auto get_fec_strand() -> auto& { return fec_strand_; }
         auto get_data_reader() -> connection::DataReader* { return data_reader_.get(); }
         [[nodiscard]] auto get_error_string() const -> const std::string& { return error_string_; }
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
@@ -104,7 +107,9 @@ namespace srs
         io_context_type io_context_{ 4 };
         asio::executor_work_guard<io_context_type::executor_type> io_work_guard_;
         udp::endpoint remote_endpoint_;
+        std::vector<udp::endpoint> remote_fec_endpoints_;
         asio::signal_set signal_set_{ io_context_, SIGINT, SIGTERM };
+        asio::strand<io_context_type::executor_type> fec_strand_;
         std::jthread working_thread_;
         AppExitHelper exit_helper_{ this };
         std::unique_ptr<workflow::Handler> workflow_handler_;
@@ -112,6 +117,8 @@ namespace srs
 
         void exit();
         void wait_for_reading_finish();
+        void set_remote_fec_endpoints();
+        void add_remote_fec_endpoint(std::string_view remote_ip, int port_number);
     };
 
 } // namespace srs

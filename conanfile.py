@@ -45,7 +45,16 @@ BOOST_LIBS = (
 BOOST_OPTIONS = {
     f"without_{_name}": True
     for _name in BOOST_LIBS
-    if _name not in ["thread", "atomic", "chrono", "container", "date_time", "exception", "system"]
+    if _name
+    not in [
+        "thread",
+        "atomic",
+        "chrono",
+        "container",
+        "date_time",
+        "exception",
+        "system",
+    ]
 }
 BOOST_OPTIONS.update({"shared": False})
 
@@ -62,7 +71,15 @@ class CompressorRecipe(ConanFile):
         self.requires("fmt/11.1.4", override=True)
         self.requires("boost/1.86.0", options=BOOST_OPTIONS)
         if platform != "darwin":
-            self.requires("protobuf/5.27.0", options={"with_zlib": True, "fPIC": True, "shared": False, "lite": False})
+            self.requires(
+                "protobuf/5.27.0",
+                options={
+                    "with_zlib": True,
+                    "fPIC": True,
+                    "shared": False,
+                    "lite": False,
+                },
+            )
             if os.environ["CMAKE_ENABLE_TEST"] == "ON":
                 self.requires("gtest/1.15.0")
 

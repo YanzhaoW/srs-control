@@ -13,6 +13,7 @@ target_link_libraries(
             spdlog::spdlog
             CLI11::CLI11
             Boost::thread
+            glaze::glaze
             srs_data)
 target_compile_definitions(srs_control PUBLIC SRS_PROJECT_VERSION="v${CMAKE_PROJECT_VERSION}")
 

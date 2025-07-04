@@ -11,6 +11,7 @@ namespace srs
 {
     App::App()
         : io_work_guard_{ asio::make_work_guard(io_context_) }
+        , fec_strand_{ asio::make_strand(io_context_.get_executor()) }
     {
         spdlog::set_pattern("[%H:%M:%S] [%^%=7l%$] [thread %t] %v");
         spdlog::info("Welcome to SRS Application");
@@ -63,6 +64,7 @@ namespace srs
 
     void App::init()
     {
+        set_remote_fec_endpoints();
         signal_set_.async_wait(
             [this](const boost::system::error_code& error, auto)
             {
@@ -71,7 +73,7 @@ namespace srs
                     return;
                 }
                 exit();
-                spdlog::info("calling SIGINT from monitoring thread");
+                spdlog::info("Calling SIGINT from monitoring thread");
             });
         auto monitoring_action = [this]()
         {
@@ -126,22 +128,59 @@ namespace srs
         remote_endpoint_ = *udp_endpoints.begin();
     }
 
+    void App::add_remote_fec_endpoint(std::string_view remote_ip, int port_number)
+    {
+        auto resolver = udp::resolver{ io_context_ };
+        spdlog::debug("Add the remote FEC with ip: {} and port: {}", remote_ip, port_number);
+        auto udp_endpoints = resolver.resolve(udp::v4(), remote_ip, fmt::format("{}", port_number));
+
+        if (udp_endpoints.begin() == udp_endpoints.end())
+        {
+            spdlog::debug("Failed to add the FEC remote point");
+            return;
+        }
+        remote_fec_endpoints_.push_back(*udp_endpoints.begin());
+    }
+
     void App::switch_on()
     {
         auto connection_info = connection::Info{ this };
         connection_info.local_port_number = configurations_.fec_control_local_port;
-        auto connection = std::make_shared<connection::Starter>(connection_info);
-        connection->set_remote_endpoint(remote_endpoint_);
-        connection->acq_on();
+
+        for (const auto& remote_endpoint : remote_fec_endpoints_)
+        {
+            auto fec_connection = std::make_shared<connection::Starter>(connection_info);
+            fec_connection->set_remote_endpoint(remote_endpoint);
+            asio::post(fec_strand_, [fec_connection = std::move(fec_connection)]() { fec_connection->acq_on(); });
+        }
     }
 
     void App::switch_off()
     {
+        const auto waiting_time = std::chrono::seconds{ 4 };
+        auto is_ok = wait_for_status(
+            [](const Status& status)
+            {
+                spdlog::debug("Waiting for acq_on status true ...");
+                return status.is_acq_on.load();
+            },
+            waiting_time);
+
+        if (not is_ok)
+        {
+            throw std::runtime_error("TIMEOUT during waiting for status is_acq_on true.");
+        }
         auto connection_info = connection::Info{ this };
         connection_info.local_port_number = configurations_.fec_control_local_port;
-        auto connection = std::make_shared<connection::Stopper>(connection_info);
-        connection->set_remote_endpoint(remote_endpoint_);
-        connection->acq_off();
+
+        for (const auto& remote_endpoint : remote_fec_endpoints_)
+        {
+            auto fec_connection = std::make_shared<connection::Stopper>(connection_info);
+            fec_connection->set_remote_endpoint(remote_endpoint);
+            fec_connection->acq_off();
+        }
+        spdlog::info("SRS system is turned off");
+        set_status_acq_off();
     }
 
     void App::read_data(bool is_non_stop)
@@ -154,4 +193,12 @@ namespace srs
 
     void App::start_workflow(bool is_blocking) { workflow_handler_->start(is_blocking); }
     void App::wait_for_finish() { working_thread_.join(); }
+
+    void App::set_remote_fec_endpoints()
+    {
+        for (const auto& fec_ips : configurations_.remote_fec_ips)
+        {
+            add_remote_fec_endpoint(fec_ips, common::DEFAULT_SRS_CONTROL_PORT);
+        }
+    }
 } // namespace srs
