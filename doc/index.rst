@@ -1,24 +1,23 @@
-#####################################
 Welcome to SRS-control documentation
-#####################################
+====================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Basics
+    :maxdepth: 2
+    :caption: Basics
 
-   introduction
-   download_step
-   installation
-   executable
-   library_usage
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Program design
-
+    introduction
+    download_step
+    installation
+    executable
+    library_usage
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Advanced topics
+    :maxdepth: 2
+    :caption: Program design
 
-   classes
+.. toctree::
+    :maxdepth: 2
+    :caption: Advanced topics
+
+    program_design
+    reference

@@ -1,8 +1,7 @@
 #pragma once
 
 #include <fstream>
-#include <print>
-#include <srs/utils/CommonDefitions.hpp>
+#include <srs/utils/CommonDefinitions.hpp>
 #include <string>
 #include <vector>
 
@@ -26,7 +25,8 @@ namespace srs::reader
          *
          * \brief Read one frame of the bianry data to a vector.
          *
-         * The input vector is first reserved with #srs::common::LARGE_READ_MSG_BUFFER_SIZE elements and then resized with the
+         * The input vector is first reserved with #srs::common::LARGE_READ_MSG_BUFFER_SIZE elements and then resized
+         * with the
          * \a size value, which is read from the binary file in the beginning. The vector is then set with \a size bytes
          * of data from the file.
          *

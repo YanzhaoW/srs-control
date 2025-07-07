@@ -1,17 +1,22 @@
 #pragma once
 
+#include "EnumConvertFunctions.hpp"  // IWYU pragma: export
+#include "srs/utils/CommonAlias.hpp" // IWYU pragma: keep
+#include "srs/utils/CommonDefinitions.hpp"
 #include <bit>
 #include <bitset>
 #include <boost/asio.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/thread/future.hpp>
-#include <srs/utils/CommonAlias.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <magic_enum/magic_enum.hpp>
+#include <stdexcept>
+#include <type_traits>
 
 namespace srs::common
 {
-    /**  \defgroup CommonFunctions Common functions
-     *   @{
-     */
-
     // subbits from a half open range [min, max)
     template <std::size_t bit_size, std::size_t max, std::size_t min = 0>
     constexpr auto subset(const std::bitset<bit_size>& bits) -> std::bitset<max - min>
@@ -65,6 +70,12 @@ namespace srs::common
         return std::static_pointer_cast<std::remove_cvref_t<decltype(obj)>>(obj.shared_from_this());
     }
 
+    template <typename Enum>
+    consteval auto get_enum_names()
+    {
+        auto names = magic_enum::enum_names<srs::common::ActionMode>();
+    }
+
     auto create_coro_future(auto& coro, auto&& pre_fut)
     {
         if (not pre_fut.valid())
@@ -97,6 +108,4 @@ namespace srs::common
         asio::co_spawn(coro.get_executor(), coro.async_resume(std::forward<decltype(args)>(args)...), asio::use_future)
             .get();
     }
-
-    /** @}*/
-} // namespace srs
+} // namespace srs::common

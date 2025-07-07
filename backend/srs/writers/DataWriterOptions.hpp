@@ -25,6 +25,10 @@ namespace srs
 
         if (auto pos = filename.find(':'); pos != std::string::npos)
         {
+            if (auto pos = filename.find('?'); pos != std::string::npos)
+            {
+                return { udp, raw };
+            }
             return { udp, proto };
         }
 

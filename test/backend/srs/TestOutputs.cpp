@@ -3,9 +3,9 @@
 
 #include <gtest/gtest.h>
 
-#include <srs/SRSEmulator.hpp>
-#include <srs/utils/Connections.hpp>
-#include <srs/workflow/Handler.hpp>
+#include "srs/SRSEmulator.hpp"
+#include "srs/connections/Connections.hpp"
+#include "srs/workflow/Handler.hpp"
 
 namespace
 {

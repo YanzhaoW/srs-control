@@ -1,14 +1,32 @@
-#include <string_view>
+#include "srs/Application.hpp"
+#include "srs/connections/ConnectionTypeDef.hpp"
+#include "srs/connections/Connections.hpp"
+#include "srs/utils/AppStatus.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
+#include "srs/workflow/Handler.hpp"
 
+#include <boost/asio/error.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <chrono>
+#include <exception>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <memory>
 #include <spdlog/spdlog.h>
-
-#include <srs/Application.hpp>
-#include <srs/utils/Connections.hpp>
-#include <srs/workflow/Handler.hpp>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace srs
 {
+    internal::AppExitHelper::~AppExitHelper() noexcept { app_->end_of_work(); }
+
     App::App()
         : io_work_guard_{ asio::make_work_guard(io_context_) }
         , fec_strand_{ asio::make_strand(io_context_.get_executor()) }
@@ -17,8 +35,6 @@ namespace srs
         spdlog::info("Welcome to SRS Application");
         workflow_handler_ = std::make_unique<workflow::Handler>(this);
     }
-
-    AppExitHelper::~AppExitHelper() noexcept { app_->end_of_work(); }
 
     void App::end_of_work()
     {
@@ -50,7 +66,7 @@ namespace srs
         // Turn off SRS data acquisition
         wait_for_reading_finish();
 
-        if (status_.is_acq_on.load())
+        if ((not is_switch_off_disaled_) and status_.is_acq_on.load())
         {
             spdlog::debug("Turning srs system off ...");
             switch_off();
@@ -118,14 +134,6 @@ namespace srs
     void App::set_output_filenames(const std::vector<std::string>& filenames)
     {
         workflow_handler_->set_output_filenames(filenames);
-    }
-
-    void App::set_remote_endpoint(std::string_view remote_ip, int port_number)
-    {
-        auto resolver = udp::resolver{ io_context_ };
-        spdlog::debug("Set the remote socket with ip: {} and port: {}", remote_ip, port_number);
-        auto udp_endpoints = resolver.resolve(udp::v4(), remote_ip, fmt::format("{}", port_number));
-        remote_endpoint_ = *udp_endpoints.begin();
     }
 
     void App::add_remote_fec_endpoint(std::string_view remote_ip, int port_number)

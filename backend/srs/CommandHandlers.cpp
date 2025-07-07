@@ -5,7 +5,7 @@
 // #include <srs/CommandHandlers.hpp>
 // #include <srs/Control.hpp>
 // #include <vector>
-// #include <srs/CommonDefitions.hpp>
+// #include <srs/CommonDefinitions.hpp>
 // #include <fmt/format.h>
 
 // namespace srs

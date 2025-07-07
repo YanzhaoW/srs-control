@@ -26,62 +26,170 @@ namespace srs
 
     class App;
 
-    class AppExitHelper
+    namespace internal
     {
-      public:
-        explicit AppExitHelper(App* app)
-            : app_{ app }
+        /**
+         * @class AppExitHelper
+         * @brief An internal exit helper for App class.
+         */
+        class AppExitHelper
         {
-        }
+          public:
+            /**
+             * @brief Constructor with pointer to srs::App instance
+             */
+            explicit AppExitHelper(App* app)
+                : app_{ app }
+            {
+            }
 
-        AppExitHelper(const AppExitHelper&) = default;
-        AppExitHelper(AppExitHelper&&) = delete;
-        AppExitHelper& operator=(const AppExitHelper&) = default;
-        AppExitHelper& operator=(AppExitHelper&&) = delete;
-        ~AppExitHelper() noexcept;
+            AppExitHelper(const AppExitHelper&) = default;
+            AppExitHelper(AppExitHelper&&) = delete;
+            AppExitHelper& operator=(const AppExitHelper&) = default;
+            AppExitHelper& operator=(AppExitHelper&&) = delete;
+            /**
+             * @brief Destructor calling srs::App::end_of_work method.
+             */
+            ~AppExitHelper() noexcept;
 
-      private:
-        App* app_;
-    };
+          private:
+            App* app_;
+        };
+
+    } // namespace internal
+
+    /**
+     * @class App
+     * @brief The primary interface class of SRS-Control.
+     *
+     * Application class should be instantied only once during the whole program. Public setter methods should be called
+     * before calling the #init() method.
+     */
 
     class App
     {
       public:
+        /**
+         * @brief Constructor of the App class.
+         *
+         * The contructor contains following actions:
+         * 1. Instantiation of the work guard, which make sures the io_context_ keep accepting new tasks.
+         * 2. Instantiation of strand from the #io_context_, which synchronizes the communications among the FECs.
+         * 3. Set the logging format.
+         * 4. Instantiation (memory allocation) of workflow_handler_.
+         */
         App();
 
         App(const App&) = delete;
         App(App&&) = delete;
         App& operator=(const App&) = delete;
         App& operator=(App&&) = delete;
+
+        /**
+         * @brief Destructor of the App class.
+         *
+         * This destructor is called before the destruction of each members. The destructor contains following actions:
+         * 1. Cancel the signal_set_.
+         * 2. Wait for the Status::is_reading to be false, which will be unset from connection::DataReader::close(). The
+         * waiting time is set to be common::DEFAULT_STATUS_WAITING_TIME_SECONDS.
+         * 3. Requesting acquisition off to all FEC devices.
+         * 4. Set the Status::is_acq_on to be true.
+         *
+         * The exit process of App class also contains the destruction of its member variables. The following order must
+         * be kept:
+         *
+         * 1. Destruction of connection::DataReader member.
+         * 2. Destruction of workflow::Handler member.
+         * 3. Destruction of internal::AppExitHelper member, which calls end_of_work method.
+         * 4. Destruction of working_thread_ (std::jthread) by **waiting** for the thread to finish.
+         * 5. Destruction other members. Orders are not important.
+         * 6. Destruction of io_context member. This must be done in the very end.
+         *
+         * @sa internal::AppExitHelper
+         */
         ~App() noexcept;
 
-        // public APIs
+        /**
+         * @brief Initialization of internal members.
+         */
         void init();
+
         void configure_fec() {}
+
+        /**
+         * @brief Establish the communications to the availble FECs to start the data acquisition.
+         */
         void switch_on();
+        /**
+         * @brief Establish the communications to the availble FECs to stop the data acquisition.
+         */
         void switch_off();
+        /**
+         * @brief Start reading the input data stream from the port specified by srs::Config::fec_data_receive_port. If
+         * \a is_non_stop is true, the reading process will not be stopped until an interrupt happens, such as pressing
+         * "Ctrl-C" from users. If \a is_non_stop is false, the reading process will be stopped after one frame of data
+         * is read.
+         *
+         * @param is_non_stop Flag to set non-stop mode.
+         */
         void read_data(bool is_non_stop = true);
 
-        void notify_status_change() { status_.status_change.notify_all(); }
+        /**
+         * @brief Start data analysis workflow, triggering data conversions.
+         *
+         * This function call is executed in the main thread, which can be blocked if there is no data to ba analysed.
+         * In the non-block, the process will just be in a spin loop unti the new data is available
+         *
+         * @param is_blocking Flag to set the block mode.
+         */
         void start_workflow(bool is_blocking = true);
+
+        /**
+         * @brief Manually wait for the working thread to finish.
+         *
+         * This method is called automatically in the destructor and shouldn't be called if not necessary. It blocks the
+         * program until the working thread exits.
+         */
         void wait_for_finish();
+
+        // setters:
+        /**
+         * @brief Set the local listen port number for the communications to FEC devices
+         */
+        void set_fec_data_receiv_port(int port_num) { configurations_.fec_data_receive_port = port_num; }
+
+        /**
+         * @brief Set the print mode.
+         */
+        void set_print_mode(common::DataPrintMode mode);
+
+        /**
+         * @brief Set the output filenames.
+         */
+        void set_output_filenames(const std::vector<std::string>& filenames);
+        /**
+         * @brief Set the error messages (internal usage).
+         */
+        void set_error_string(std::string_view err_msg) { error_string_ = err_msg; }
+        /**
+         * @brief Set the configuration values.
+         */
+        void set_options(Config options) { configurations_ = std::move(options); }
+
+        void disable_switch_off(bool is_disabled = true) { is_switch_off_disaled_ = is_disabled; }
+
+        // internal usage
+        // TODO: Refactor the code to not expose thoese methods for the internal usage
+
         auto wait_for_status(auto&& condition,
                              std::chrono::seconds time_duration = common::DEFAULT_STATUS_WAITING_TIME_SECONDS) -> bool
         {
             return status_.wait_for_status(std::forward<decltype(condition)>(condition), time_duration);
         }
-
-        // setters:
-        void set_remote_endpoint(std::string_view remote_ip, int port_number);
-        void set_fec_data_receiv_port(int port_num) { configurations_.fec_data_receive_port = port_num; }
+        void notify_status_change() { status_.status_change.notify_all(); }
         void set_status_acq_on(bool val = true) { status_.is_acq_on.store(val); }
         void set_status_acq_off(bool val = true) { status_.is_acq_off.store(val); }
         void set_status_is_reading(bool val = true) { status_.is_reading.store(val); }
-        void set_print_mode(common::DataPrintMode mode);
-        void set_output_filenames(const std::vector<std::string>& filenames);
-        void set_error_string(std::string_view err_msg) { error_string_ = err_msg; }
-        void set_options(Config options) { configurations_ = std::move(options); }
-
         // getters:
         [[nodiscard]] auto get_channel_address() const -> uint16_t { return channel_address_; }
         // [[nodiscard]] auto get_fec_config() const -> const auto& { return fec_config_; }
@@ -99,20 +207,49 @@ namespace srs
         using udp = asio::ip::udp;
 
         Status status_;
+        bool is_switch_off_disaled_ = false;
         uint16_t channel_address_ = common::DEFAULT_CHANNEL_ADDRE;
         Config configurations_;
         std::string error_string_;
 
         // Destructors are called in the inversed order
+
+        /** @brief Asio io_context that manages the task scheduling and network IO.
+         */
         io_context_type io_context_{ 4 };
+
+        /** @brief Asio io_context work guard.
+         */
         asio::executor_work_guard<io_context_type::executor_type> io_work_guard_;
-        udp::endpoint remote_endpoint_;
+
+        /** @brief Remote endpoints of FEC devices.
+         */
         std::vector<udp::endpoint> remote_fec_endpoints_;
+
+        /** @brief User signal handler for interrupts.
+         */
         asio::signal_set signal_set_{ io_context_, SIGINT, SIGTERM };
+
+        /** @brief FEC communication strand for synchronous communications.
+         */
         asio::strand<io_context_type::executor_type> fec_strand_;
+
+        /** @brief Main working thread.
+         */
         std::jthread working_thread_;
-        AppExitHelper exit_helper_{ this };
+
+        /**
+         * @brief Exit helper for App class
+         *
+         */
+        internal::AppExitHelper exit_helper_{ this };
+
+        /** @brief The handler to the analysis working flow.
+         */
         std::unique_ptr<workflow::Handler> workflow_handler_;
+
+        /** @brief Communication to the main input data stream.
+         */
         std::shared_ptr<connection::DataReader> data_reader_;
 
         void exit();

@@ -14,6 +14,7 @@ target_link_libraries(
             CLI11::CLI11
             Boost::thread
             glaze::glaze
+            magic_enum::magic_enum
             srs_data)
 target_compile_definitions(srs_control PUBLIC SRS_PROJECT_VERSION="v${CMAKE_PROJECT_VERSION}")
 

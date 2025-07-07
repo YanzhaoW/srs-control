@@ -1,10 +1,25 @@
+#include "DataWriter.hpp"
+#include "DataWriterOptions.hpp"
+#include "srs/converters/DataConvertOptions.hpp"
+#include <algorithm>
 #include <boost/asio/ip/address.hpp>
 
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/thread/futures/wait_for_all.hpp>
+#include <memory>
+#include <optional>
+#include <spdlog/spdlog.h>
 #include <srs/workflow/Handler.hpp>
 #include <srs/writers/BinaryFileWriter.hpp>
 #include <srs/writers/JsonWriter.hpp>
 #include <srs/writers/RootFileWriter.hpp>
 #include <srs/writers/UDPWriter.hpp>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace srs::writer
 {
@@ -13,13 +28,15 @@ namespace srs::writer
         auto convert_str_to_endpoint(asio::thread_pool& thread_pool, std::string_view ip_port)
             -> std::optional<asio::ip::udp::endpoint>
         {
+            const auto question_pos = ip_port.find('?');
             const auto colon_pos = ip_port.find(':');
             if (colon_pos == std::string::npos)
             {
                 spdlog::critical("Ill format socket string {:?}. Please set it as \"ip:port\"", ip_port);
                 return {};
             }
-            auto ip_string = ip_port.substr(0, colon_pos);
+            auto ip_string =
+                (question_pos == std::string::npos) ? ip_port.substr(0, colon_pos) : ip_port.substr(0, question_pos);
             auto port_str = ip_port.substr(colon_pos + 1);
 
             auto err_code = boost::system::error_code{};
@@ -109,6 +126,10 @@ namespace srs::writer
 
         for (const auto& filename : filenames)
         {
+            if (filename.empty())
+            {
+                continue;
+            }
             const auto [filetype, convert_mode] = get_filetype_from_filename(filename);
 
             auto is_ok = false;

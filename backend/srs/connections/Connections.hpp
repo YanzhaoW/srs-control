@@ -96,6 +96,11 @@ namespace srs::connection
         // void close() {}
     };
 
+    /** 
+     * @class DataReader
+     * @brief Connection for reading data stream from FEC devices
+     *
+     */
     class DataReader : public Base<common::LARGE_READ_MSG_BUFFER_SIZE>
     {
       public:

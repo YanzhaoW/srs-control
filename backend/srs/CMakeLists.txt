@@ -23,11 +23,21 @@ target_sources(
             BASE_DIRS
             ${CMAKE_SOURCE_DIR}/backend)
 
+target_link_libraries(
+    srscpp
+    PRIVATE $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
+            $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
+            $<BUILD_LOCAL_INTERFACE:Boost::thread>
+            $<BUILD_LOCAL_INTERFACE:fmt::fmt>
+            $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>
+            $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>)
+
 add_subdirectory(utils)
 add_subdirectory(data)
 add_subdirectory(converters)
 add_subdirectory(writers)
 add_subdirectory(readers)
+add_subdirectory(connections)
 add_subdirectory(devices)
 add_subdirectory(workflow)
 
