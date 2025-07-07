@@ -9,6 +9,7 @@ target_link_libraries(
             zpp_bits::zpp_bits
             Boost::thread
             protobuf::libprotobuf
+            magic_enum::magic_enum
             srscpp
             srs_data
             gsl::gsl-lite

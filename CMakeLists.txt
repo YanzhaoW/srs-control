@@ -27,9 +27,9 @@ else()
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        list(APPEND CMAKE_CXX_FLAGS "-fexperimental-library")
-    endif()
+    # if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # list(APPEND CMAKE_CXX_FLAGS "-fexperimental-library")
+    # endif()
 
     include(import_packages)
 

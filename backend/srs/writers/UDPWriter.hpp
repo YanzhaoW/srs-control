@@ -1,6 +1,6 @@
 #pragma once
 
-#include <srs/utils/ConnectionBase.hpp>
+#include <srs/connections/ConnectionBase.hpp>
 #include <srs/workflow/TaskDiagram.hpp>
 #include <srs/writers/DataWriterOptions.hpp>
 

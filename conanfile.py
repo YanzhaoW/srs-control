@@ -1,8 +1,10 @@
-import os
-from sys import platform
+# pylint: disable-all
+
+# import os
 
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain
+# from conan.tools.cmake import cmake_layout
 
 BOOST_LIBS = (
     "atomic",
@@ -58,32 +60,36 @@ BOOST_OPTIONS = {
 }
 BOOST_OPTIONS.update({"shared": False})
 
+PROTOBUF_OPTIONS = {
+    "with_zlib": True,
+    "fPIC": True,
+    "shared": False,
+    "lite": False,
+}
+
 
 class CompressorRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps"
 
     def requirements(self):
-        self.requires("gsl-lite/0.41.0")
-        self.requires("cli11/2.4.2")
-        self.requires("spdlog/1.15.1")
-        self.requires("zpp_bits/4.4.24")
-        self.requires("fmt/11.1.4", override=True)
-        self.requires("boost/1.86.0", options=BOOST_OPTIONS)
-        if platform != "darwin":
-            self.requires(
-                "protobuf/5.27.0",
-                options={
-                    "with_zlib": True,
-                    "fPIC": True,
-                    "shared": False,
-                    "lite": False,
-                },
-            )
-            if os.environ["CMAKE_ENABLE_TEST"] == "ON":
-                self.requires("gtest/1.15.0")
+        self.requires("gsl-lite/0.41.0")  # type: ignore
+        self.requires("cli11/2.4.2")  # type: ignore
+        self.requires("spdlog/1.15.1")  # type: ignore
+        self.requires("zpp_bits/4.4.24")  # type: ignore
+        self.requires("magic_enum/0.9.7")  # type: ignore
+        self.requires("fmt/11.1.4", override=True)  # type: ignore
+        self.requires("boost/1.86.0", options=BOOST_OPTIONS)  # type: ignore
+        self.requires("protobuf/6.30.1", options=PROTOBUF_OPTIONS)  # type: ignore
+        self.requires("gtest/1.15.0")  # type: ignore
 
     def generate(self):
         tc = CMakeToolchain(self)
-        tc.user_presets_path = False
+        tc.user_presets_path = ""
         tc.generate()
+
+    # def layout(self):
+    #     cmake_layout(self)
+
+    def build_requirements(self):
+        self.tool_requires("protobuf/6.30.1")  # type: ignore

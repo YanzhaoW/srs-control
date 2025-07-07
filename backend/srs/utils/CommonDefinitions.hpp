@@ -2,14 +2,10 @@
 
 #include <chrono>
 #include <cstdint>
+#include <string_view>
 
 namespace srs::common
 {
-    /**  \defgroup CommonDefinitions Common defintions
-     *  @{
-     */
-
-    // General
     constexpr auto BYTE_BIT_LENGTH = 8;
 
     // Connections:
@@ -36,6 +32,10 @@ namespace srs::common
     // port numbers:
     constexpr auto DEFAULT_SRS_CONTROL_PORT = 6600;
     constexpr auto FEC_DAQ_RECEIVE_PORT = 6006;
+
+    /**
+     * @brief Default value of the listening port number used for the FEC communications
+     */
     static constexpr int FEC_CONTROL_LOCAL_PORT = 6007;
 
     // Data processor:
@@ -49,15 +49,26 @@ namespace srs::common
     constexpr auto GZIP_DEFAULT_COMPRESSION_LEVEL = 9;
     constexpr auto PROTOBUF_ENABLE_GZIP = true;
 
+    /**
+     * @enum DataPrintMode
+     * @brief Print mode of the status line
+     */
     enum class DataPrintMode : uint8_t
     {
-        print_speed,
-        print_header,
-        print_raw,
-        print_all
+        print_speed,  //!< Print the data reading rate
+        print_header, //!< Print the header of the data structure
+        print_raw,    //!< Print the raw binary data
+        print_all     //!< Print everything
+    };
+
+    enum class ActionMode : uint8_t
+    {
+        all,
+        acq_on,
+        acq_off,
+        read_only,
+        none,
     };
 
     using RawDelimSizeType = uint32_t;
-
-    /** @}*/
-} // namespace srs
+} // namespace srs::common
