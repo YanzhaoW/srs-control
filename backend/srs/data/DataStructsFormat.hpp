@@ -1,3 +1,4 @@
+#include <fmt/base.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <srs/data/SRSDataStructs.hpp>
@@ -29,7 +30,7 @@ class fmt::formatter<srs::MarkerData>
     template <typename FmtContent>
     constexpr auto format(const srs::MarkerData& marker, FmtContent& ctn) const
     {
-        return format_to(
+        return fmt::format_to(
             ctn.out(), "Marker data: [vmm id: {}, srs timestamp: {}]", marker.vmm_id, marker.srs_timestamp);
     }
 };
@@ -42,7 +43,7 @@ class fmt::formatter<srs::HitData>
     template <typename FmtContent>
     constexpr auto format(const srs::HitData& hit, FmtContent& ctn) const
     {
-        return format_to(
+        return fmt::format_to(
             ctn.out(),
             "Hit data: [Over threshold: {}, channel num: {}, tdc: {}, adc: {}, offset: {}, vmm id: {}, bc id: {}]",
             hit.is_over_threshold,

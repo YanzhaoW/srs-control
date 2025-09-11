@@ -1,6 +1,13 @@
 #pragma once
 
 #include "ConnectionBase.hpp"
+#include "srs/connections/ConnectionTypeDef.hpp"
+#include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
+#include <gsl/gsl-lite.hpp>
+#include <memory>
+#include <span>
+#include <spdlog/spdlog.h>
 
 namespace srs::workflow
 {
@@ -9,6 +16,7 @@ namespace srs::workflow
 
 namespace srs::connection
 {
+    class FecSwitchSocket;
     class Starter : public Base<>
     {
       public:
@@ -18,12 +26,8 @@ namespace srs::connection
         }
 
         void close();
-        void acq_on()
-        {
-            spdlog::info("Requesting data from the FEC with the IP: {}", get_remote_endpoint().address().to_string());
-            const auto data = std::vector<CommunicateEntryType>{ 0, 15, 1 };
-            communicate(data, common::NULL_ADDRESS);
-        }
+        void send_message_from(std::shared_ptr<FecSwitchSocket> socket);
+        void acq_on();
         void on_fail()
         {
             set_connection_bad();
@@ -93,10 +97,11 @@ namespace srs::connection
          * @see connection::Base::communicate
          */
         void acq_off();
+        void send_message_from(std::shared_ptr<FecSwitchSocket> socket);
         // void close() {}
     };
 
-    /** 
+    /**
      * @class DataReader
      * @brief Connection for reading data stream from FEC devices
      *
@@ -130,7 +135,7 @@ namespace srs::connection
             }
             else
             {
-                spdlog::debug("Program is alreay on exit!");
+                spdlog::debug("Program is already on exit!");
             }
         }
         void close();

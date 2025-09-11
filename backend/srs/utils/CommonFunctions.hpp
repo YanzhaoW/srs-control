@@ -94,6 +94,7 @@ namespace srs::common
 
     auto create_coro_future(auto& coro, bool is_terminated)
     {
+        // WARN: Which thread is this launched?
         return boost::async(
             [&coro, is_terminated]()
             {

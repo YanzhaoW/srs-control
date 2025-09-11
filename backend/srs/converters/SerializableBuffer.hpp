@@ -2,7 +2,10 @@
 
 #include <algorithm>
 #include <boost/asio/buffer.hpp>
+#include <iterator>
+#include <span>
 #include <srs/utils/CommonAlias.hpp>
+#include <string_view>
 #include <zpp_bits.h>
 
 namespace srs::process
@@ -29,11 +32,16 @@ namespace srs::process
             return asio::buffer(data_);
         }
 
+        auto operator==(std::span<char> msg) const -> bool { return std::string_view{ msg } == *this; }
+
+        auto operator==(std::string_view msg) const -> bool { return msg == data(); }
+
         [[nodiscard]] auto data() const -> std::string_view { return std::string_view{ data_.data(), data_.size() }; }
+        [[nodiscard]] auto empty() const -> bool { return data_.empty(); }
 
         void clear() { data_.clear(); }
 
       private:
         BinaryData data_;
     };
-} // namespace srs
+} // namespace srs::process

@@ -1,4 +1,5 @@
-target_sources(srscpp PRIVATE Connections.cpp)
+target_sources(srscpp PRIVATE Connections.cpp FecSwitchSocket.cpp SpecialSocketBase.cpp
+                              DataSocket.cpp)
 
 target_sources(
     srscpp
@@ -7,4 +8,7 @@ target_sources(
             FILES
             ConnectionBase.hpp
             ConnectionTypeDef.hpp
-            Connections.hpp)
+            Connections.hpp
+            FecSwitchSocket.hpp
+            DataSocket.hpp
+            SpecialSocketBase.hpp)

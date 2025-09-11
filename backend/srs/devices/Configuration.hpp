@@ -1,6 +1,8 @@
 #pragma once
 
 #include <srs/utils/CommonDefinitions.hpp>
+#include <string>
+#include <vector>
 
 namespace srs
 {

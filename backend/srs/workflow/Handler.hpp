@@ -1,15 +1,23 @@
 #pragma once
 
+#include "srs/converters/SerializableBuffer.hpp"
+#include "srs/data/SRSDataStructs.hpp"
+#include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
+#include "srs/workflow/TaskDiagram.hpp"
 #include <atomic>
-#include <chrono>
-#include <span>
-
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <gsl/gsl-lite.hpp>
+#include <memory>
+#include <oneapi/tbb/concurrent_queue.h>
+#include <span>
 #include <spdlog/logger.h>
-
-#include <srs/workflow/TaskDiagram.hpp>
+#include <string>
+#include <vector>
 
 namespace srs
 {
@@ -92,7 +100,7 @@ namespace srs::workflow
       private:
         using enum common::DataPrintMode;
 
-        std::atomic<bool> is_stopped_{ false };
+        std::atomic<bool> is_stopped_{ true };
         std::size_t received_data_size_{};
         common::DataPrintMode print_mode_ = common::DataPrintMode::print_speed;
         std::atomic<uint64_t> total_read_data_bytes_ = 0;

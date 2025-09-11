@@ -79,7 +79,7 @@ class CompressorRecipe(ConanFile):
         self.requires("zpp_bits/4.4.24")  # type: ignore
         self.requires("magic_enum/0.9.7")  # type: ignore
         self.requires("fmt/11.1.4", override=True)  # type: ignore
-        self.requires("boost/1.86.0", options=BOOST_OPTIONS)  # type: ignore
+        self.requires("boost/1.88.0", options=BOOST_OPTIONS)  # type: ignore
         self.requires("protobuf/6.30.1", options=PROTOBUF_OPTIONS)  # type: ignore
         self.requires("gtest/1.15.0")  # type: ignore
 

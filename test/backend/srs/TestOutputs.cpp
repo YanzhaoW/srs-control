@@ -1,7 +1,12 @@
+#include <cstdint>
+#include <exception>
 #include <filesystem>
+#include <spdlog/spdlog.h>
+#include <string>
 #include <thread>
 
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "srs/SRSEmulator.hpp"
 #include "srs/connections/Connections.hpp"
