@@ -1,11 +1,27 @@
 #pragma once
 
+#include "srs/converters/DataConvertOptions.hpp"
+#include "srs/data/SRSDataStructs.hpp"
+#include "srs/utils/CommonFunctions.hpp"
+#include "srs/workflow/TaskDiagram.hpp"
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/experimental/coro.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <boost/thread/future.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
-#include <map>
-
+#include <glaze/core/opts.hpp>
+#include <glaze/core/write.hpp>
 #include <glaze/glaze.hpp>
-
-#include <srs/workflow/TaskDiagram.hpp>
+#include <ios>
+#include <map>
+#include <optional>
+#include <spdlog/spdlog.h>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace srs::writer
 {
@@ -85,7 +101,7 @@ namespace srs::writer
             if (not file_stream_.is_open())
             {
                 spdlog::critical("JsonWriter: cannot open the file with filename {:?}", filename);
-                throw std::runtime_error("Error occured with JsonWriter");
+                throw std::runtime_error("Error occurred with JsonWriter");
             }
             file_stream_ << "[\n";
             coro_ = generate_coro(thread_pool.get_executor());
@@ -96,10 +112,7 @@ namespace srs::writer
         {
             return process::DataConvertOptions::structure;
         }
-        auto write(auto pre_future) -> boost::unique_future<std::optional<int>>
-        {
-            return common::create_coro_future(coro_, pre_future);
-        }
+        auto write(auto pre_future) -> OutputFuture { return common::create_coro_future(coro_, pre_future); }
 
       private:
         bool is_first_item = true;

@@ -169,7 +169,7 @@ auto main(int argc, char** argv) -> int
     }
     catch (std::exception& ex)
     {
-        spdlog::critical("Exception occured: {}", ex.what());
+        spdlog::critical("Exception occurred: {}", ex.what());
     }
 
     return 0;

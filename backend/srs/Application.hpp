@@ -1,17 +1,28 @@
 #pragma once
 
-#include <thread>
-
+#include "srs/devices/Configuration.hpp"
+#include "srs/utils/AppStatus.hpp"
+#include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
+#include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <chrono>
+#include <csignal>
+#include <cstdint>
+#include <expected>
+#include <future>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // #include <srs/devices/Fec.hpp>
-#include <srs/devices/Configuration.hpp>
-#include <srs/utils/AppStatus.hpp>
-#include <srs/utils/CommonAlias.hpp>
-
 namespace srs
 {
     namespace workflow
@@ -22,7 +33,8 @@ namespace srs
     namespace connection
     {
         class DataReader;
-    }
+        class DataSocket;
+    } // namespace connection
 
     class App;
 
@@ -62,8 +74,8 @@ namespace srs
      * @class App
      * @brief The primary interface class of SRS-Control.
      *
-     * Application class should be instantied only once during the whole program. Public setter methods should be called
-     * before calling the #init() method.
+     * Application class should be instantiated only once during the whole program. Public setter methods should be
+     * called before calling the #init() method.
      */
 
     class App
@@ -72,8 +84,8 @@ namespace srs
         /**
          * @brief Constructor of the App class.
          *
-         * The contructor contains following actions:
-         * 1. Instantiation of the work guard, which make sures the io_context_ keep accepting new tasks.
+         * The constructor contains following actions:
+         * 1. Instantiation of the work guard, which make sure the io_context_ keep accepting new tasks.
          * 2. Instantiation of strand from the #io_context_, which synchronizes the communications among the FECs.
          * 3. Set the logging format.
          * 4. Instantiation (memory allocation) of workflow_handler_.
@@ -117,11 +129,11 @@ namespace srs
         void configure_fec() {}
 
         /**
-         * @brief Establish the communications to the availble FECs to start the data acquisition.
+         * @brief Establish the communications to the available FECs to start the data acquisition.
          */
         void switch_on();
         /**
-         * @brief Establish the communications to the availble FECs to stop the data acquisition.
+         * @brief Establish the communications to the available FECs to stop the data acquisition.
          */
         void switch_off();
         /**
@@ -137,8 +149,8 @@ namespace srs
         /**
          * @brief Start data analysis workflow, triggering data conversions.
          *
-         * This function call is executed in the main thread, which can be blocked if there is no data to ba analysed.
-         * In the non-block, the process will just be in a spin loop unti the new data is available
+         * This function call is executed in the main thread, which can be blocked if there is no data to ba analyzed.
+         * In the non-block, the process will just be in a spin loop until the new data is available
          *
          * @param is_blocking Flag to set the block mode.
          */
@@ -176,10 +188,10 @@ namespace srs
          */
         void set_options(Config options) { configurations_ = std::move(options); }
 
-        void disable_switch_off(bool is_disabled = true) { is_switch_off_disaled_ = is_disabled; }
+        void disable_switch_off(bool is_disabled = true) { is_switch_off_disabled_ = is_disabled; }
 
         // internal usage
-        // TODO: Refactor the code to not expose thoese methods for the internal usage
+        // TODO: Refactor the code to not expose those methods for the internal usage
 
         auto wait_for_status(auto&& condition,
                              std::chrono::seconds time_duration = common::DEFAULT_STATUS_WAITING_TIME_SECONDS) -> bool
@@ -201,18 +213,20 @@ namespace srs
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
 
         // called by ExitHelper
-        void end_of_work();
+        void action_after_destructor();
 
       private:
         using udp = asio::ip::udp;
+        using SwitchFutureType = std::expected<std::future<void>, boost::system::error_code>;
+        using SwitchFutureStatusType = std::expected<std::future_status, boost::system::error_code>;
 
         Status status_;
-        bool is_switch_off_disaled_ = false;
+        bool is_switch_off_disabled_ = false;
         uint16_t channel_address_ = common::DEFAULT_CHANNEL_ADDRE;
         Config configurations_;
         std::string error_string_;
 
-        // Destructors are called in the inversed order
+        // Destructors are called in the inverse order
 
         /** @brief Asio io_context that manages the task scheduling and network IO.
          */
@@ -239,7 +253,7 @@ namespace srs
         std::jthread working_thread_;
 
         /**
-         * @brief Exit helper for App class
+         * @brief Exit helper for App class. This is called after calling the destructor.
          *
          */
         internal::AppExitHelper exit_helper_{ this };
@@ -252,10 +266,20 @@ namespace srs
          */
         std::shared_ptr<connection::DataReader> data_reader_;
 
+        std::shared_ptr<connection::DataSocket> data_socket_;
+
+        SwitchFutureType switch_on_future_;
+
+        SwitchFutureType switch_off_future_;
+
         void exit();
         void wait_for_reading_finish();
         void set_remote_fec_endpoints();
         void add_remote_fec_endpoint(std::string_view remote_ip, int port_number);
+        static auto wait_for_switch_action(const SwitchFutureType& switch_future) -> SwitchFutureStatusType;
+
+        template <typename T>
+        auto switch_FECs() -> SwitchFutureType;
     };
 
 } // namespace srs

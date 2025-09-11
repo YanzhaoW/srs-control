@@ -1,12 +1,27 @@
+#include "srs/utils/CommonAlias.hpp"
+#include "srs/workflow/TaskDiagram.hpp"
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/impl/co_spawn.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <chrono>
+#include <exception>
 #include <fmt/chrono.h>
 #include <fmt/color.h>
+#include <fmt/ranges.h>
+#include <memory>
+#include <oneapi/tbb/concurrent_queue.h>
+#include <span>
+#include <spdlog/common.h>
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include <spdlog/spdlog.h>
 #include <srs/data/DataStructsFormat.hpp>
 #include <srs/workflow/Handler.hpp>
+#include <string>
+#include <utility>
 
 namespace srs::workflow
 {
@@ -84,13 +99,13 @@ namespace srs::workflow
     void Handler::start(bool is_blocking)
     {
         is_stopped_.store(false);
-        spdlog::debug("Workflow starts.");
+        spdlog::debug("Analysis workflow: main loop starts.");
         if (print_mode_ == print_speed)
         {
             monitor_.start();
         }
         analysis_loop(is_blocking);
-        spdlog::trace("Workflow exit start().");
+        spdlog::trace("Analysis workflow: exiting the main loop.");
     }
 
     Handler::~Handler() { stop(); }
@@ -98,15 +113,16 @@ namespace srs::workflow
 
     void Handler::stop()
     {
-        // CAS operation to guarantee the thread safty
+        // CAS operation to guarantee the thread safety
         auto expected = false;
-        spdlog::trace("Try to stop the workflow. Current is_stopped status: {}", is_stopped_.load());
+        spdlog::debug("Analysis workflow: trying to stop ... ");
+        spdlog::trace("Analysis workflow: current is_stopped status: {}", is_stopped_.load());
         if (is_stopped_.compare_exchange_strong(expected, true))
         {
-            spdlog::trace("Try to stop data monitor");
+            spdlog::trace("Analysis workflow: Try to stop data monitor");
             monitor_.stop();
             data_queue_.abort();
-            spdlog::trace("Workflow is stopped");
+            spdlog::trace("Analysis workflow: successfully stopped");
         }
     }
 
@@ -116,7 +132,8 @@ namespace srs::workflow
         auto is_success = data_queue_.try_emplace(read_data);
         if (not is_success)
         {
-            spdlog::critical("Data queue is full and message is lost. Try to increase its capacity!");
+            spdlog::critical(
+                "Analysis workflow: Data queue is full and message is lost. Try to increase its capacity!");
         }
     }
 
@@ -124,7 +141,7 @@ namespace srs::workflow
     {
         try
         {
-            spdlog::trace("entering workflow loop");
+            spdlog::trace("Analysis workflow: entering workflow loop");
             // TODO: Use direct binary data
 
             while (true)
@@ -137,24 +154,24 @@ namespace srs::workflow
                 update_monitor();
                 print_data();
 
-                auto is_reading = app_->get_status().is_reading.load();
-                if (not(is_reading or analysis_result))
-                {
-                    break;
-                }
+                // auto is_reading = app_->get_status().is_reading.load();
+                // if (not(is_reading or analysis_result))
+                // {
+                //     break;
+                // }
             }
         }
         catch (tbb::user_abort& ex)
         {
-            spdlog::trace("Workflow: {}", ex.what());
+            spdlog::trace("Analysis workflow: {}", ex.what());
         }
         catch (std::exception& ex)
         {
-            spdlog::critical("Exception occured: {}", ex.what());
+            spdlog::critical("Exception occurred: {}", ex.what());
             app_->set_error_string(ex.what());
             // app_->exit();
         }
-        spdlog::debug("Workflow loop is done.\n");
+        spdlog::debug("Analysis workflow: Workflow loop is done.\n");
     }
 
     void Handler::update_monitor()

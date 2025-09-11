@@ -41,8 +41,7 @@ namespace srs::writer
 
             auto err_code = boost::system::error_code{};
             auto resolver = asio::ip::udp::resolver{ thread_pool };
-            auto query = asio::ip::udp::resolver::query{ std::string{ ip_string }, std::string{ port_str } };
-            auto iter = resolver.resolve(query, err_code);
+            auto iter = resolver.resolve(std::string{ ip_string }, std::string{ port_str }, err_code).begin();
             if (err_code)
             {
                 spdlog::critical("Cannot query the ip address {:?}. Error code: {}", ip_port, err_code.message());
