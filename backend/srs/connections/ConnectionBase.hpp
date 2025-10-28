@@ -177,15 +177,16 @@ namespace srs::connection
     auto Base<buffer_size>::send_message(std::shared_ptr<FecSwitchSocket> socket,
                                          std::shared_ptr<Base<buffer_size>> connection) -> asio::awaitable<void>
     {
-        spdlog::trace("Connection {}: Sending data using external socket ...", connection->get_name());
+        spdlog::debug("Connection {}: Sending data using external socket at time {} us...",
+                      connection->get_name(),
+                      socket->get_time_us());
         auto data_size = co_await socket->get_socket().async_send_to(
             asio::buffer(connection->write_msg_buffer_.data()), connection->remote_endpoint_, asio::use_awaitable);
-        auto time = socket->get_time_us();
-        spdlog::debug("Connection {}: {} bytes data sent to the remote endpoint {} at time {}: \n\t{:02x}",
+        spdlog::debug("Connection {}: {} bytes data sent to the remote endpoint {} at time {} us: \n\t{:02x}",
                       connection->get_name(),
                       data_size,
                       connection->remote_endpoint_,
-                      time,
+                      socket->get_time_us(),
                       fmt::join(connection->write_msg_buffer_.data(), " "));
         co_return;
     }

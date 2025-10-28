@@ -8,7 +8,10 @@
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/deferred.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/experimental/cancellation_condition.hpp>
+#include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
 #include <boost/asio/ip/basic_endpoint.hpp>
 #include <boost/asio/ip/udp.hpp>
@@ -65,13 +68,22 @@ namespace srs::connection
     {
         auto time = get_time_us();
         spdlog::debug(
-            "Registering data sent to the remote endpoint {} at time {}", connection->get_remote_endpoint(), time);
-        asio::co_spawn(strand_, std::move(action), asio::detached);
+            "Registering data sent to the remote endpoint {} at time {} us", connection->get_remote_endpoint(), time);
+        // asio::co_spawn(strand_, std::move(action), asio::detached);
+        auto co_action = asio::co_spawn(strand_, std::move(action), asio::deferred);
+        action_queue_.push_back(std::move(co_action));
 
         auto lock = std::lock_guard{ mut_ };
         const auto& remote_endpoint = connection->get_remote_endpoint();
         auto& connections = all_connections_.try_emplace(remote_endpoint, SmallConnections{}).first->second;
         connections.push_back(std::move(connection));
+    }
+
+    void FecSwitchSocket::launch_actions()
+    {
+        asio::experimental::make_parallel_group(std::move(action_queue_))
+            .async_wait(asio::experimental::wait_for_all(), asio::use_future)
+            .get();
     }
 
     void FecSwitchSocket::deregister_connection(const UDPEndpoint& endpoint,

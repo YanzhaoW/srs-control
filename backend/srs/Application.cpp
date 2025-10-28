@@ -50,13 +50,17 @@ namespace srs
         //         "Failed to close srs system! Please manually close the system with\n\n srs_control --acq-off\n");
         // }
         if (auto switch_off_status = wait_for_switch_action(switch_off_future_);
-            switch_off_status == std::future_status::timeout)
+            switch_off_status == std::future_status::ready)
         {
-            spdlog::warn("TIMEOUT while waiting for switching off process to finish.");
+            spdlog::info("FECs has been switched off successfully.");
         }
         else if (switch_off_status == std::future_status::timeout)
         {
-            spdlog::debug("FECs has been switched off successfully.");
+            spdlog::warn("TIMEOUT while waiting for switching off process to finish.");
+        }
+        else if (switch_off_status == std::future_status::deferred)
+        {
+            spdlog::warn("Switching off of FECs is pending.");
         }
         else if (not switch_off_status.has_value())
         {
@@ -79,6 +83,7 @@ namespace srs
     {
         spdlog::debug("Calling the destructor of App ... ");
         signal_set_.cancel();
+        signal_set_.clear();
 
         // Turn off SRS data acquisition
         wait_for_reading_finish();
@@ -95,7 +100,7 @@ namespace srs
         }
         else if (switch_on_status == std::future_status::deferred)
         {
-            spdlog::warn("Switched on of FECs is pending. Skipping switching off process.");
+            spdlog::warn("Switching on of FECs is pending. Skipping switching off process.");
         }
         else
         {
@@ -213,6 +218,7 @@ namespace srs
                         fec_connection->set_remote_endpoint(remote_endpoint);
                         fec_connection->send_message_from(socket);
                     }
+                    socket->launch_actions();
                     return socket->cancel_listen_after(io_context_);
                 });
     }

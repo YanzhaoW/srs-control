@@ -1,11 +1,16 @@
 #pragma once
 
 #include <boost/thread/future.hpp>
+#include <map>
+#include <memory>
+#include <optional>
 #include <spdlog/spdlog.h>
 
 #include <srs/converters/DataConvertOptions.hpp>
 #include <srs/data/SRSDataStructs.hpp>
 #include <srs/writers/DataWriterOptions.hpp>
+#include <string>
+#include <vector>
 
 namespace srs::workflow
 {
