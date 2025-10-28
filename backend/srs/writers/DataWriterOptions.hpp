@@ -1,8 +1,12 @@
 #pragma once
 
-#include <filesystem>
+#include "srs/converters/DataConvertOptions.hpp"
 
-#include <srs/converters/DataConvertOptions.hpp>
+#include <cstdint>
+#include <filesystem>
+#include <string>
+#include <string_view>
+#include <tuple>
 
 namespace srs
 {
