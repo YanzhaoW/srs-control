@@ -89,16 +89,18 @@ namespace srs::workflow
             read_speed_string_ =
                 fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{:>7.5}", 1000. * read_speed_MBps);
             write_speed_string_ =
-                fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "{:>7.5}", 1000. * write_speed_MBps);
+                fmt::format(fg(fmt::color::spring_green) | fmt::emphasis::bold, "{:>7.5}", 1000. * write_speed_MBps);
             drop_speed_string_ =
-                fmt::format(fg(fmt::color::red) | fmt::emphasis::bold, "{:>7.5}", 1000. * drop_speed_MBps);
+                fmt::format(fg(fmt::color::orange_red) | fmt::emphasis::bold, "{:>7.5}", 1000. * drop_speed_MBps);
             unit_string_ = fmt::format(fmt::emphasis::bold, "KB/s");
         }
         else
         {
             read_speed_string_ = fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{:>7.5}", read_speed_MBps);
-            write_speed_string_ = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "{:>7.5}", write_speed_MBps);
-            drop_speed_string_ = fmt::format(fg(fmt::color::red) | fmt::emphasis::bold, "{:>7.5}", drop_speed_MBps);
+            write_speed_string_ =
+                fmt::format(fg(fmt::color::spring_green) | fmt::emphasis::bold, "{:>7.5}", write_speed_MBps);
+            drop_speed_string_ =
+                fmt::format(fg(fmt::color::orange_red) | fmt::emphasis::bold, "{:>7.5}", drop_speed_MBps);
             unit_string_ = fmt::format(fmt::emphasis::bold, "MB/s");
         }
     }

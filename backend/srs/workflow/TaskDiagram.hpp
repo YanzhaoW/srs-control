@@ -68,6 +68,7 @@ namespace srs::workflow
 
         auto generate_starting_coro(asio::any_io_executor /*unused*/) -> StartingCoroType;
         [[maybe_unused]] auto run_processes(bool is_stopped) -> std::expected<void, std::string_view>;
+        // [[maybe_unused]] auto run_workflow(bool is_stopped) -> std::expected<void, std::string_view>;
     };
 
     template <process::DataConvertOptions option>
