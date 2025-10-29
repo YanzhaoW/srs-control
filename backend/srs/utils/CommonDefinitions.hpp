@@ -17,7 +17,7 @@ namespace srs::common
     constexpr auto COMMAND_LENGTH_BITS = uint16_t{ 0xffff };
     constexpr auto ZERO_UINT16_PADDING = uint16_t{};
     constexpr auto SMALL_READ_MSG_BUFFER_SIZE = 96;
-    constexpr auto LARGE_READ_MSG_BUFFER_SIZE = 10000; //!< size of the data array for reading a UDP package
+    constexpr auto LARGE_READ_MSG_BUFFER_SIZE = 80'000'000; //!< size of the data array for reading a UDP package
 
     constexpr auto DEFAULT_CMD_LENGTH = uint16_t{ 0xffff };
     constexpr auto CMD_TYPE = uint8_t{ 0xaa };

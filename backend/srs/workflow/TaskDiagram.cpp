@@ -119,6 +119,17 @@ namespace srs::workflow
         return {};
     }
 
+    // auto TaskDiagram::run_workflow(bool is_stopped) -> std::expected<void, std::string_view>
+    // {
+        // auto starting_task = std::move(coro_);
+        // auto raw_to_delim_raw_fut = raw_to_delim_raw_converter_.create_future(starting_fut, writers_);
+        // auto struct_deser_fut = struct_deserializer_.create_future(starting_fut, writers_);
+        // auto proto_converter_fut = struct_proto_converter_.create_future(struct_deser_fut, writers_);
+        // auto proto_deser_fut = proto_serializer_.create_future(proto_converter_fut, writers_);
+        // auto proto_delim_deser_fut = proto_delim_serializer_.create_future(proto_converter_fut, writers_);
+
+    // }
+
     // NOLINTNEXTLINE(readability-static-accessed-through-instance)
     auto TaskDiagram::generate_starting_coro(asio::any_io_executor /*unused*/) -> StartingCoroType
     {
