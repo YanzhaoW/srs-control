@@ -9,9 +9,11 @@
 #include "srs/converters/StructDeserializer.hpp"
 #include "srs/converters/StructToProtoConverter.hpp"
 #include "srs/writers/DataWriter.hpp"
+#include <atomic>
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/experimental/coro.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <cstdint>
 #include <expected>
 #include <oneapi/tbb/concurrent_queue.h>
 #include <string>
@@ -46,6 +48,8 @@ namespace srs::workflow
         template <process::DataConvertOptions option>
         auto get_data() -> std::string_view;
 
+        [[nodiscard]] auto get_data_bytes() const -> uint64_t { return total_read_data_bytes_.load(); }
+
         auto get_struct_data() -> const auto& { return struct_deserializer_.data(); }
 
       private:
@@ -55,6 +59,8 @@ namespace srs::workflow
         process::Struct2ProtoConverter struct_proto_converter_;
         process::ProtoSerializer proto_serializer_;
         process::ProtoDelimSerializer proto_delim_serializer_;
+
+        std::atomic<uint64_t> total_read_data_bytes_ = 0;
 
         StartingCoroType coro_;
 

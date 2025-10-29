@@ -48,6 +48,7 @@ namespace srs::common
     constexpr auto FLAG_BIT_POSITION = 15; // zero based
     constexpr auto GZIP_DEFAULT_COMPRESSION_LEVEL = 9;
     constexpr auto PROTOBUF_ENABLE_GZIP = true;
+    constexpr auto DEFAULT_DATA_QUEUE_SIZE = 100;
 
     /**
      * @enum DataPrintMode

@@ -50,14 +50,19 @@ namespace srs::workflow
         std::shared_ptr<spdlog::logger> console_;
         asio::steady_timer clock_;
         std::atomic<uint64_t> last_read_data_bytes_ = 0;
+        std::atomic<uint64_t> last_write_data_bytes_ = 0;
         std::atomic<uint64_t> last_processed_hit_num_ = 0;
         std::chrono::time_point<std::chrono::steady_clock> last_print_time_ = std::chrono::steady_clock::now();
         std::chrono::milliseconds period_ = common::DEFAULT_DISPLAY_PERIOD;
         std::atomic<double> current_received_bytes_MBps_;
+        std::atomic<double> current_write_bytes_MBps_;
         std::atomic<double> current_hits_ps_;
-        std::string speed_string_;
+        std::string read_speed_string_;
+        std::string write_speed_string_;
+        std::string drop_speed_string_;
+        std::string unit_string_;
 
-        void set_speed_string(double speed_MBps);
+        void set_speed_string();
         auto print_cycle() -> asio::awaitable<void>;
     };
 
@@ -84,6 +89,7 @@ namespace srs::workflow
         [[nodiscard]] auto get_processed_hit_number() const -> uint64_t { return total_processed_hit_numer_.load(); }
         // [[nodiscard]] auto get_export_data() -> auto& { return struct_serializer.get_output_data(); }
         [[nodiscard]] auto get_data_monitor() const -> const auto& { return monitor_; }
+        [[nodiscard]] auto get_data_workflow() const -> const auto& { return data_processes_; }
         [[nodiscard]] auto get_app() -> auto& { return *app_; }
 
         // setters:

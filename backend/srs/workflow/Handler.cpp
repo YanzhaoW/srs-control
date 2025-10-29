@@ -1,4 +1,7 @@
+#include "srs/workflow/Handler.hpp"
+#include "srs/data/DataStructsFormat.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
 #include "srs/workflow/TaskDiagram.hpp"
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -18,8 +21,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <spdlog/spdlog.h>
-#include <srs/data/DataStructsFormat.hpp>
-#include <srs/workflow/Handler.hpp>
 #include <string>
 #include <utility>
 
@@ -41,43 +42,64 @@ namespace srs::workflow
         console_->set_formatter(std::move(console_format));
         console_->flush_on(spdlog::level::info);
         console_->set_level(spdlog::level::info);
+        const auto& task_workflow = processor_->get_data_workflow();
         while (true)
         {
             co_await clock_.async_wait(asio::use_awaitable);
             clock_.expires_after(period_);
 
-            auto total_bytes_count = processor_->get_read_data_bytes();
-            auto total_hits_count = processor_->get_processed_hit_number();
+            auto read_total_bytes_count = processor_->get_read_data_bytes();
+            auto read_total_hits_count = processor_->get_processed_hit_number();
+            auto write_total_bytes_count = task_workflow.get_data_bytes();
 
             auto time_now = std::chrono::steady_clock::now();
-
             auto time_duration = std::chrono::duration_cast<std::chrono::microseconds>(time_now - last_print_time_);
-            auto bytes_read = static_cast<double>(total_bytes_count - last_read_data_bytes_);
-            auto hits_processed = static_cast<double>(total_hits_count - last_processed_hit_num_);
 
-            last_read_data_bytes_ = total_bytes_count;
-            last_processed_hit_num_ = total_hits_count;
+            auto bytes_read = static_cast<double>(read_total_bytes_count - last_read_data_bytes_);
+            auto bytes_write = static_cast<double>(write_total_bytes_count - last_write_data_bytes_);
+            auto hits_processed = static_cast<double>(read_total_hits_count - last_processed_hit_num_);
+
+            last_read_data_bytes_ = read_total_bytes_count;
+            last_write_data_bytes_ = write_total_bytes_count;
+            last_processed_hit_num_ = read_total_hits_count;
             last_print_time_ = time_now;
 
-            const auto time_duration_double = static_cast<double>(time_duration.count());
-            current_received_bytes_MBps_.store(bytes_read / time_duration_double);
-            current_hits_ps_.store(hits_processed / time_duration_double * 1e6);
+            const auto time_duration_us = static_cast<double>(time_duration.count());
+            current_received_bytes_MBps_.store(bytes_read / time_duration_us);
+            current_write_bytes_MBps_.store(bytes_write / time_duration_us);
+            current_hits_ps_.store(hits_processed / time_duration_us * 1e6);
 
-            set_speed_string(current_received_bytes_MBps_.load());
-            console_->info("Data reading rate: {}. Press \"Ctrl-C\" to stop the program \r", speed_string_);
+            set_speed_string();
+            console_->info("read|write|drop rate: {} |{} |{} {}. Press \"Ctrl-C\" to stop the program \r",
+                           read_speed_string_,
+                           write_speed_string_,
+                           drop_speed_string_,
+                           unit_string_);
         }
     }
 
-    void DataMonitor::set_speed_string(double speed_MBps)
+    void DataMonitor::set_speed_string()
     {
-        if (speed_MBps < 1.)
+        auto read_speed_MBps = current_received_bytes_MBps_.load();
+        auto write_speed_MBps = current_write_bytes_MBps_.load();
+        auto drop_speed_MBps = read_speed_MBps - write_speed_MBps;
+
+        if (read_speed_MBps < 1.)
         {
-            speed_string_ =
-                fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{:>7.5} KB/s", 1000. * speed_MBps);
+            read_speed_string_ =
+                fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{:>7.5}", 1000. * read_speed_MBps);
+            write_speed_string_ =
+                fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "{:>7.5}", 1000. * write_speed_MBps);
+            drop_speed_string_ =
+                fmt::format(fg(fmt::color::red) | fmt::emphasis::bold, "{:>7.5}", 1000. * drop_speed_MBps);
+            unit_string_ = fmt::format(fmt::emphasis::bold, "KB/s");
         }
         else
         {
-            speed_string_ = fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{:>7.5} MB/s", speed_MBps);
+            read_speed_string_ = fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{:>7.5}", read_speed_MBps);
+            write_speed_string_ = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "{:>7.5}", write_speed_MBps);
+            drop_speed_string_ = fmt::format(fg(fmt::color::red) | fmt::emphasis::bold, "{:>7.5}", drop_speed_MBps);
+            unit_string_ = fmt::format(fmt::emphasis::bold, "MB/s");
         }
     }
 
@@ -94,6 +116,7 @@ namespace srs::workflow
         , monitor_{ this, &(control->get_io_context()) }
         , data_processes_{ this, control->get_io_context() }
     {
+        data_queue_.set_capacity(common::DEFAULT_DATA_QUEUE_SIZE);
     }
 
     void Handler::start(bool is_blocking)
@@ -132,8 +155,7 @@ namespace srs::workflow
         auto is_success = data_queue_.try_emplace(read_data);
         if (not is_success)
         {
-            spdlog::critical(
-                "Analysis workflow: Data queue is full and message is lost. Try to increase its capacity!");
+            spdlog::trace("Analysis workflow: Data queue is full and message is lost. Try to increase its capacity!");
         }
     }
 

@@ -10,6 +10,7 @@
 
 #include "srs/SRSEmulator.hpp"
 #include "srs/connections/Connections.hpp"
+#include "srs/connections/DataSocket.hpp"
 #include "srs/workflow/Handler.hpp"
 
 namespace
@@ -34,8 +35,8 @@ namespace
 
                 app.init();
                 app.read_data(false);
-                auto* data_reader = app.get_data_reader();
-                auto port_num = data_reader->get_local_port_number();
+                auto* data_reader = app.get_data_reader_socket();
+                auto port_num = data_reader->get_port();
                 auto emulator = srs::test::SRSEmulator{ "test_data.bin", port_num, app };
 
                 auto analysis_thread = std::jthread(
