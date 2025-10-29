@@ -50,6 +50,7 @@ namespace srs::workflow
         }
         if (pop_res)
         {
+            total_read_data_bytes_ += binary_data_.data().size();
             auto res = run_processes(false);
             if (not res.has_value())
             {

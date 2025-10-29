@@ -208,7 +208,7 @@ namespace srs
         [[nodiscard]] auto get_status() const -> const auto& { return status_; }
         [[nodiscard]] auto get_io_context() -> auto& { return io_context_; }
         [[nodiscard]] auto get_fec_strand() -> auto& { return fec_strand_; }
-        auto get_data_reader() -> connection::DataReader* { return data_reader_.get(); }
+        auto get_data_reader_socket() -> connection::DataSocket* { return data_socket_.get(); }
         [[nodiscard]] auto get_error_string() const -> const std::string& { return error_string_; }
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
 
@@ -264,7 +264,7 @@ namespace srs
 
         /** @brief Communication to the main input data stream.
          */
-        std::shared_ptr<connection::DataReader> data_reader_;
+        // std::shared_ptr<connection::DataReader> data_reader_;
 
         std::shared_ptr<connection::DataSocket> data_socket_;
 
