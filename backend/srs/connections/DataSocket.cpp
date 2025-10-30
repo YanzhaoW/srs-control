@@ -13,9 +13,9 @@
 namespace srs::connection
 {
     DataSocket::DataSocket(int port_number, io_context_type& io_context, workflow::Handler* workflow)
-        : io_context_{ &io_context }
+        : SpecialSocket(port_number, io_context)
+        , io_context_{ &io_context }
         , workflow_handler_{ workflow }
-        , SpecialSocket(port_number, io_context)
     {
     }
 

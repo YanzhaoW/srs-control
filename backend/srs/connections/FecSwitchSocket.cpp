@@ -57,8 +57,8 @@ namespace srs::connection
     } // namespace
 
     FecSwitchSocket::FecSwitchSocket(int port_number, io_context_type& io_context)
-        : strand_{ asio::make_strand(io_context.get_executor()) }
-        , SpecialSocket{ port_number, io_context }
+        : SpecialSocket{ port_number, io_context }
+        , strand_{ asio::make_strand(io_context.get_executor()) }
 
     {
     }

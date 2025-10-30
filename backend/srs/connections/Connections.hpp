@@ -110,8 +110,8 @@ namespace srs::connection
     {
       public:
         DataReader(const Info& info, workflow::Handler* processor)
-            : workflow_handler_{ processor }
-            , Base(info, "DataReader")
+            : Base(info, "DataReader")
+            , workflow_handler_{ processor }
         {
             set_timeout_seconds(1);
             set_continuous();

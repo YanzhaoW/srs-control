@@ -1,7 +1,6 @@
 #pragma once
 
 #include "srs/converters/SerializableBuffer.hpp"
-#include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/workflow/TaskDiagram.hpp"
@@ -36,7 +35,7 @@ namespace srs::workflow
         void set_display_period(std::chrono::milliseconds duration) { period_ = duration; }
         void start();
         void stop();
-        void update(const StructData& data_struct) {}
+        // void update(const StructData& data_struct) {}
         void http_server_loop();
 
         // getters:

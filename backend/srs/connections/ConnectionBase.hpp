@@ -87,7 +87,7 @@ namespace srs::connection
                          uint16_t address,
                          std::shared_ptr<FecSwitchSocket> socket);
 
-        auto send_continuous_message() -> asio::experimental::coro<int(std::optional<std::string_view>)>;
+        auto send_continuous_message() -> asio::experimental::coro<std::size_t(std::optional<std::string_view>)>;
         auto check_response(std::span<char> response_msg) -> bool;
 
         // Setters:
@@ -192,10 +192,11 @@ namespace srs::connection
     }
 
     template <int buffer_size>
-    auto Base<buffer_size>::send_continuous_message() -> asio::experimental::coro<int(std::optional<std::string_view>)>
+    auto Base<buffer_size>::send_continuous_message()
+        -> asio::experimental::coro<std::size_t(std::optional<std::string_view>)>
     {
         auto send_msg = std::string_view{};
-        auto data_size = 0;
+        auto data_size = std::size_t{ 0 };
         while (true)
         {
             data_size = (not send_msg.empty()) ? socket_->send_to(asio::buffer(send_msg), remote_endpoint_) : 0;

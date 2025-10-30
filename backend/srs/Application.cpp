@@ -260,7 +260,7 @@ namespace srs
         // set_status_acq_off();
     }
 
-    void App::read_data(bool is_non_stop)
+    void App::read_data(bool /*is_non_stop*/)
     {
         spdlog::info("Starting input data stream ...");
         auto fut = connection::SpecialSocket::create<connection::DataSocket>(

@@ -101,7 +101,7 @@ namespace srs::writer
     }
 
     // NOLINTNEXTLINE
-    auto Manager::add_root_file(const std::string& filename) -> bool
+    auto Manager::add_root_file([[maybe_unused]] const std::string& filename) -> bool
     {
 #ifdef HAS_ROOT
         auto& app = workflow_handler_->get_app();
@@ -121,7 +121,7 @@ namespace srs::writer
 
     void Manager::set_output_filenames(const std::vector<std::string>& filenames)
     {
-        auto& app = workflow_handler_->get_app();
+        // auto& app = workflow_handler_->get_app();
 
         for (const auto& filename : filenames)
         {

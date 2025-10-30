@@ -31,7 +31,7 @@ namespace srs::process
             common::coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
         }
 
-        auto extract_coro() -> CoroType { std::move(coro_); }
+        auto extract_coro() -> CoroType { return std::move(coro_); }
 
         auto create_future(this auto&& self, InputFuture& pre_fut, writer::Manager& writers) -> OutputFuture
         {

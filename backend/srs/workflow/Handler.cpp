@@ -161,7 +161,7 @@ namespace srs::workflow
         }
     }
 
-    void Handler::analysis_loop(bool is_blocking)
+    void Handler::analysis_loop(bool /*is_blocking*/)
     {
         try
         {
@@ -174,7 +174,7 @@ namespace srs::workflow
                 {
                     break;
                 }
-                auto analysis_result = data_processes_.analysis_one(data_queue_, is_blocking);
+                // auto analysis_result = data_processes_.analysis_one(data_queue_, is_blocking);
                 update_monitor();
                 print_data();
 
@@ -203,7 +203,7 @@ namespace srs::workflow
         const auto& struct_data = data_processes_.get_struct_data();
 
         total_processed_hit_numer_ += struct_data.hit_data.size();
-        monitor_.update(struct_data);
+        // monitor_.update(struct_data);
     }
 
     void Handler::print_data()

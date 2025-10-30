@@ -173,7 +173,7 @@ namespace srs::connection
             }
             auto timer = asio::system_timer{ co_await asio::this_coro::executor };
             timer.expires_after(waiting_time);
-            auto err_code = co_await timer.async_wait(asio::as_tuple(asio::use_awaitable));
+            [[maybe_unused]] auto err_code = co_await timer.async_wait(asio::as_tuple(asio::use_awaitable));
             socket->cancel_timer_.cancel();
             if (not socket->is_finished())
             {
