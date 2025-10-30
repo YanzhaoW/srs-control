@@ -13,6 +13,7 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/experimental/coro.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <oneapi/tbb/concurrent_queue.h>
@@ -42,6 +43,7 @@ namespace srs::workflow
             -> bool;
         void set_output_filenames(const std::vector<std::string>& filenames);
         void reset();
+        void init();
         // void stop() { run_processes(true); }
 
         // Getters:
@@ -49,6 +51,7 @@ namespace srs::workflow
         auto get_data() -> std::string_view;
 
         [[nodiscard]] auto get_data_bytes() const -> uint64_t { return total_read_data_bytes_.load(); }
+        [[nodiscard]] auto get_drop_data_bytes() const -> uint64_t { return total_drop_data_bytes_.load(); }
 
         auto get_struct_data() -> const auto& { return struct_deserializer_.data(); }
 
@@ -61,14 +64,17 @@ namespace srs::workflow
         process::ProtoDelimSerializer proto_delim_serializer_;
 
         std::atomic<uint64_t> total_read_data_bytes_ = 0;
+        std::atomic<uint64_t> total_drop_data_bytes_ = 0;
 
+        asio::any_io_executor io_context_ = nullptr;
         StartingCoroType coro_;
+        asio::experimental::coro<std::size_t(bool)> coro_chain_;
 
         writer::Manager writers_;
 
         auto generate_starting_coro(asio::any_io_executor /*unused*/) -> StartingCoroType;
         [[maybe_unused]] auto run_processes(bool is_stopped) -> std::expected<void, std::string_view>;
-        // [[maybe_unused]] auto run_workflow(bool is_stopped) -> std::expected<void, std::string_view>;
+        [[maybe_unused]] auto run_workflow(bool is_stopped) -> std::expected<void, std::string_view>;
     };
 
     template <process::DataConvertOptions option>

@@ -4,6 +4,7 @@
 
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain
+
 # from conan.tools.cmake import cmake_layout
 
 BOOST_LIBS = (
@@ -56,6 +57,9 @@ BOOST_OPTIONS = {
         "date_time",
         "exception",
         "system",
+        "cobalt",
+        "container",
+        "context",
     ]
 }
 BOOST_OPTIONS.update({"shared": False})

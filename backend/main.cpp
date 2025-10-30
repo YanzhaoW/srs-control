@@ -3,7 +3,6 @@
 #include "srs/devices/Configuration.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
-
 #include <CLI/CLI.hpp>
 #include <cstdlib>
 #include <exception>

@@ -168,7 +168,7 @@ namespace srs
         /**
          * @brief Set the local listen port number for the communications to FEC devices
          */
-        void set_fec_data_receiv_port(int port_num) { configurations_.fec_data_receive_port = port_num; }
+        void set_fec_data_receiv_port(int port_num) { config_.fec_data_receive_port = port_num; }
 
         /**
          * @brief Set the print mode.
@@ -186,9 +186,11 @@ namespace srs
         /**
          * @brief Set the configuration values.
          */
-        void set_options(Config options) { configurations_ = std::move(options); }
+        void set_options(Config options) { config_ = std::move(options); }
 
         void disable_switch_off(bool is_disabled = true) { is_switch_off_disabled_ = is_disabled; }
+
+        void exit_and_switch_off();
 
         // internal usage
         // TODO: Refactor the code to not expose those methods for the internal usage
@@ -211,6 +213,8 @@ namespace srs
         auto get_data_reader_socket() -> connection::DataSocket* { return data_socket_.get(); }
         [[nodiscard]] auto get_error_string() const -> const std::string& { return error_string_; }
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
+        [[nodiscard]] auto get_config() const -> const auto& { return config_; }
+        [[nodiscard]] auto get_config_ref() -> auto& { return config_; }
 
         // called by ExitHelper
         void action_after_destructor();
@@ -223,7 +227,7 @@ namespace srs
         Status status_;
         bool is_switch_off_disabled_ = false;
         uint16_t channel_address_ = common::DEFAULT_CHANNEL_ADDRE;
-        Config configurations_;
+        Config config_;
         std::string error_string_;
 
         // Destructors are called in the inverse order
@@ -272,14 +276,13 @@ namespace srs
 
         SwitchFutureType switch_off_future_;
 
-        void exit();
         void wait_for_reading_finish();
         void set_remote_fec_endpoints();
         void add_remote_fec_endpoint(std::string_view remote_ip, int port_number);
         static auto wait_for_switch_action(const SwitchFutureType& switch_future) -> SwitchFutureStatusType;
 
         template <typename T>
-        auto switch_FECs() -> SwitchFutureType;
+        auto switch_FECs(std::string_view connection_name) -> SwitchFutureType;
     };
 
 } // namespace srs

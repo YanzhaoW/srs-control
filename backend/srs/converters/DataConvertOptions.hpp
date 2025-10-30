@@ -3,8 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <fmt/base.h>
 #include <fmt/format.h>
 #include <string_view>
+#include <utility>
 
 namespace srs::process
 {
@@ -95,7 +97,7 @@ namespace srs::process
                                    });
     }
 
-} // namespace srs
+} // namespace srs::process
 
 template <>
 class fmt::formatter<srs::process::DataConvertOptions>

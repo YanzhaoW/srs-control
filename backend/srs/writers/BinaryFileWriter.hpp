@@ -1,5 +1,18 @@
 #pragma once
 
+#include "srs/converters/DataConvertOptions.hpp"
+#include "srs/utils/CommonFunctions.hpp"
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <boost/thread/future.hpp>
+#include <cstddef>
+#include <fmt/format.h>
+#include <fstream>
+#include <ios>
+#include <optional>
+#include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <string>
 
 #include <boost/asio.hpp>
@@ -8,6 +21,8 @@
 #include <srs/utils/CommonConcepts.hpp>
 #include <srs/workflow/TaskDiagram.hpp>
 #include <srs/writers/DataWriterOptions.hpp>
+#include <string_view>
+#include <utility>
 
 namespace srs::writer
 {
@@ -15,7 +30,7 @@ namespace srs::writer
     {
       public:
         using InputType = std::string_view;
-        using OutputType = int;
+        using OutputType = std::size_t;
         using CoroType = asio::experimental::coro<OutputType(std::optional<InputType>)>;
         using InputFuture = boost::shared_future<std::optional<InputType>>;
         using OutputFuture = boost::unique_future<std::optional<OutputType>>;
@@ -38,6 +53,7 @@ namespace srs::writer
         auto write(auto pre_future) -> OutputFuture { return common::create_coro_future(coro_, pre_future); }
         auto get_convert_mode() const -> process::DataConvertOptions { return convert_mode_; }
         void close() { ofstream_.close(); }
+        auto get_coro() -> auto& { return coro_; }
 
       private:
         process::DataConvertOptions convert_mode_ = process::DataConvertOptions::none;
@@ -48,14 +64,17 @@ namespace srs::writer
         // NOLINTNEXTLINE(readability-static-accessed-through-instance)
         auto generate_coro(asio::any_io_executor /*unused*/) -> CoroType
         {
+            auto total_size = std::size_t{};
             auto write_msg = std::string_view{};
             while (true)
             {
                 if (not write_msg.empty())
                 {
+                    // spdlog::trace("writer size: {}", write_msg.size());
+                    total_size += write_msg.size();
                     ofstream_ << write_msg;
                 }
-                auto msg = co_yield static_cast<int>(write_msg.size());
+                auto msg = co_yield write_msg.size();
 
                 if (msg.has_value())
                 {
@@ -64,7 +83,8 @@ namespace srs::writer
                 else
                 {
                     close();
-                    spdlog::info("Binary file {} is closed successfully", file_name_);
+                    spdlog::info(
+                        "Binary file {} is closed successfully with {}B written in total.", file_name_, total_size);
                     co_return;
                 }
             }

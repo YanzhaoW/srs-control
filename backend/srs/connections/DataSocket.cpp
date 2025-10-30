@@ -2,10 +2,12 @@
 #include "SpecialSocketBase.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
 #include "srs/workflow/Handler.hpp"
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
+#include <cstddef>
 #include <memory>
 #include <span>
 #include <utility>
@@ -13,11 +15,14 @@
 namespace srs::connection
 {
     DataSocket::DataSocket(int port_number, io_context_type& io_context, workflow::Handler* workflow)
-        : io_context_{ &io_context }
+        : SpecialSocket(port_number, io_context)
+        , io_context_{ &io_context }
         , workflow_handler_{ workflow }
-        , SpecialSocket(port_number, io_context)
     {
+        read_msg_buffer_.resize(common::LARGE_READ_MSG_BUFFER_SIZE);
     }
+
+    void DataSocket::set_buffer_size(std::size_t buffer_size) { read_msg_buffer_.resize(buffer_size); }
 
     // WARN: is it really needed?
     void DataSocket::register_send_action_imp(asio::awaitable<void> action,

@@ -3,6 +3,7 @@
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/UDPFormatters.hpp" // IWYU pragma: keep
 #include <algorithm>
 #include <boost/asio/as_tuple.hpp>
@@ -57,10 +58,11 @@ namespace srs::connection
     } // namespace
 
     FecSwitchSocket::FecSwitchSocket(int port_number, io_context_type& io_context)
-        : strand_{ asio::make_strand(io_context.get_executor()) }
-        , SpecialSocket{ port_number, io_context }
+        : SpecialSocket{ port_number, io_context }
+        , strand_{ asio::make_strand(io_context.get_executor()) }
 
     {
+        read_msg_buffer_.resize(common::SMALL_READ_MSG_BUFFER_SIZE);
     }
 
     void FecSwitchSocket::register_send_action_imp(asio::awaitable<void> action,
@@ -109,6 +111,7 @@ namespace srs::connection
             spdlog::debug("Response from the remote endpoint {} is recognized by the local socket with port {}",
                           endpoint,
                           get_port());
+            // print_available_responses();
         }
         else
         {
@@ -133,7 +136,8 @@ namespace srs::connection
     void FecSwitchSocket::print_error() const
     {
         spdlog::error(
-            "TIMEOUT during waiting for the responses from the following ip/port:\n\t{}",
+            "TIMEOUT during local port {} waiting for the responses from the following ip/port:\n\t{}",
+            get_port(),
             fmt::join(
                 all_connections_ |
                     std::views::filter([](const auto& key_value) -> bool { return not key_value.second.empty(); }) |

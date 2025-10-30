@@ -5,23 +5,25 @@
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
-#include "srs/utils/CommonDefinitions.hpp"
 #include <boost/asio/awaitable.hpp>
+#include <cstddef>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <span>
+#include <vector>
 
 namespace srs::connection
 {
     class DataSocket : public SpecialSocket
     {
       public:
-        using ConnectionType = Base<common::LARGE_READ_MSG_BUFFER_SIZE>;
+        using ConnectionType = Base;
+        void set_buffer_size(std::size_t buffer_size);
         void cancel();
 
       private:
         friend SpecialSocket;
-        ReadBufferType<common::LARGE_READ_MSG_BUFFER_SIZE> read_msg_buffer_{};
+        std::vector<char> read_msg_buffer_;
         gsl::not_null<io_context_type*> io_context_;
         gsl::not_null<workflow::Handler*> workflow_handler_;
 

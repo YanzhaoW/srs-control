@@ -1,6 +1,7 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
+#include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include "srs/writers/DataWriter.hpp"
 #include <algorithm>
@@ -8,6 +9,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/thread/future.hpp>
 #include <fmt/ranges.h>
+#include <gsl/gsl-lite.hpp>
 #include <optional>
 #include <type_traits>
 
@@ -31,7 +33,12 @@ namespace srs::process
             common::coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
         }
 
-        auto extract_coro() -> CoroType { std::move(coro_); }
+        explicit DataConverterBase(io_context_type& io_context)
+            : io_context_{ &io_context }
+        {
+        }
+
+        auto extract_coro() -> CoroType { return std::move(coro_); }
 
         auto create_future(this auto&& self, InputFuture& pre_fut, writer::Manager& writers) -> OutputFuture
         {
@@ -40,8 +47,11 @@ namespace srs::process
                 converter_options, [&writers](auto option) { return writers.is_convert_required(option); });
             return is_needed ? common::create_coro_future(self.coro_, pre_fut) : OutputFuture{};
         }
+        auto get_executor() const -> auto { return io_context_->get_executor(); }
 
       private:
+        // gsl::not_null<io_context_type*> io_context_;
+        io_context_type* io_context_ = nullptr;
         CoroType coro_;
     };
 } // namespace srs::process

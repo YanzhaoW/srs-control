@@ -88,7 +88,7 @@ namespace srs::writer
     {
       public:
         using InputType = const StructData*;
-        using OutputType = int;
+        using OutputType = std::size_t;
         using CoroType = asio::experimental::coro<OutputType(std::optional<InputType>)>;
         using InputFuture = boost::shared_future<std::optional<InputType>>;
         using OutputFuture = boost::unique_future<std::optional<OutputType>>;
@@ -126,7 +126,7 @@ namespace srs::writer
         auto generate_coro(asio::any_io_executor /*unused*/) -> CoroType
         {
             InputType data_struct{};
-            auto res = 0;
+            auto res = std::size_t{ 0 };
             while (true)
             {
                 res = 0;
@@ -168,7 +168,7 @@ namespace srs::writer
             {
                 spdlog::critical("JsonWriter: cannot interpret data struct to json. Error: {}",
                                  error_code.custom_error_message);
-                throw std::runtime_error("Error occured with JsonWriter");
+                throw std::runtime_error("Error occurred with JsonWriter");
             }
             file_stream_ << string_buffer_;
             string_buffer_.clear();

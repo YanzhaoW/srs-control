@@ -2,10 +2,12 @@
 
 #include "EnumConvertFunctions.hpp"  // IWYU pragma: export
 #include "srs/utils/CommonAlias.hpp" // IWYU pragma: keep
+#include "srs/utils/CommonConcepts.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <bit>
 #include <bitset>
 #include <boost/asio.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/thread/future.hpp>
@@ -74,6 +76,7 @@ namespace srs::common
     consteval auto get_enum_names()
     {
         auto names = magic_enum::enum_names<srs::common::ActionMode>();
+        return names;
     }
 
     auto create_coro_future(auto& coro, auto&& pre_fut)
@@ -108,5 +111,22 @@ namespace srs::common
     {
         asio::co_spawn(coro.get_executor(), coro.async_resume(std::forward<decltype(args)>(args)...), asio::use_future)
             .get();
+    }
+
+    auto create_coro_task(auto task, asio::any_io_executor executor)
+    {
+        auto task_handle = task();
+        using input_type = decltype(task_handle)::input_type;
+        asio::co_spawn(executor, task_handle.async_resume(input_type{}, asio::use_awaitable), asio::use_future).get();
+        return task_handle;
+    }
+
+    auto make_unique_coro(DataConverter auto& task, asio::any_io_executor executor)
+    {
+        auto task_handle =
+            std::make_unique<typename std::remove_reference_t<decltype(task)>::CoroType>(task.generate_coro());
+        using input_type = std::remove_cvref_t<decltype(*task_handle)>::input_type;
+        asio::co_spawn(executor, task_handle->async_resume(input_type{}, asio::use_awaitable), asio::use_future).get();
+        return task_handle;
     }
 } // namespace srs::common

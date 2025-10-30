@@ -8,8 +8,11 @@
 #include <boost/asio/thread_pool.hpp>
 #include <boost/system/detail/error_code.hpp>
 #include <boost/thread/futures/wait_for_all.hpp>
+#include <magic_enum/magic_enum.hpp>
+#include <map>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <spdlog/spdlog.h>
 #include <srs/workflow/Handler.hpp>
 #include <srs/writers/BinaryFileWriter.hpp>
@@ -78,6 +81,15 @@ namespace srs::writer
             { return option_count.second > 0 && convert_option_has_dependency(dependee, option_count.first); });
     }
 
+    auto Manager::generate_conversion_req_map() const -> std::map<process::DataConvertOptions, bool>
+    {
+        constexpr auto conversions = magic_enum::enum_values<process::DataConvertOptions>();
+        return std::views::transform(conversions,
+                                     [this](const auto conversion) -> std::pair<process::DataConvertOptions, bool>
+                                     { return std::pair{ conversion, is_convert_required(conversion) }; }) |
+               std::ranges::to<std::map<process::DataConvertOptions, bool>>();
+    }
+
     void Manager::wait_for_finished() { boost::wait_for_all(write_futures_.begin(), write_futures_.end()); }
 
     auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool
@@ -101,7 +113,7 @@ namespace srs::writer
     }
 
     // NOLINTNEXTLINE
-    auto Manager::add_root_file(const std::string& filename) -> bool
+    auto Manager::add_root_file([[maybe_unused]] const std::string& filename) -> bool
     {
 #ifdef HAS_ROOT
         auto& app = workflow_handler_->get_app();
@@ -121,7 +133,7 @@ namespace srs::writer
 
     void Manager::set_output_filenames(const std::vector<std::string>& filenames)
     {
-        auto& app = workflow_handler_->get_app();
+        // auto& app = workflow_handler_->get_app();
 
         for (const auto& filename : filenames)
         {

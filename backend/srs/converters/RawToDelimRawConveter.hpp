@@ -1,9 +1,12 @@
 #pragma once
 
 #include "srs/utils/CommonDefinitions.hpp"
+#include "srs/utils/CommonFunctions.hpp"
 #include <array>
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <optional>
 #include <spdlog/spdlog.h>
 #include <string_view>
 #include <vector>
@@ -17,7 +20,7 @@ namespace srs::process
     {
       public:
         explicit Raw2DelimRawConverter(asio::thread_pool& thread_pool)
-            : DataConverterBase{ generate_coro(thread_pool.get_executor()) }
+            : DataConverterBase{ thread_pool }
         {
         }
 
@@ -29,33 +32,28 @@ namespace srs::process
             return std::string_view{ output_data_.data(), output_data_.size() };
         }
 
-      private:
-        std::vector<char> output_data_;
-
-        // NOLINTNEXTLINE(readability-static-accessed-through-instance)
-        auto generate_coro(asio::any_io_executor /*unused*/) -> CoroType
+        auto generate_coro() -> CoroType
         {
-            InputType temp_data{};
+            spdlog::trace("Process: Starting Raw2DelimRaw converter.");
+            auto binary_data = co_yield OutputType{};
+
             while (true)
             {
-                if (not temp_data.empty())
+                if (not binary_data.has_value())
                 {
-                    output_data_.clear();
-                    convert(temp_data, output_data_);
+                    break;
                 }
-                auto output_temp = std::string_view{ output_data_.data(), output_data_.size() };
-                auto data = co_yield (output_temp);
-                if (data.has_value())
-                {
-                    temp_data = data.value();
-                }
-                else
-                {
-                    spdlog::debug("Shutting down Raw2DelimRaw converter.");
-                    co_return;
-                }
+                output_data_.clear();
+                convert(binary_data.value(), output_data_);
+
+                binary_data = co_yield std::string_view{ output_data_.data(), output_data_.size() };
             }
+            spdlog::debug("Process: Shutting down Raw2DelimRaw converter.");
+            co_return;
         }
+
+      private:
+        std::vector<char> output_data_;
 
         static void convert(std::string_view input, std::vector<char>& output)
         {
@@ -65,4 +63,4 @@ namespace srs::process
             deserialize_to(size, zpp::bits::unsized(input)).or_throw();
         }
     };
-} // namespace srs
+} // namespace srs::process

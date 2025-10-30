@@ -1,6 +1,12 @@
 #pragma once
 
+#include "srs/utils/CommonAlias.hpp" // IWYU pragma: keep
+#include <boost/asio/any_io_executor.hpp>
+#include <concepts>
 #include <fstream>
+#include <iterator>
+#include <type_traits>
+#include <utility>
 
 namespace srs
 {
@@ -25,6 +31,17 @@ namespace srs
     template <typename DataType, typename TaskType>
     concept OutputCompatible = requires(DataType, TaskType task) {
         std::is_same_v<DataType, std::remove_cvref_t<decltype(task.get_output_data())>>;
+    };
+
+    template <typename T>
+    concept DataConverter = requires(T converter) {
+        typename T::InputType;
+        typename T::OutputType;
+        typename T::InputFuture;
+        typename T::OutputFuture;
+        typename T::CoroType;
+        { converter.get_executor() } -> std::convertible_to<asio::any_io_executor>;
+        { converter.generate_coro() } -> std::convertible_to<typename T::CoroType>;
     };
 
 }; // namespace srs

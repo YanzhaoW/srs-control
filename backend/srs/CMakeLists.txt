@@ -53,3 +53,10 @@ target_sources(
 target_link_libraries(srscpp PRIVATE $<BUILD_LOCAL_INTERFACE:srs_data>)
 target_compile_definitions(srscpp PUBLIC BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION
                                          BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY)
+target_compile_options(
+    srscpp
+    PRIVATE -Werror
+            -Wall
+            -Wextra
+            -Wconversion
+            -pedantic)
