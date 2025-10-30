@@ -17,7 +17,7 @@ namespace srs::workflow
 namespace srs::connection
 {
     class FecSwitchSocket;
-    class Starter : public Base<>
+    class Starter : public Base
     {
       public:
         explicit Starter(const Info& info)
@@ -38,7 +38,7 @@ namespace srs::connection
         }
     };
 
-    class Stopper : public Base<>
+    class Stopper : public Base
     {
       public:
         /**
@@ -106,11 +106,11 @@ namespace srs::connection
      * @brief Connection for reading data stream from FEC devices
      *
      */
-    class DataReader : public Base<common::LARGE_READ_MSG_BUFFER_SIZE>
+    class DataReader : public Base
     {
       public:
         DataReader(const Info& info, workflow::Handler* processor)
-            : Base(info, "DataReader")
+            : Base(info, "DataReader", common::LARGE_READ_MSG_BUFFER_SIZE)
             , workflow_handler_{ processor }
         {
             set_timeout_seconds(1);

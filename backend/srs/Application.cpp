@@ -219,6 +219,8 @@ namespace srs
         auto fut = connection::SpecialSocket::create<connection::DataSocket>(
                        configurations_.fec_data_receive_port, io_context_, workflow_handler_.get())
                        .transform([this](auto socket) { data_socket_ = std::move(socket); });
+        spdlog::debug("data stream is using the buffer size: {}", configurations_.data_buffer_size);
+        data_socket_->set_buffer_size(configurations_.data_buffer_size);
 
         if (not fut.has_value())
         {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <srs/utils/CommonDefinitions.hpp>
 #include <string>
 #include <vector>
@@ -21,6 +22,11 @@ namespace srs
          * @brief The port number of the local network that is used for reading the data stream from FECs.
          */
         int fec_data_receive_port = common::FEC_DAQ_RECEIVE_PORT;
+
+        /**
+         * @brief The size of data buffer to store the incoming UDP frames.
+         */
+        std::size_t data_buffer_size = common::LARGE_READ_MSG_BUFFER_SIZE;
 
         /**
          * @brief Remote IP addresses of FECs.

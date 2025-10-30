@@ -3,6 +3,7 @@
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/UDPFormatters.hpp" // IWYU pragma: keep
 #include <algorithm>
 #include <boost/asio/as_tuple.hpp>
@@ -61,6 +62,7 @@ namespace srs::connection
         , strand_{ asio::make_strand(io_context.get_executor()) }
 
     {
+        read_msg_buffer_.resize(common::SMALL_READ_MSG_BUFFER_SIZE);
     }
 
     void FecSwitchSocket::register_send_action_imp(asio::awaitable<void> action,

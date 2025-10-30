@@ -42,6 +42,7 @@ namespace srs::workflow
         console_->set_formatter(std::move(console_format));
         console_->flush_on(spdlog::level::info);
         console_->set_level(spdlog::level::info);
+        const auto buffer_size = processor_->get_app().get_configuration().data_buffer_size;
         const auto& task_workflow = processor_->get_data_workflow();
         while (true)
         {
@@ -76,10 +77,10 @@ namespace srs::workflow
             current_drop_bytes_MBps_ = bytes_drop / time_duration_us;
             current_hits_ps_ = hits_processed / time_duration_us * 1e6;
             const auto frame_rate =
-                bytes_read / static_cast<double>(frame_counts_diff) / common::LARGE_READ_MSG_BUFFER_SIZE * 100.;
+                bytes_read / static_cast<double>(frame_counts_diff) / static_cast<double>(buffer_size) * 100.;
 
             set_speed_string();
-            console_->info("read|write|drop rate: {} ({:>2.0}%) | {} | {} {}. Press \"Ctrl-C\" to stop the program \r",
+            console_->info("read|write|drop rate: {} ({:>2.0f}%) | {} | {} {}. Press \"Ctrl-C\" to stop the program \r",
                            read_speed_string_,
                            frame_rate,
                            write_speed_string_,

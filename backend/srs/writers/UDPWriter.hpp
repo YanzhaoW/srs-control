@@ -20,7 +20,7 @@
 
 namespace srs::connection
 {
-    class UDPWriterConnection : public Base<>
+    class UDPWriterConnection : public Base
     {
       public:
         explicit UDPWriterConnection(const Info& info)

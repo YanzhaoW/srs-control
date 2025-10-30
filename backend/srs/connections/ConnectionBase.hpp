@@ -9,18 +9,16 @@
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include "srs/utils/UDPFormatters.hpp" // IWYU pragma: keep
-
+#include <algorithm>
 #include <atomic>
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/buffer.hpp>
 #include <boost/asio/deferred.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/cancellation_condition.hpp>
 #include <boost/asio/experimental/coro.hpp>
-#include <boost/asio/ip/basic_endpoint.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -32,7 +30,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <fmt/base.h>
-#include <fmt/ranges.h>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <optional>
@@ -46,46 +43,66 @@
 
 namespace srs::connection
 {
+    class FecSwitchSocket;
     // derive from enable_shared_from_this to make sure object still alive in the coroutine
-    template <int buffer_size = common::SMALL_READ_MSG_BUFFER_SIZE>
-    class Base : public std::enable_shared_from_this<Base<buffer_size>>
+    class Base : public std::enable_shared_from_this<Base>
     {
       public:
-        explicit Base(const Info& info, std::string name)
-            : local_port_number_{ info.local_port_number }
-            , name_{ std::move(name) }
-            , app_{ info.control }
-        {
-            spdlog::debug("Creating connection {} with buffer size: {}", name_, buffer_size);
-        }
+        explicit Base(const Info& info, std::string name, std::size_t buffer_size = common::SMALL_READ_MSG_BUFFER_SIZE);
 
         // possible overload from derived class
-        void read_data_handle(std::span<BufferElementType> read_data)
-        {
-            spdlog::trace(
-                "Connection {}: received {} bytes data: {:02x}", name_, read_data.size(), fmt::join(read_data, " "));
-            if (write_msg_response_buffer_ == read_data)
-            {
-                spdlog::trace("Connection {}: received data is correct!", name_);
-            }
-            else
-            {
-                spdlog::trace("Connection {}: received data is incorrect! Supposed response should be: {:02x}",
-                              name_,
-                              fmt::join(write_msg_response_buffer_.data(), " "));
-            }
-        }
+        void read_data_handle(std::span<BufferElementType> read_data);
 
         void close() { close_socket(); }
-        void on_fail() { spdlog::debug("default on_fail is called!"); }
+        static void on_fail() { spdlog::debug("default on_fail is called!"); }
 
-        void listen(this auto&& self, bool is_non_stop = false);
-        void communicate(this auto&& self, const std::vector<CommunicateEntryType>& data, uint16_t address);
+        void listen(this auto&& self, bool is_non_stop = false)
+        {
+            using asio::experimental::awaitable_operators::operator||;
+            if (self.socket_ == nullptr)
+            {
+                self.socket_ = self.new_shared_socket(self.local_port_number_);
+            }
 
+            co_spawn(self.app_->get_io_context(),
+                     signal_handling(common::get_shared_from_this(self)) ||
+                         listen_message(common::get_shared_from_this(self), is_non_stop),
+                     asio::detached);
+            spdlog::trace("Connection {}: spawned listen coroutine", self.name_);
+        }
+
+        void communicate(this auto&& self, const std::vector<CommunicateEntryType>& data, uint16_t address)
+        {
+            using asio::experimental::awaitable_operators::operator||;
+            if (self.socket_ == nullptr)
+            {
+                self.socket_ = self.new_shared_socket(self.local_port_number_);
+            }
+
+            auto listen_action = co_spawn(self.app_->get_io_context(),
+                                          signal_handling(common::get_shared_from_this(self)) ||
+                                              listen_message(common::get_shared_from_this(self), false),
+                                          asio::deferred);
+
+            self.encode_write_msg(self.write_msg_buffer_, self.counter_, data, address);
+            auto send_action =
+                co_spawn(self.app_->get_io_context(), send_message(self.shared_from_this()), asio::deferred);
+            auto group = asio::experimental::make_parallel_group(std::move(listen_action), std::move(send_action));
+            auto fut = group.async_wait(asio::experimental::wait_for_all(), asio::use_future);
+            spdlog::trace("Connection {}: start communication", self.name_);
+            fut.get();
+        }
+
+        // TODO: utilize listen function
         void communicate(this auto&& self,
                          const std::vector<CommunicateEntryType>& data,
                          uint16_t address,
-                         std::shared_ptr<FecSwitchSocket> socket);
+                         std::shared_ptr<FecSwitchSocket> socket)
+        {
+            self.encode_write_msg(self.write_msg_buffer_, self.counter_, data, address);
+            auto send_action = send_message(socket, self.shared_from_this());
+            socket->register_send_action(std::move(send_action), common::get_shared_from_this(self));
+        }
 
         auto send_continuous_message() -> asio::experimental::coro<std::size_t(std::optional<std::string_view>)>;
         auto check_response(std::span<char> response_msg) -> bool;
@@ -106,10 +123,7 @@ namespace srs::connection
 
         // Getters:
         auto get_executor() { return app_->get_io_context().get_executor(); }
-        [[nodiscard]] auto get_read_msg_buffer() const -> const ReadBufferType<buffer_size>&
-        {
-            return read_msg_buffer_;
-        }
+        [[nodiscard]] auto get_read_msg_buffer() const -> const auto& { return read_msg_buffer_; }
         [[nodiscard]] auto get_name() const -> const std::string& { return name_; }
         [[nodiscard]] auto get_app() -> App& { return *app_; }
         auto get_socket() -> const udp::socket& { return *socket_; }
@@ -125,7 +139,7 @@ namespace srs::connection
         void close_socket();
         void set_continuous(bool is_continuous = true) { is_continuous_ = is_continuous; }
         void set_connection_bad() { is_connection_ok_ = false; }
-        auto is_connection_ok() -> bool { return is_connection_ok_; }
+        auto is_connection_ok() const -> bool { return is_connection_ok_; }
 
       private:
         bool is_continuous_ = false;
@@ -141,13 +155,14 @@ namespace srs::connection
         process::SerializableMsgBuffer write_msg_response_buffer_;
         std::span<const char> continuous_send_msg_;
         std::unique_ptr<asio::signal_set> signal_set_;
-        ReadBufferType<buffer_size> read_msg_buffer_{};
+        std::vector<char> read_msg_buffer_;
+
         int timeout_seconds_ = common::DEFAULT_TIMEOUT_SECONDS;
 
-        void encode_write_msg(process::SerializableMsgBuffer& buffer,
-                              uint32_t counter,
-                              const std::vector<CommunicateEntryType>& data,
-                              uint16_t address);
+        static void encode_write_msg(process::SerializableMsgBuffer& buffer,
+                                     uint32_t counter,
+                                     const std::vector<CommunicateEntryType>& data,
+                                     uint16_t address);
         static auto signal_handling(SharedConnectionPtr auto connection) -> asio::awaitable<void>;
         static auto timer_countdown(auto* connection) -> asio::awaitable<void>;
         static auto listen_message(SharedConnectionPtr auto connection, bool is_non_stop = false)
@@ -155,68 +170,28 @@ namespace srs::connection
         static auto send_message(std::shared_ptr<Base> connection) -> asio::awaitable<void>;
         static auto send_message(std::shared_ptr<FecSwitchSocket> socket, std::shared_ptr<Base> connection)
             -> asio::awaitable<void>;
-        void reset_read_msg_buffer() { std::fill(read_msg_buffer_.begin(), read_msg_buffer_.end(), 0); }
+        void reset_read_msg_buffer() { std::ranges::fill(read_msg_buffer_, 0); }
     };
 
-    // Member function definitions:
-
-    // TODO: remove this
-    template <int buffer_size>
-    auto Base<buffer_size>::send_message(std::shared_ptr<Base<buffer_size>> connection) -> asio::awaitable<void>
+    auto Base::signal_handling(SharedConnectionPtr auto connection) -> asio::awaitable<void>
     {
-        spdlog::trace("Connection {}: Sending data ...", connection->get_name());
-        auto data_size = co_await connection->socket_->async_send_to(
-            asio::buffer(connection->write_msg_buffer_.data()), connection->remote_endpoint_, asio::use_awaitable);
-        spdlog::trace("Connection {}: {} bytes data sent with {:02x}",
-                      connection->get_name(),
-                      data_size,
-                      fmt::join(connection->write_msg_buffer_.data(), " "));
-    }
-
-    template <int buffer_size>
-    auto Base<buffer_size>::send_message(std::shared_ptr<FecSwitchSocket> socket,
-                                         std::shared_ptr<Base<buffer_size>> connection) -> asio::awaitable<void>
-    {
-        spdlog::debug("Connection {}: Sending data using external socket at time {} us...",
-                      connection->get_name(),
-                      socket->get_time_us());
-        auto data_size = co_await socket->get_socket().async_send_to(
-            asio::buffer(connection->write_msg_buffer_.data()), connection->remote_endpoint_, asio::use_awaitable);
-        spdlog::debug("Connection {}: {} bytes data sent to the remote endpoint {} at time {} us: \n\t{:02x}",
-                      connection->get_name(),
-                      data_size,
-                      connection->remote_endpoint_,
-                      socket->get_time_us(),
-                      fmt::join(connection->write_msg_buffer_.data(), " "));
-        co_return;
-    }
-
-    template <int buffer_size>
-    auto Base<buffer_size>::send_continuous_message()
-        -> asio::experimental::coro<std::size_t(std::optional<std::string_view>)>
-    {
-        auto send_msg = std::string_view{};
-        auto data_size = std::size_t{ 0 };
-        while (true)
+        connection->signal_set_ = std::make_unique<asio::signal_set>(co_await asio::this_coro::executor, SIGINT);
+        spdlog::trace("Connection {}: waiting for signals", connection->get_name());
+        auto [error, sig_num] = co_await connection->signal_set_->async_wait(asio::as_tuple(asio::use_awaitable));
+        if (error == asio::error::operation_aborted)
         {
-            data_size = (not send_msg.empty()) ? socket_->send_to(asio::buffer(send_msg), remote_endpoint_) : 0;
-            auto msg = co_yield data_size;
-
-            if (not msg.has_value())
-            {
-                close();
-                co_return;
-            }
-            else
-            {
-                send_msg = msg.value();
-            }
+            spdlog::trace("Connection {}: Signal ended with {}", connection->get_name(), error.message());
+        }
+        else
+        {
+            fmt::print("\n");
+            spdlog::trace(
+                "Connection {}: Signal ID {} is called with {:?}!", connection->get_name(), sig_num, error.message());
+            connection->close();
         }
     }
 
-    template <int buffer_size>
-    auto Base<buffer_size>::listen_message(SharedConnectionPtr auto connection, bool is_non_stop)
-        -> asio::awaitable<void>
+    auto Base::listen_message(SharedConnectionPtr auto connection, bool is_non_stop) -> asio::awaitable<void>
     {
         using asio::experimental::awaitable_operators::operator||;
 
@@ -270,134 +245,5 @@ namespace srs::connection
             }
         }
         connection->close();
-    }
-
-    template <int buffer_size>
-    auto Base<buffer_size>::signal_handling(SharedConnectionPtr auto connection) -> asio::awaitable<void>
-    {
-        connection->signal_set_ = std::make_unique<asio::signal_set>(co_await asio::this_coro::executor, SIGINT);
-        spdlog::trace("Connection {}: waiting for signals", connection->get_name());
-        auto [error, sig_num] = co_await connection->signal_set_->async_wait(asio::as_tuple(asio::use_awaitable));
-        if (error == asio::error::operation_aborted)
-        {
-            spdlog::trace("Connection {}: Signal ended with {}", connection->get_name(), error.message());
-        }
-        else
-        {
-            fmt::print("\n");
-            spdlog::trace(
-                "Connection {}: Signal ID {} is called with {:?}!", connection->get_name(), sig_num, error.message());
-            connection->close();
-        }
-    }
-
-    template <int buffer_size>
-    auto Base<buffer_size>::new_shared_socket(int port_number) -> std::unique_ptr<udp::socket>
-    {
-        auto socket = std::make_unique<udp::socket>(
-            app_->get_io_context(), udp::endpoint{ udp::v4(), static_cast<asio::ip::port_type>(port_number) });
-        spdlog::debug("Connection {}: Opening the socket from ip: {} with port: {}",
-                      name_,
-                      socket->local_endpoint().address().to_string(),
-                      socket->local_endpoint().port());
-        local_port_number_ = socket->local_endpoint().port();
-        return socket;
-    }
-
-    template <int buffer_size>
-    void Base<buffer_size>::encode_write_msg(process::SerializableMsgBuffer& buffer,
-                                             uint32_t counter,
-                                             const std::vector<CommunicateEntryType>& data,
-                                             uint16_t address)
-    {
-        buffer.serialize(counter,
-                         common::ZERO_UINT16_PADDING,
-                         address,
-                         common::WRITE_COMMAND_BITS,
-                         common::DEFAULT_TYPE_BITS,
-                         common::COMMAND_LENGTH_BITS);
-        buffer.serialize(data);
-    }
-
-    template <int buffer_size>
-    void Base<buffer_size>::listen(this auto&& self, bool is_non_stop)
-    {
-        using asio::experimental::awaitable_operators::operator||;
-        if (self.socket_ == nullptr)
-        {
-            self.socket_ = self.new_shared_socket(self.local_port_number_);
-        }
-
-        co_spawn(self.app_->get_io_context(),
-                 signal_handling(common::get_shared_from_this(self)) ||
-                     listen_message(common::get_shared_from_this(self), is_non_stop),
-                 asio::detached);
-        spdlog::trace("Connection {}: spawned listen coroutine", self.name_);
-    }
-
-    template <int buffer_size>
-    void Base<buffer_size>::communicate(this auto&& self,
-                                        const std::vector<CommunicateEntryType>& data,
-                                        uint16_t address,
-                                        std::shared_ptr<FecSwitchSocket> socket)
-    {
-        self.encode_write_msg(self.write_msg_buffer_, self.counter_, data, address);
-        auto send_action = send_message(socket, self.shared_from_this());
-        socket->register_send_action(std::move(send_action), common::get_shared_from_this(self));
-    }
-
-    // TODO: utilize listen function
-    template <int buffer_size>
-    void Base<buffer_size>::communicate(this auto&& self,
-                                        const std::vector<CommunicateEntryType>& data,
-                                        uint16_t address)
-    {
-        using asio::experimental::awaitable_operators::operator||;
-        if (self.socket_ == nullptr)
-        {
-            self.socket_ = self.new_shared_socket(self.local_port_number_);
-        }
-
-        auto listen_action = co_spawn(self.app_->get_io_context(),
-                                      signal_handling(common::get_shared_from_this(self)) ||
-                                          listen_message(common::get_shared_from_this(self), false),
-                                      asio::deferred);
-
-        self.encode_write_msg(self.write_msg_buffer_, self.counter_, data, address);
-        auto send_action = co_spawn(self.app_->get_io_context(), send_message(self.shared_from_this()), asio::deferred);
-        auto group = asio::experimental::make_parallel_group(std::move(listen_action), std::move(send_action));
-        auto fut = group.async_wait(asio::experimental::wait_for_all(), asio::use_future);
-        spdlog::trace("Connection {}: start communication", self.name_);
-        fut.get();
-    }
-
-    template <int buffer_size>
-    auto Base<buffer_size>::check_response(std::span<char> response_msg) -> bool
-    {
-        if (write_msg_response_buffer_.empty())
-        {
-            spdlog::trace("write_msg_response_buffer is empty!");
-            return true;
-        }
-        return write_msg_response_buffer_ == response_msg;
-    }
-
-    template <int buffer_size>
-    void Base<buffer_size>::close_socket()
-    {
-        if (not is_socket_closed_.load())
-        {
-            is_socket_closed_.store(true);
-            spdlog::trace("Connection {}: Closing the socket ...", name_);
-            // socket_->cancel();
-            socket_->close();
-            if (signal_set_ != nullptr)
-            {
-                spdlog::trace("Connection {}: cancelling signal ...", name_);
-                signal_set_->cancel();
-                spdlog::trace("Connection {}: signal is cancelled.", name_);
-            }
-            spdlog::trace("Connection {}: Socket is closed and cancelled.", name_);
-        }
     }
 } // namespace srs::connection
