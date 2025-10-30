@@ -132,6 +132,7 @@ namespace srs::connection
             }
         }
         // TODO: close the socket here
+        spdlog::debug("Coroutine for the local socket with port {} has existed.", socket->get_port());
         co_return;
     }
 

@@ -35,6 +35,7 @@ namespace srs::workflow
         , struct_proto_converter_{ thread_pool }
         , proto_serializer_{ thread_pool }
         , proto_delim_serializer_{ thread_pool }
+        , io_context_{ thread_pool.get_executor() }
         , writers_{ data_processor }
     {
         coro_ = generate_starting_coro(thread_pool.get_executor());
@@ -55,6 +56,7 @@ namespace srs::workflow
                                  .value_or(0);
                 }
             }
+            spdlog::debug("Workflow coroutine has existed");
         }(thread_pool.get_executor());
         common::coro_sync_start(coro_chain_, false, asio::use_awaitable);
     }
@@ -81,6 +83,10 @@ namespace srs::workflow
             {
                 throw std::runtime_error(fmt::format("{}", res.error()));
             }
+        }
+        else
+        {
+            total_drop_data_bytes_ += binary_data_.data().size();
         }
         return pop_res;
     }
@@ -148,7 +154,7 @@ namespace srs::workflow
     auto TaskDiagram::run_workflow(bool is_stopped) -> std::expected<void, std::string_view>
     {
 
-        asio::co_spawn(*io_context_, coro_chain_.async_resume(is_stopped, asio::use_awaitable), asio::use_future).get();
+        asio::co_spawn(io_context_, coro_chain_.async_resume(is_stopped, asio::use_awaitable), asio::use_future).get();
         return {};
     }
 

@@ -50,6 +50,7 @@ namespace srs::workflow
         auto get_data() -> std::string_view;
 
         [[nodiscard]] auto get_data_bytes() const -> uint64_t { return total_read_data_bytes_.load(); }
+        [[nodiscard]] auto get_drop_data_bytes() const -> uint64_t { return total_drop_data_bytes_.load(); }
 
         auto get_struct_data() -> const auto& { return struct_deserializer_.data(); }
 
@@ -62,8 +63,9 @@ namespace srs::workflow
         process::ProtoDelimSerializer proto_delim_serializer_;
 
         std::atomic<uint64_t> total_read_data_bytes_ = 0;
+        std::atomic<uint64_t> total_drop_data_bytes_ = 0;
 
-        asio::any_io_executor* io_context_;
+        asio::any_io_executor io_context_ = nullptr;
         StartingCoroType coro_;
         asio::experimental::coro<std::size_t(bool)> coro_chain_;
 
