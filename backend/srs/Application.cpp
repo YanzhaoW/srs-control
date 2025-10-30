@@ -106,17 +106,6 @@ namespace srs
         {
             spdlog::info("FECs were not switched on. Skipping switching off process.");
         }
-
-        // if ((not is_switch_off_disabled_) and status_.is_acq_on.load())
-        // {
-        //     spdlog::debug("Turning srs system off ...");
-        //     switch_off();
-        // }
-        // else
-        // {
-        //     set_status_acq_off(true);
-        // }
-        // set_status_acq_on(false);
     }
 
     void App::init()
@@ -158,18 +147,6 @@ namespace srs
         {
             spdlog::warn("TIMEOUT during waiting for the closing of input data stream.");
         }
-
-        // auto res = status_.wait_for_status(
-        //     [](const auto& status)
-        //     {
-        //         spdlog::debug("Waiting for reading status false");
-        //         return not status.is_reading.load();
-        //     });
-
-        // if (not res)
-        // {
-        //     spdlog::critical("TIMEOUT during waiting for status is_reading false.");
-        // }
     }
 
     // This will be called by Ctrl-C interrupt
@@ -218,8 +195,9 @@ namespace srs
                         fec_connection->set_remote_endpoint(remote_endpoint);
                         fec_connection->send_message_from(socket);
                     }
+                    auto res_fut = socket->cancel_listen_after(io_context_);
                     socket->launch_actions();
-                    return socket->cancel_listen_after(io_context_);
+                    return res_fut;
                 });
     }
 
@@ -233,39 +211,16 @@ namespace srs
     {
         spdlog::info("Switching off FEC devices ...");
         switch_off_future_ = switch_FECs<connection::Stopper>();
-
-        // const auto waiting_time = std::chrono::seconds{ 4 };
-        // auto is_ok = wait_for_status(
-        //     [](const Status& status)
-        //     {
-        //         spdlog::debug("Waiting for acq_on status true ...");
-        //         return status.is_acq_on.load();
-        //     },
-        //     waiting_time);
-
-        // if (not is_ok)
-        // {
-        //     throw std::runtime_error("TIMEOUT during waiting for status is_acq_on true.");
-        // }
-        // auto connection_info = connection::Info{ this };
-        // connection_info.local_port_number = configurations_.fec_control_local_port;
-
-        // for (const auto& remote_endpoint : remote_fec_endpoints_)
-        // {
-        //     auto fec_connection = std::make_shared<connection::Stopper>(connection_info);
-        //     fec_connection->set_remote_endpoint(remote_endpoint);
-        //     fec_connection->acq_off();
-        // }
-        // spdlog::info("SRS system is turned off");
-        // set_status_acq_off();
     }
 
-    void App::read_data(bool is_non_stop)
+    void App::read_data(bool /*is_non_stop*/)
     {
         spdlog::info("Starting input data stream ...");
         auto fut = connection::SpecialSocket::create<connection::DataSocket>(
                        configurations_.fec_data_receive_port, io_context_, workflow_handler_.get())
                        .transform([this](auto socket) { data_socket_ = std::move(socket); });
+        spdlog::debug("data stream is using the buffer size: {}", configurations_.data_buffer_size);
+        data_socket_->set_buffer_size(configurations_.data_buffer_size);
 
         if (not fut.has_value())
         {
@@ -273,11 +228,6 @@ namespace srs
                              "{} is not available.",
                              configurations_.fec_data_receive_port);
         }
-
-        // auto connection_info = connection::Info{ this };
-        // connection_info.local_port_number = configurations_.fec_data_receive_port;
-        // data_reader_ = std::make_shared<connection::DataReader>(connection_info, workflow_handler_.get());
-        // data_reader_->start(is_non_stop);
     }
 
     void App::start_workflow(bool is_blocking)

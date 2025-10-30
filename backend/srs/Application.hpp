@@ -211,6 +211,7 @@ namespace srs
         auto get_data_reader_socket() -> connection::DataSocket* { return data_socket_.get(); }
         [[nodiscard]] auto get_error_string() const -> const std::string& { return error_string_; }
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
+        [[nodiscard]] auto get_configuration() const -> const auto& { return configurations_; }
 
         // called by ExitHelper
         void action_after_destructor();

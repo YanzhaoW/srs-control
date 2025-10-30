@@ -74,6 +74,7 @@ namespace srs::common
     consteval auto get_enum_names()
     {
         auto names = magic_enum::enum_names<srs::common::ActionMode>();
+        return names;
     }
 
     auto create_coro_future(auto& coro, auto&& pre_fut)
