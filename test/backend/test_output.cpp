@@ -1,13 +1,18 @@
 #include "srs/SRSWorld.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include <CLI/CLI.hpp>
+#include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <exception>
+#include <filesystem>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <gtest/gtest.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -20,10 +25,28 @@ using srs::common::internal::get_enum_dashed_names;
 constexpr auto SPDLOG_LOG_NAMES = get_enum_dashed_names<spdlog::level::level_enum>();
 const auto spdlog_map = get_enum_dash_map<spdlog::level::level_enum>();
 
+namespace
+{
+    auto get_file_size(std::string_view filename) -> std::size_t
+    {
+        namespace fs = std::filesystem;
+        auto file_path = fs::path{ filename };
+        if (fs::exists(file_path))
+        {
+            return std::filesystem::file_size(file_path);
+        }
+        spdlog::error("File with the name {:?} doesn't exist!", filename);
+        return 0;
+    }
+
+} // namespace
+
 auto main(int argc, char** argv) -> int
 {
     auto cli_args = CLI::App{ "SRS integration test" };
 
+    auto output_filenames = std::vector<std::string>{ "" };
+    const auto input_filename = std::string{ "test_data.bin" };
     try
     {
         argv = cli_args.ensure_utf8(argv);
@@ -31,7 +54,6 @@ auto main(int argc, char** argv) -> int
         auto is_continuous_output = false;
         auto spdlog_level = spdlog::level::info;
         auto sleep_time = 5;
-        auto output_filenames = std::vector<std::string>{ "" };
 
         cli_args
             .add_option("-l, --log-level",
@@ -85,5 +107,25 @@ auto main(int argc, char** argv) -> int
     {
         spdlog::critical("exception occurred: {}", ex.what());
     }
+
+    if (not std::ranges::all_of(output_filenames,
+                                [&input_filename](std::string_view name) -> bool
+                                {
+                                    if (name == "")
+                                    {
+                                        return true;
+                                    }
+                                    if (name.ends_with(".bin"))
+                                    {
+                                        return get_file_size(name) == get_file_size(input_filename);
+                                    }
+                                    return get_file_size(name) != 0;
+                                }))
+    {
+        spdlog::error("Output files don't have correct sizes!");
+        return 1;
+    }
+    spdlog::info("All output files have correct sizes!");
+
     return 0;
 }

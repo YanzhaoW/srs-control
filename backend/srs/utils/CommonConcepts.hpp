@@ -37,8 +37,6 @@ namespace srs
     concept DataConverter = requires(T converter) {
         typename T::InputType;
         typename T::OutputType;
-        typename T::InputFuture;
-        typename T::OutputFuture;
         typename T::CoroType;
         { converter.get_executor() } -> std::convertible_to<asio::any_io_executor>;
         { converter.generate_coro() } -> std::convertible_to<typename T::CoroType>;

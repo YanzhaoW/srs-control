@@ -1,9 +1,7 @@
 #include "DataWriter.hpp"
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include <algorithm>
 #include <boost/asio/ip/address.hpp>
-
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -75,10 +73,11 @@ namespace srs::writer
 
     auto Manager::is_convert_required(process::DataConvertOptions dependee) const -> bool
     {
-        return std::ranges::any_of(
-            convert_count_map_,
-            [dependee](const auto& option_count) -> bool
-            { return option_count.second > 0 && convert_option_has_dependency(dependee, option_count.first); });
+        auto is_required = false;
+        do_for_each_writer(
+            [&is_required, dependee](std::string_view, auto& writer)
+            { is_required |= convert_option_has_dependency(dependee, writer.get_required_conversion()); });
+        return is_required;
     }
 
     auto Manager::generate_conversion_req_map() const -> std::map<process::DataConvertOptions, bool>
@@ -94,9 +93,11 @@ namespace srs::writer
 
     auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool
     {
-        auto& app = workflow_handler_->get_app();
+        // auto& app = workflow_handler_->get_app();
         return binary_files_
-            .try_emplace(filename, std::make_unique<BinaryFile>(app.get_io_context(), filename, deser_mode))
+            .try_emplace(filename,
+                         std::make_unique<BinaryFile>(
+                             filename, deser_mode, workflow_handler_->get_data_workflow().get_n_lines()))
             .second;
     }
 
@@ -106,7 +107,12 @@ namespace srs::writer
         auto endpoint = convert_str_to_endpoint(app.get_io_context(), filename);
         if (endpoint.has_value())
         {
-            return udp_files_.try_emplace(filename, std::make_unique<UDP>(app, std::move(endpoint.value()), deser_mode))
+            return udp_files_
+                .try_emplace(filename,
+                             std::make_unique<UDP>(app.get_io_context(),
+                                                   std::move(endpoint.value()),
+                                                   workflow_handler_->get_data_workflow().get_n_lines(),
+                                                   deser_mode))
                 .second;
         }
         return false;
@@ -127,8 +133,11 @@ namespace srs::writer
 
     auto Manager::add_json_file(const std::string& filename) -> bool
     {
-        auto& app = workflow_handler_->get_app();
-        return json_files_.try_emplace(filename, std::make_unique<Json>(app.get_io_context(), filename)).second;
+        // auto& app = workflow_handler_->get_app();
+        return json_files_
+            .try_emplace(filename,
+                         std::make_unique<Json>(filename, workflow_handler_->get_data_workflow().get_n_lines()))
+            .second;
     }
 
     void Manager::set_output_filenames(const std::vector<std::string>& filenames)
@@ -172,7 +181,7 @@ namespace srs::writer
             if (is_ok)
             {
                 spdlog::info("Add the output source {:?}", filename);
-                ++(convert_count_map_.at(convert_mode));
+                // ++(convert_count_map_.at(convert_mode));
             }
             else
             {

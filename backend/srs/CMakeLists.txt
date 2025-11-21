@@ -29,6 +29,7 @@ target_link_libraries(
             $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
             $<BUILD_LOCAL_INTERFACE:Boost::thread>
             $<BUILD_LOCAL_INTERFACE:fmt::fmt>
+            $<BUILD_LOCAL_INTERFACE:Taskflow::Taskflow>
             $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>
             $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>)
 

@@ -1,4 +1,5 @@
-target_sources(srscpp PRIVATE StructDeserializer.cpp)
+target_sources(srscpp PRIVATE StructDeserializer.cpp RawToDelimRawConveter.cpp
+                              StructToProtoConverter.cpp)
 
 target_sources(
     srscpp

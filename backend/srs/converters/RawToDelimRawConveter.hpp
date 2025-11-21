@@ -1,66 +1,57 @@
 #pragma once
 
+#include "srs/converters/DataConvertOptions.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include "srs/utils/CommonFunctions.hpp"
 #include <array>
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <optional>
+#include <cassert>
+#include <cstddef>
 #include <spdlog/spdlog.h>
+#include <srs/converters/DataConverterBase.hpp>
+#include <string>
 #include <string_view>
 #include <vector>
-#include <zpp_bits.h>
 
-#include <srs/converters/DataConverterBase.hpp>
+namespace srs::workflow
+{
+    class TaskDiagram;
+}
 
 namespace srs::process
 {
-    class Raw2DelimRawConverter : public DataConverterBase<std::string_view, std::string_view>
+    class Raw2DelimRawConverter
+        : public ConverterTask<DataConvertOptions::raw_frame, std::string_view, std::string_view>
     {
       public:
-        explicit Raw2DelimRawConverter(asio::thread_pool& thread_pool)
-            : DataConverterBase{ thread_pool }
+        explicit Raw2DelimRawConverter(size_t n_lines = 1)
+            : ConverterTask{ "RawDelimiter", raw, n_lines }
         {
+            output_data_.resize(n_lines);
         }
+
+        Raw2DelimRawConverter(const Raw2DelimRawConverter&) = default;
+        Raw2DelimRawConverter(Raw2DelimRawConverter&&) = delete;
+        Raw2DelimRawConverter& operator=(const Raw2DelimRawConverter&) = default;
+        Raw2DelimRawConverter& operator=(Raw2DelimRawConverter&&) = delete;
+        ~Raw2DelimRawConverter() { spdlog::debug("Taskflow: raw data delimiter is finished!"); }
 
         using SizeType = common::RawDelimSizeType;
-        static constexpr auto ConverterOption = std::array{ raw_frame };
 
-        [[nodiscard]] auto data() const -> OutputType
+        [[nodiscard]] auto get_data_view(std::size_t line_num) const -> OutputType
         {
-            return std::string_view{ output_data_.data(), output_data_.size() };
+            assert(line_number < get_line_num());
+            return std::string_view{ output_data_[line_num].data(), output_data_[line_num].size() };
         }
 
-        auto generate_coro() -> CoroType
+        void run_task(const auto& prev_data_converter, std::size_t line_number)
         {
-            spdlog::trace("Process: Starting Raw2DelimRaw converter.");
-            auto binary_data = co_yield OutputType{};
-
-            while (true)
-            {
-                if (not binary_data.has_value())
-                {
-                    break;
-                }
-                output_data_.clear();
-                convert(binary_data.value(), output_data_);
-
-                binary_data = co_yield std::string_view{ output_data_.data(), output_data_.size() };
-            }
-            spdlog::debug("Process: Shutting down Raw2DelimRaw converter.");
-            co_return;
+            assert(line_number < get_line_num());
+            auto& output_data = output_data_[line_number];
+            output_data.clear();
+            convert(prev_data_converter.get_data_view(line_number), output_data);
         }
 
       private:
-        std::vector<char> output_data_;
-
-        static void convert(std::string_view input, std::vector<char>& output)
-        {
-            auto size = static_cast<SizeType>(input.size());
-            output.reserve(size + sizeof(size));
-            auto deserialize_to = zpp::bits::out{ output, zpp::bits::append{}, zpp::bits::endian::big{} };
-            deserialize_to(size, zpp::bits::unsized(input)).or_throw();
-        }
+        std::vector<std::vector<char>> output_data_;
+        static void convert(std::string_view input, std::vector<char>& output);
     };
 } // namespace srs::process

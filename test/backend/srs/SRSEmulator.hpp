@@ -54,9 +54,6 @@ namespace srs::test
         void wait_for_connection();
         void wait_for_data_sender();
 
-        // Getters
-        auto get_remote_endpoint() -> const auto& { return udp_writer_.get_remote_endpoint(); }
-
       private:
         using IOContextType = asio::thread_pool;
 
@@ -67,7 +64,6 @@ namespace srs::test
         std::string source_filename_;
         Config config_;
         reader::RawFrame frame_reader_;
-        writer::UDP udp_writer_;
         asio::ip::udp::socket udp_socket_;
         std::shared_ptr<asio::system_timer> data_sender_status_ = std::make_shared<asio::system_timer>(io_context_);
         asio::steady_timer data_sending_control_{ io_context_ };

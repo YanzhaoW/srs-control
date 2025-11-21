@@ -89,10 +89,10 @@ namespace srs::workflow
         // getters:
         [[nodiscard]] auto get_read_data_bytes() const -> uint64_t { return total_read_data_bytes_.load(); }
         [[nodiscard]] auto get_processed_hit_number() const -> uint64_t { return total_processed_hit_numer_.load(); }
+        [[nodiscard]] auto get_drop_data_bytes() const -> uint64_t { return total_drop_data_bytes_.load(); }
         [[nodiscard]] auto get_frame_counts() const -> uint64_t { return total_frame_counts_.load(); }
-        // [[nodiscard]] auto get_export_data() -> auto& { return struct_serializer.get_output_data(); }
         [[nodiscard]] auto get_data_monitor() const -> const auto& { return monitor_; }
-        [[nodiscard]] auto get_data_workflow() const -> const auto& { return data_processes_; }
+        [[nodiscard]] auto get_data_workflow() const -> const TaskDiagram& { return task_diagram_; }
         [[nodiscard]] auto get_app() -> auto& { return *app_; }
 
         // setters:
@@ -101,7 +101,7 @@ namespace srs::workflow
         void set_monitor_display_period(std::chrono::milliseconds duration) { monitor_.set_display_period(duration); }
         void set_output_filenames(const std::vector<std::string>& filenames)
         {
-            data_processes_.set_output_filenames(filenames);
+            task_diagram_.set_output_filenames(filenames);
         }
 
         void stop();
@@ -113,6 +113,7 @@ namespace srs::workflow
         std::size_t received_data_size_{};
         common::DataPrintMode print_mode_ = common::DataPrintMode::print_speed;
         std::atomic<uint64_t> total_read_data_bytes_ = 0;
+        std::atomic<uint64_t> total_drop_data_bytes_ = 0;
         std::atomic<uint64_t> total_processed_hit_numer_ = 0;
         std::atomic<uint64_t> total_frame_counts_ = 0;
         gsl::not_null<App*> app_;
@@ -120,7 +121,7 @@ namespace srs::workflow
 
         // Data buffer
         tbb::concurrent_bounded_queue<process::SerializableMsgBuffer> data_queue_;
-        TaskDiagram data_processes_;
+        TaskDiagram task_diagram_;
 
         // should run on a different task
         void analysis_loop(bool is_blocking);

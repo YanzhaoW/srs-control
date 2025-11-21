@@ -4,7 +4,6 @@
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/workflow/TaskDiagram.hpp"
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -53,7 +52,7 @@ namespace srs::workflow
             auto read_total_hits_count = processor_->get_processed_hit_number();
             auto frame_counts = processor_->get_frame_counts();
             auto write_total_bytes_count = task_workflow.get_data_bytes();
-            auto drop_total_bytes_count = task_workflow.get_drop_data_bytes();
+            auto drop_total_bytes_count = processor_->get_drop_data_bytes();
 
             auto time_now = std::chrono::steady_clock::now();
             auto time_duration = std::chrono::duration_cast<std::chrono::microseconds>(time_now - last_print_time_);
@@ -118,7 +117,7 @@ namespace srs::workflow
     Handler::Handler(App* control)
         : app_{ control }
         , monitor_{ this, &(control->get_io_context()) }
-        , data_processes_{ this, control->get_io_context() }
+        , task_diagram_{ this, control->get_io_context() }
     {
         data_queue_.set_capacity(common::DEFAULT_DATA_QUEUE_SIZE);
     }
@@ -126,7 +125,6 @@ namespace srs::workflow
     void Handler::start(bool is_blocking)
     {
         is_stopped_.store(false);
-        data_processes_.init();
         spdlog::debug("Analysis workflow: main loop starts.");
         if (print_mode_ == print_speed)
         {
@@ -148,96 +146,106 @@ namespace srs::workflow
     {
         // CAS operation to guarantee the thread safety
         auto expected = false;
-        spdlog::debug("Analysis workflow: trying to stop ... ");
+        spdlog::trace("Analysis workflow: trying to stop ... ");
         spdlog::trace("Analysis workflow: current is_stopped status: {}", is_stopped_.load());
         if (is_stopped_.compare_exchange_strong(expected, true))
         {
-            spdlog::trace("Analysis workflow: Try to stop data monitor");
+            spdlog::trace("------->> Analysis workflow shutdown: Try to stop data monitor");
             monitor_.stop();
+
+            while (not task_diagram_.is_taskflow_abort_ready())
+            {
+            }
             data_queue_.abort();
-            spdlog::trace("Analysis workflow: successfully stopped");
+
+            spdlog::trace("<<------- Analysis workflow shutdown: successfully stopped");
         }
     }
 
     void Handler::read_data_once(std::span<BufferElementType> read_data)
     {
-        total_read_data_bytes_ += read_data.size();
+        const auto data_size = read_data.size();
+        total_read_data_bytes_ += data_size;
         ++total_frame_counts_;
         auto is_success = data_queue_.try_emplace(read_data);
         if (not is_success)
         {
+            total_drop_data_bytes_ += data_size;
             spdlog::trace("Analysis workflow: Data queue is full and message is lost. Try to increase its capacity!");
         }
     }
 
-    void Handler::analysis_loop(bool is_blocking)
+    void Handler::analysis_loop([[maybe_unused]] bool is_blocking)
     {
         try
         {
             spdlog::trace("Analysis workflow: entering workflow loop");
             // TODO: Use direct binary data
 
-            while (true)
-            {
-                if (is_stopped_.load())
-                {
-                    break;
-                }
-                [[maybe_unused]] auto analysis_result = data_processes_.analysis_one(data_queue_, is_blocking);
-                update_monitor();
-                print_data();
+            task_diagram_.construct_taskflow_and_run(data_queue_, is_stopped_);
+            // while (true)
+            // {
+            //     // if (is_stopped_.load())
+            //     // {
+            //     //     break;
+            //     // }
+            //     // [[maybe_unused]] auto analysis_result = task_diagram_.analysis_one(data_queue_);
+            //     // update_monitor();
+            //     // print_data();
 
-                // auto is_reading = app_->get_status().is_reading.load();
-                // if (not(is_reading or analysis_result))
-                // {
-                //     break;
-                // }
-            }
+            //     // auto is_reading = app_->get_status().is_reading.load();
+            //     // if (not(is_reading or analysis_result))
+            //     // {
+            //     //     break;
+            //     // }
+            // }
         }
         catch (tbb::user_abort& ex)
         {
             spdlog::trace("Analysis workflow: {}", ex.what());
         }
-        catch (std::exception& ex)
-        {
-            spdlog::critical("Exception occurred: {}", ex.what());
-            app_->set_error_string(ex.what());
-            // app_->exit();
-        }
+        // catch (std::exception& ex)
+        // {
+        //     spdlog::critical("Exception occurred: {}", ex.what());
+        //     app_->set_error_string(ex.what());
+        //     throw ex;
+        //     // app_->exit();
+        // }
         spdlog::debug("Analysis workflow: Workflow loop is done.\n");
     }
 
     void Handler::update_monitor()
     {
-        const auto& struct_data = data_processes_.get_struct_data();
+        // const auto& struct_data = data_processes_.get_struct_data();
 
-        total_processed_hit_numer_ += struct_data.hit_data.size();
+        // total_processed_hit_numer_ += struct_data.hit_data.size();
         // monitor_.update(struct_data);
     }
 
     void Handler::print_data()
     {
-        const auto& export_data = data_processes_.get_struct_data();
-        const auto& raw_data = data_processes_.get_data<TaskDiagram::raw>();
-        if (print_mode_ == print_raw)
-        {
-            spdlog::info("data: {:x}", fmt::join(raw_data, ""));
-        }
-        if (print_mode_ == print_header or print_mode_ == print_raw or print_mode_ == print_all)
-        {
-            spdlog::info("{}. Data size: {}", export_data.header, received_data_size_);
-        }
+        // using enum process::DataConvertOptions;
+        // const auto& export_data = data_processes_.get_struct_data();
+        // const auto& raw_data = data_processes_.get_data<raw>();
+        // if (print_mode_ == print_raw)
+        // {
+        //     spdlog::info("data: {:x}", fmt::join(raw_data, ""));
+        // }
+        // if (print_mode_ == print_header or print_mode_ == print_raw or print_mode_ == print_all)
+        // {
+        //     spdlog::info("{}. Data size: {}", export_data.header, received_data_size_);
+        // }
 
-        if (print_mode_ == print_all)
-        {
-            for (const auto& hit_data : export_data.hit_data)
-            {
-                spdlog::info("{}", hit_data);
-            }
-            for (const auto& marker_data : export_data.marker_data)
-            {
-                spdlog::info("{}", marker_data);
-            }
-        }
+        // if (print_mode_ == print_all)
+        // {
+        //     for (const auto& hit_data : export_data.hit_data)
+        //     {
+        //         spdlog::info("{}", hit_data);
+        //     }
+        //     for (const auto& marker_data : export_data.marker_data)
+        //     {
+        //         spdlog::info("{}", marker_data);
+        //     }
+        // }
     }
 } // namespace srs::workflow

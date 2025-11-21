@@ -1,8 +1,16 @@
 #pragma once
 
+#include "srs/converters/DataConvertOptions.hpp"
+#include "srs/converters/ProtoSerializerBase.hpp"
+#include "srs/data/message.pb.h"
+#include "srs/utils/CommonDefinitions.hpp"
+#include <array>
+#include <cstddef>
 #include <google/protobuf/io/gzip_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/util/delimited_message_util.h>
-#include <srs/converters/ProtoSerializerBase.hpp>
+#include <string>
+#include <string_view>
 
 namespace srs::process
 {
@@ -28,13 +36,18 @@ namespace srs::process
         return 0;
     };
 
-    class ProtoDelimSerializer : public ProtoSerializerBase<decltype(protobuf_delim_deserializer_converter)>
+    class ProtoDelimSerializer
+        : public ProtoSerializerBase<decltype(protobuf_delim_deserializer_converter), DataConvertOptions::proto_frame>
     {
       public:
-        explicit ProtoDelimSerializer(asio::thread_pool& thread_pool)
-            : ProtoSerializerBase{ thread_pool, "ProtoDelimSerializer", protobuf_delim_deserializer_converter }
+        explicit ProtoDelimSerializer(std::size_t n_lines)
+            : ProtoSerializerBase{ "ProtoDelimSerializer", protobuf_delim_deserializer_converter, n_lines }
         {
         }
-        static constexpr auto ConverterOption = std::array{ proto_frame };
+        static constexpr auto ConverterOptions = std::array{ proto_frame };
+        static constexpr auto RequiredConverterOptions = std::array{ structure_to_proto };
+        static constexpr auto name_ = std::string_view{ "Struct deserializer(delim)" };
+        static constexpr auto get_name() -> std::string_view { return name_; };
+        static auto get_name_str() -> std::string { return std::string{ name_ }; };
     };
-} // namespace srs
+} // namespace srs::process

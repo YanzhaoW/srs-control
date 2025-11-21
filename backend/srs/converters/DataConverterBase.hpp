@@ -1,57 +1,65 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/utils/CommonAlias.hpp"
-#include "srs/utils/CommonFunctions.hpp"
-#include "srs/writers/DataWriter.hpp"
-#include <algorithm>
+#include "srs/writers/DataWriterOptions.hpp"
 #include <boost/asio/experimental/coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/thread/future.hpp>
+#include <cstddef>
 #include <fmt/ranges.h>
 #include <gsl/gsl-lite.hpp>
-#include <optional>
-#include <type_traits>
+#include <string>
+#include <string_view>
 
 namespace srs::process
 {
+
     template <typename Input, typename Output>
-    class DataConverterBase
+    class BaseTask
     {
       public:
         using InputType = Input;
         using OutputType = Output;
-        using InputFuture = boost::shared_future<std::optional<InputType>>;
-        using OutputFuture = boost::shared_future<std::optional<OutputType>>;
-        using CoroType = asio::experimental::coro<OutputType(std::optional<InputType>)>;
 
         using enum DataConvertOptions;
 
-        explicit DataConverterBase(auto coro)
-            : coro_(std::move(coro))
-        {
-            common::coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
-        }
-
-        explicit DataConverterBase(io_context_type& io_context)
-            : io_context_{ &io_context }
+        explicit BaseTask(std::string_view name, DataConvertOptions prev_convert, std::size_t n_lines = 1)
+            : previous_conversion_{ prev_convert }
+            , name_{ name }
+            , n_lines_{ n_lines }
         {
         }
 
-        auto extract_coro() -> CoroType { return std::move(coro_); }
-
-        auto create_future(this auto&& self, InputFuture& pre_fut, writer::Manager& writers) -> OutputFuture
-        {
-            constexpr auto converter_options = std::remove_cvref_t<decltype(self)>::ConverterOption;
-            auto is_needed = std::ranges::any_of(
-                converter_options, [&writers](auto option) { return writers.is_convert_required(option); });
-            return is_needed ? common::create_coro_future(self.coro_, pre_fut) : OutputFuture{};
-        }
-        auto get_executor() const -> auto { return io_context_->get_executor(); }
+        [[nodiscard]] auto get_n_lines() const -> int { return n_lines_; }
+        [[nodiscard]] auto get_required_conversion() const -> DataConvertOptions { return previous_conversion_; }
+        [[nodiscard]] auto get_name() const -> std::string_view { return name_; };
+        [[nodiscard]] auto get_name_str() const -> std::string { return std::string{ name_ }; };
 
       private:
-        // gsl::not_null<io_context_type*> io_context_;
-        io_context_type* io_context_ = nullptr;
-        CoroType coro_;
+        process::DataConvertOptions previous_conversion_;
+        std::string name_ = "empty";
+        std::size_t n_lines_ = 1;
+    };
+
+    template <DataConvertOptions Conversion, typename Input, typename Output>
+    class ConverterTask : public BaseTask<Input, Output>
+    {
+      public:
+        constexpr static auto converter_type = Conversion;
+        explicit ConverterTask(std::string_view name, DataConvertOptions prev_convert, std::size_t n_lines = 1)
+            : BaseTask<Input, Output>{ name, prev_convert, n_lines }
+        {
+        }
+    };
+
+    template <DataWriterOption writer, typename Input, typename Output>
+    class WriterTask : public BaseTask<Input, Output>
+    {
+      public:
+        constexpr static auto writer_type = writer;
+        explicit WriterTask(std::string_view name, DataConvertOptions prev_convert, std::size_t n_lines = 1)
+            : BaseTask<Input, Output>{ name, prev_convert, n_lines }
+        {
+        }
     };
 } // namespace srs::process

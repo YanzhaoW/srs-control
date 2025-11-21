@@ -17,17 +17,21 @@ target_link_libraries(ctest_output PRIVATE test_utility CLI11::CLI11)
 # CTest
 
 add_test(NAME IntegrationTestEmptyOutput COMMAND ctest_output -l trace)
-set_property(TEST IntegrationTestEmptyOutput PROPERTY PASS_REGULAR_EXPRESSION
-                                                      "Application has exited.")
-set_property(
-    TEST IntegrationTestEmptyOutput
-    PROPERTY FAIL_REGULAR_EXPRESSION "Process: Starting Raw2DelimRaw converter."
-             "Process: Shutting down Raw2DelimRaw converter.")
+set_tests_properties(
+    IntegrationTestEmptyOutput
+    PROPERTIES
+        FAIL_REGULAR_EXPRESSION
+        "Process: Starting Raw2DelimRaw converter;Process: Shutting down Raw2DelimRaw converter."
+        PROPERTY_REGULAR_EXPRESSION
+        "Application has exited."
+        TIMEOUT
+        8)
 
 add_test(NAME IntegrationTestBinOutput COMMAND ctest_output -l trace -o test_output.bin)
-set_property(
-    TEST IntegrationTestBinOutput
-    PROPERTY
-        PASS_REGULAR_EXPRESSION
+set_tests_properties(
+    IntegrationTestBinOutput
+    PROPERTIES
+        PROPERTY_REGULAR_EXPRESSION
         "Process: Starting Raw2DelimRaw converter.*Process: Shutting down Raw2DelimRaw converter.*Application has exited."
-)
+        TIMEOUT
+        8)

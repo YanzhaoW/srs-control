@@ -117,9 +117,6 @@ namespace srs::test
 
     SRSEmulator::SRSEmulator(const Config& config, App& app)
         : config_{ config }
-        , udp_writer_{ app,
-                       asio::ip::udp::endpoint{ asio::ip::udp::v4(),
-                                                static_cast<asio::ip::port_type>(config_.data_port) } }
         , udp_socket_{ io_context_,
                        asio::ip::udp::endpoint{ asio::ip::udp::v4(),
                                                 static_cast<asio::ip::port_type>(config_.listen_port) } }
@@ -205,8 +202,8 @@ namespace srs::test
     {
         spdlog::info("Server: Starting to send data from emulator ...");
         auto total_size = std::size_t{ 0 };
-        auto executor = co_await cobalt::this_coro::executor;
-        auto connection = connection::UDPWriterConnection{ { .name = "emulator" }, executor };
+        auto executor = co_await asio::this_coro::executor;
+        auto connection = connection::UDPWriterConnection{ { .name = "emulator" }, io_context_ };
         connection.set_socket(
             std::make_unique<asio::ip::udp::socket>(executor, asio::ip::udp::endpoint{ asio::ip::udp::v4(), 0 }));
         connection.set_remote_endpoint(asio::ip::udp::endpoint{ asio::ip::make_address("127.0.0.1"),

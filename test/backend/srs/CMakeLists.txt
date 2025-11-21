@@ -16,6 +16,8 @@ target_link_libraries(
            zpp_bits::zpp_bits
            magic_enum::magic_enum
            protobuf::libprotobuf
+           glaze::glaze
+           Taskflow::Taskflow
            gsl::gsl-lite
            spdlog::spdlog)
 

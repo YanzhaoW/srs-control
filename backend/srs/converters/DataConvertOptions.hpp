@@ -16,6 +16,7 @@ namespace srs::process
         raw,
         raw_frame,
         structure,
+        structure_to_proto,
         proto,
         proto_frame
     };
@@ -33,10 +34,14 @@ namespace srs::process
                 return std::string_view{ "raw_frame" };
             case structure:
                 return std::string_view{ "structure" };
+            case structure_to_proto:
+                return std::string_view{ "structure_to_proto" };
             case proto:
                 return std::string_view{ "proto" };
             case proto_frame:
                 return std::string_view{ "proto_frame" };
+            default:
+                return std::string_view{ "invalid" };
         }
     }
 
@@ -54,11 +59,9 @@ namespace srs::process
     constexpr auto EMPTY_CONVERT_OPTION_COUNT_MAP = []()
     {
         using enum DataConvertOptions;
-        return std::array{ std::make_pair(raw, 0),
-                           std::make_pair(raw_frame, 0),
-                           std::make_pair(structure, 0),
-                           std::make_pair(proto, 0),
-                           std::make_pair(proto_frame, 0) };
+        return std::array{ std::make_pair(raw, 0),       std::make_pair(raw_frame, 0),
+                           std::make_pair(structure, 0), std::make_pair(structure_to_proto, 0),
+                           std::make_pair(proto, 0),     std::make_pair(proto_frame, 0) };
     }();
 
     constexpr auto CONVERT_OPTION_RELATIONS = []()
@@ -66,8 +69,10 @@ namespace srs::process
         using enum DataConvertOptions;
         return std::array{ ConvertOptionRelation{ raw, raw_frame },
                            ConvertOptionRelation{ raw, structure },
-                           ConvertOptionRelation{ structure, proto },
-                           ConvertOptionRelation{ structure, proto_frame } };
+                           ConvertOptionRelation{ structure, structure_to_proto },
+                           ConvertOptionRelation{ structure, structure_to_proto },
+                           ConvertOptionRelation{ structure_to_proto, proto },
+                           ConvertOptionRelation{ structure_to_proto, proto_frame } };
     }();
 
     constexpr auto convert_option_has_dependency(DataConvertOptions dependee, DataConvertOptions depender) -> bool
@@ -103,10 +108,11 @@ template <>
 class fmt::formatter<srs::process::DataConvertOptions>
 {
   public:
-    static constexpr auto parse(format_parse_context& ctx) { return ctx.end(); }
+    static constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
     template <typename FmtContent>
     constexpr auto format(srs::process::DataConvertOptions option, FmtContent& ctn) const
     {
+        // TODO: DUPLICATES
         using enum srs::process::DataConvertOptions;
         switch (option)
         {
@@ -122,6 +128,10 @@ class fmt::formatter<srs::process::DataConvertOptions>
                 return fmt::format_to(ctn.out(), "proto");
             case proto_frame:
                 return fmt::format_to(ctn.out(), "proto_frame");
+            case structure_to_proto:
+                return fmt::format_to(ctn.out(), "structure_to_proto");
+            default:
+                return fmt::format_to(ctn.out(), "invalid");
         }
     }
 };
