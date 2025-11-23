@@ -30,10 +30,16 @@ namespace srs::workflow
 namespace srs::writer
 {
     template <typename T>
-    concept WriterVisitor = requires(T visitor, BinaryFile& binary_file, BinaryFile& UDP_file, BinaryFile& JSON_file) {
+    concept WriterVisitor =
+#ifdef HAS_ROOT
+        requires(T visitor, BinaryFile& binary_file, BinaryFile& UDP_file, BinaryFile& JSON_file, RootFile& root_file)
+#else
+        requires(T visitor, BinaryFile& binary_file, BinaryFile& UDP_file, BinaryFile& JSON_file)
+#endif
+    {
         { visitor(std::string_view{}, binary_file) } -> std::same_as<void>;
 #ifdef HAS_ROOT
-        { T(std::string_view{}, std::declval<RootFile>()) } -> std::same_as<void>;
+        { visitor(std::string_view{}, root_file) } -> std::same_as<void>;
 #endif
         { visitor(std::string_view{}, UDP_file) } -> std::same_as<void>;
         { visitor(std::string_view{}, JSON_file) } -> std::same_as<void>;
@@ -79,10 +85,10 @@ namespace srs::writer
         workflow::Handler* workflow_handler_ = nullptr;
         std::vector<boost::unique_future<std::optional<std::size_t>>> write_futures_;
 
-        auto add_binary_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool;
-        auto add_udp_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool;
-        auto add_root_file(const std::string& filename) -> bool;
-        auto add_json_file(const std::string& filename) -> bool;
+        auto add_binary_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
+        auto add_udp_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
+        auto add_root_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
+        auto add_json_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
 
         template <typename WriterType>
         void write_to_files(std::map<std::string, std::unique_ptr<WriterType>>& writers, auto make_future)

@@ -50,17 +50,18 @@ jobs:
 
       - name: test
         run: |
-          cd build/bin
-          ./srs_backend_test --gtest_output=xml
+          cd build
+          ctest --rerun-failed --output-on-failure
+          # ./srs_backend_test --gtest_output=xml
 
-      - name: publish test report
-        uses: dorny/test-reporter@v1
-        if: success() || failure()
-        with:
-          name: Google test
-          path: 'build/bin/test_detail.xml'
-          fail-on-error: true
-          reporter: java-junit
+      # - name: publish test report
+      #   uses: dorny/test-reporter@v1
+      #   if: success() || failure()
+      #   with:
+      #     name: Google test
+      #     path: 'build/bin/test_detail.xml'
+      #     fail-on-error: true
+      #     reporter: java-junit
 
       - name: cache-delete
         run: |

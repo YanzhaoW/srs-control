@@ -3,7 +3,6 @@
 #include "srs/Application.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/readers/RawFrameReader.hpp"
-#include "srs/writers/UDPWriter.hpp"
 #include <atomic>
 #include <boost/asio.hpp>
 #include <boost/asio/any_io_executor.hpp>
@@ -22,13 +21,12 @@
 #include <boost/cobalt/this_thread.hpp>
 #include <boost/thread/future.hpp>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
-#include <future>
 #include <memory>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <string_view>
-#include <utility>
 
 namespace srs::test
 {
@@ -49,6 +47,7 @@ namespace srs::test
             acq_off,
         };
 
+        void set_delay_time(std::size_t time) { delay_time_ = std::chrono::microseconds{ time }; }
         explicit SRSEmulator(const Config& config, App& app);
         void set_continue_output(bool is_continue) { is_continue_.store(is_continue); }
         void wait_for_connection();
@@ -57,6 +56,7 @@ namespace srs::test
       private:
         using IOContextType = asio::thread_pool;
 
+        std::chrono::microseconds delay_time_{ 1 };
         std::atomic<bool> is_continue_ = false;
         std::atomic<bool> is_idle_ = true;
         std::atomic<bool> is_shutdown_ = false;

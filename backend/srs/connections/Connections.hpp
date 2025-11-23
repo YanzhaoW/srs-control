@@ -3,11 +3,8 @@
 #include "ConnectionBase.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
-// #include "srs/utils/CommonAlias.hpp"
-// #include "srs/utils/CommonDefinitions.hpp"
 #include <gsl/gsl-lite.hpp>
 #include <memory>
-// #include <span>
 #include <spdlog/spdlog.h>
 #include <vector>
 
@@ -107,50 +104,4 @@ namespace srs::connection
       private:
         std::vector<CommunicateEntryType> send_suffix_ = { 0, 15, 0 };
     };
-
-    /**
-     * @class DataReader
-     * @brief Connection for reading data stream from FEC devices
-     *
-     */
-    // class DataReader : public Base
-    // {
-    //   public:
-    //     DataReader(const Info& info, workflow::Handler* processor)
-    //         : Base(info, "DataReader", common::LARGE_READ_MSG_BUFFER_SIZE)
-    //         , workflow_handler_{ processor }
-    //     {
-    //         set_timeout_seconds(1);
-    //         set_continuous();
-    //     }
-
-    //     DataReader(const DataReader&) = delete;
-    //     DataReader(DataReader&&) = delete;
-    //     DataReader& operator=(const DataReader&) = delete;
-    //     DataReader& operator=(DataReader&&) = delete;
-    //     ~DataReader() = default;
-
-    //     void start(bool is_non_stop = true)
-    //     {
-    //         set_socket(new_shared_socket(get_local_port_number()));
-    //         // const auto& is_on_exit = get_app().get_status().is_on_exit;
-    //         // if (not is_on_exit.load())
-    //         // {
-    //         //     get_app().set_status_is_reading(true);
-    //         //     spdlog::info("UDP data reading has been started");
-    //         //     listen(is_non_stop);
-    //         // }
-    //         // else
-    //         // {
-    //         //     spdlog::debug("Program is already on exit!");
-    //         // }
-    //     }
-    //     void close();
-
-    //     void read_data_handle(std::span<BufferElementType> read_data);
-
-    //   private:
-    //     gsl::not_null<workflow::Handler*> workflow_handler_;
-    // };
-
 } // namespace srs::connection

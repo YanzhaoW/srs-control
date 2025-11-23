@@ -55,7 +55,7 @@ namespace srs::writer
             explicit operator bool() const { return value; }
         };
 
-        explicit Json(const std::string& filename, std::size_t n_lines = 1);
+        explicit Json(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines = 1);
 
         Json(const Json&) = delete;
         Json(Json&&) = delete;
@@ -66,7 +66,7 @@ namespace srs::writer
         [[nodiscard]] auto get_data(std::size_t line_number) const -> OutputType { return output_data_[line_number]; }
         [[nodiscard]] auto get_filename() const -> const std::string& { return filename_; }
 
-        void run_task(auto& prev_data_converter, std::size_t line_number)
+        void run_task(const auto& prev_data_converter, std::size_t line_number)
         {
             assert(line_number < get_line_num());
             const auto* data_struct = prev_data_converter.get_data_view(line_number);

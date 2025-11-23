@@ -12,6 +12,7 @@
 #include <boost/system/detail/error_code.hpp>
 #include <chrono>
 #include <csignal>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <future>
@@ -132,10 +133,12 @@ namespace srs
          * @brief Establish the communications to the available FECs to start the data acquisition.
          */
         void switch_on();
+
         /**
          * @brief Establish the communications to the available FECs to stop the data acquisition.
          */
         void switch_off();
+
         /**
          * @brief Start reading the input data stream from the port specified by srs::Config::fec_data_receive_port. If
          * \a is_non_stop is true, the reading process will not be stopped until an interrupt happens, such as pressing
@@ -149,12 +152,10 @@ namespace srs
         /**
          * @brief Start data analysis workflow, triggering data conversions.
          *
-         * This function call is executed in the main thread, which can be blocked if there is no data to ba analyzed.
-         * In the non-block, the process will just be in a spin loop until the new data is available
+         * This function call is executed in the main thread.
          *
-         * @param is_blocking Flag to set the block mode.
          */
-        void start_workflow(bool is_blocking = true);
+        void start_workflow();
 
         /**
          * @brief Manually wait for the working thread to finish.
@@ -163,6 +164,8 @@ namespace srs
          * program until the working thread exits.
          */
         void wait_for_finish();
+
+        void wait_for_workflow() { workflow_thread_.join(); }
 
         // setters:
         /**
@@ -178,11 +181,13 @@ namespace srs
         /**
          * @brief Set the output filenames.
          */
-        void set_output_filenames(const std::vector<std::string>& filenames);
+        void set_output_filenames(const std::vector<std::string>& filenames, std::size_t n_lines = 1);
+
         /**
          * @brief Set the error messages (internal usage).
          */
         void set_error_string(std::string_view err_msg) { error_string_ = err_msg; }
+
         /**
          * @brief Set the configuration values.
          */
@@ -255,6 +260,10 @@ namespace srs
         /** @brief Main working thread.
          */
         std::jthread working_thread_;
+
+        /** @brief Main thread to run workflow.
+         */
+        std::jthread workflow_thread_;
 
         /**
          * @brief Exit helper for App class. This is called after calling the destructor.

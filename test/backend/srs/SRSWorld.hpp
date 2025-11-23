@@ -3,6 +3,7 @@
 #include "srs/SRSEmulator.hpp"
 #include "srs/devices/Configuration.hpp"
 #include "srs/workflow/Handler.hpp"
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -21,6 +22,8 @@ namespace srs::test
         auto launch_server() -> std::optional<std::string>;
 
         auto set_continue_output(bool is_continue) { srs_server_->set_continue_output(is_continue); }
+
+        auto set_delay_time_us(std::size_t time) { srs_server_->set_delay_time(time); }
 
         auto get_server() -> auto* { return srs_server_.get(); }
 

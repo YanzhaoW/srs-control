@@ -1,6 +1,7 @@
 #include "UDPWriter.hpp"
 #include "srs/connections/ConnectionBase.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
+#include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <boost/asio/ip/udp.hpp>
@@ -8,6 +9,7 @@
 #include <fmt/format.h>
 #include <memory>
 #include <ranges>
+#include <spdlog/spdlog.h>
 #include <utility>
 
 namespace srs::writer
@@ -19,6 +21,7 @@ namespace srs::writer
         : WriterTask{ fmt::format("{}", remote_endpoint), deser_mode, n_lines }
     {
         connections_.reserve(n_lines);
+        output_data_.resize(n_lines);
         for ([[maybe_unused]] const auto idx : std::views::iota(0, static_cast<int>(n_lines)))
         {
             auto& connection = connections_.emplace_back(std::make_unique<connection::UDPWriterConnection>(
@@ -36,5 +39,6 @@ namespace srs::writer
         {
             connection->close();
         }
+        spdlog::info("Writer: UDP socket writer to the remote socket {:?} is closed successfully.", get_name());
     }
 } // namespace srs::writer

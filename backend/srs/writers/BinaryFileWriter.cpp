@@ -35,9 +35,8 @@ namespace srs::writer
     BinaryFile::~BinaryFile()
     {
         close();
-        spdlog::info("Binary file {} is closed successfully.", file_name_);
         spdlog::debug(
-            "Binary file {} data size written: \n\t{}",
+            "Writer: Binary file {} data size written: \n\t{}",
             file_name_,
             fmt::join(
                 std::views::enumerate(output_data_) |
@@ -45,6 +44,7 @@ namespace srs::writer
                         [](const auto& idex_data_size) -> std::string
                         { return fmt::format("{}: {}", std::get<0>(idex_data_size), std::get<1>(idex_data_size)); }),
                 "\n\t"));
+        spdlog::info("Writer: Binary file writer with the base name {:?} is closed successfully.", file_name_);
     }
     void BinaryFile::close()
     {

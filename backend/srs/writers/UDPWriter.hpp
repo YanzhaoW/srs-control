@@ -92,7 +92,7 @@ namespace srs::writer
         UDP& operator=(const UDP&) = default;
         UDP& operator=(UDP&&) = delete;
 
-        void run_task(auto& prev_data_converter, std::size_t line_number)
+        void run_task(const auto& prev_data_converter, std::size_t line_number)
         {
             assert(not static_cast<bool>(input_source_));
             output_data_[line_number] =

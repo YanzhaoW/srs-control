@@ -88,7 +88,7 @@ namespace srs::common
         auto filepath = std::filesystem::path{ native_name };
         auto extension = filepath.extension().string();
         auto file_basename = filepath.replace_extension().string();
-        return std::format("{}_{}.{}", file_basename, idx, extension);
+        return std::format("{}_{}{}", file_basename, idx, extension);
     }
 
     auto create_coro_future(auto& coro, auto&& pre_fut)

@@ -6,7 +6,6 @@
 #include <string>
 #include <string_view>
 #include <thread>
-#include <vector>
 
 namespace srs::test
 {
@@ -19,7 +18,6 @@ namespace srs::test
                                                                .write_port = app_config_.fec_control_local_port,
                                                                .filename = input_filename },
                                           app_);
-        app_.get_config_ref().remote_fec_ips = std::vector{ std::string{ "127.0.0.1" } };
     }
 
     void World::init() { app_.init(); }

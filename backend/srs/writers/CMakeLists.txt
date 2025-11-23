@@ -1,4 +1,10 @@
-target_sources(srscpp PRIVATE DataWriter.cpp BinaryFileWriter.cpp JsonWriter.cpp UDPWriter.cpp)
+target_sources(
+    srscpp
+    PRIVATE DataWriter.cpp
+            BinaryFileWriter.cpp
+            JsonWriter.cpp
+            UDPWriter.cpp
+            RootFileWriter.cpp)
 target_sources(
     srscpp
     PRIVATE FILE_SET

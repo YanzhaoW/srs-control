@@ -91,17 +91,15 @@ namespace srs::writer
 
     void Manager::wait_for_finished() { boost::wait_for_all(write_futures_.begin(), write_futures_.end()); }
 
-    auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool
+    auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
     {
-        // auto& app = workflow_handler_->get_app();
         return binary_files_
             .try_emplace(filename,
-                         std::make_unique<BinaryFile>(
-                             filename, deser_mode, workflow_handler_->get_data_workflow().get_n_lines()))
+                         std::make_unique<BinaryFile>(filename, prev_conversion, workflow_handler_->get_n_lines()))
             .second;
     }
 
-    auto Manager::add_udp_file(const std::string& filename, process::DataConvertOptions deser_mode) -> bool
+    auto Manager::add_udp_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
     {
         auto& app = workflow_handler_->get_app();
         auto endpoint = convert_str_to_endpoint(app.get_io_context(), filename);
@@ -111,39 +109,35 @@ namespace srs::writer
                 .try_emplace(filename,
                              std::make_unique<UDP>(app.get_io_context(),
                                                    std::move(endpoint.value()),
-                                                   workflow_handler_->get_data_workflow().get_n_lines(),
-                                                   deser_mode))
+                                                   workflow_handler_->get_n_lines(),
+                                                   prev_conversion))
                 .second;
         }
         return false;
     }
 
-    // NOLINTNEXTLINE
-    auto Manager::add_root_file([[maybe_unused]] const std::string& filename) -> bool
+    auto Manager::add_root_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
     {
 #ifdef HAS_ROOT
-        auto& app = workflow_handler_->get_app();
         return root_files_
-            .try_emplace(filename, std::make_unique<RootFile>(app.get_io_context(), filename.c_str(), "RECREATE"))
+            .try_emplace(
+                filename,
+                std::make_unique<RootFile>(filename.c_str(), prev_conversion, workflow_handler_->get_n_lines()))
             .second;
 #else
         return false;
 #endif
     }
 
-    auto Manager::add_json_file(const std::string& filename) -> bool
+    auto Manager::add_json_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
     {
-        // auto& app = workflow_handler_->get_app();
         return json_files_
-            .try_emplace(filename,
-                         std::make_unique<Json>(filename, workflow_handler_->get_data_workflow().get_n_lines()))
+            .try_emplace(filename, std::make_unique<Json>(filename, prev_conversion, workflow_handler_->get_n_lines()))
             .second;
     }
 
     void Manager::set_output_filenames(const std::vector<std::string>& filenames)
     {
-        // auto& app = workflow_handler_->get_app();
-
         for (const auto& filename : filenames)
         {
             if (filename.empty())
@@ -171,17 +165,16 @@ namespace srs::writer
                     {
                         continue;
                     }
-                    is_ok = add_root_file(filename);
+                    is_ok = add_root_file(filename, convert_mode);
                     break;
                 case json:
-                    is_ok = add_json_file(filename);
+                    is_ok = add_json_file(filename, convert_mode);
                     break;
             }
 
             if (is_ok)
             {
                 spdlog::info("Add the output source {:?}", filename);
-                // ++(convert_count_map_.at(convert_mode));
             }
             else
             {

@@ -1,4 +1,5 @@
 #include "JsonWriter.hpp"
+#include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonFunctions.hpp"
@@ -58,16 +59,16 @@ namespace srs::writer
         }
     }
 
-    Json::Json(const std::string& filename, std::size_t n_lines)
-        : WriterTask{ "JSONWriter", structure, n_lines }
+    Json::Json(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines)
+        : WriterTask{ "JSONWriter", convert_mode, n_lines }
         , filename_{ filename }
     {
         assert(n_lines > 0);
         is_first_item_.resize(n_lines);
         output_data_.resize(n_lines);
+        data_buffers_.resize(n_lines);
+        string_buffers_.resize(n_lines);
         file_streams_.reserve(n_lines);
-        data_buffers_.reserve(n_lines);
-        string_buffers_.reserve(n_lines);
 
         for (auto idx : std::views::iota(0, static_cast<int>(n_lines)))
         {
@@ -91,8 +92,9 @@ namespace srs::writer
         {
             file_stream << "]\n";
             file_stream.close();
-            spdlog::info("JSON file {} with index {} is closed successfully", filename_, idx);
+            spdlog::debug("JSON file {} with index {} is closed successfully", filename_, idx);
         }
+        spdlog::info("Writer: JSON file writer with the base name {:?} is closed successfully.", filename_);
     }
 
     void Json::write_json(const StructData& data_struct, std::size_t line_num)

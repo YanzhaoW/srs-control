@@ -233,7 +233,7 @@ namespace srs::test
                     break;
                 }
             }
-            data_sending_control_.expires_after(std::chrono::microseconds(500));
+            data_sending_control_.expires_after(delay_time_);
             co_await data_sending_control_.async_wait(asio::use_awaitable);
 
             auto send_size = co_await send_coro.async_resume(std::optional{ read_str.value() }, asio::use_awaitable);
