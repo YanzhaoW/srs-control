@@ -1,8 +1,10 @@
+#ifdef HAS_ROOT
 #include "RootFileWriter.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include <TFile.h>
+#include <TSystem.h>
 #include <TTree.h>
 #include <cstddef>
 #include <memory>
@@ -42,3 +44,4 @@ namespace srs::writer
         }
     }
 } // namespace srs::writer
+#endif

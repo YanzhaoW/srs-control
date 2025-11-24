@@ -13,14 +13,18 @@
 #include <cstddef>
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
-#include <oneapi/tbb/concurrent_queue.h>
 #include <optional>
 #include <string_view>
 #include <taskflow/core/executor.hpp>
 #include <taskflow/core/task.hpp>
 #include <taskflow/core/taskflow.hpp>
-#include <tbb/concurrent_queue.h>
 #include <vector>
+
+#ifdef USE_ONEAPI_TBB
+#include <oneapi/tbb/concurrent_queue.h>
+#else
+#include <tbb/concurrent_queue.h>
+#endif
 
 namespace srs::workflow
 {

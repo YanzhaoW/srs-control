@@ -13,11 +13,16 @@
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
-#include <oneapi/tbb/concurrent_queue.h>
 #include <span>
 #include <spdlog/logger.h>
 #include <string>
 #include <vector>
+
+#ifdef USE_ONEAPI_TBB
+#include <oneapi/tbb/concurrent_queue.h>
+#else
+#include <tbb/concurrent_queue.h>
+#endif
 
 namespace srs
 {

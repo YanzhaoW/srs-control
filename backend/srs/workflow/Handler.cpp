@@ -14,11 +14,11 @@
 #include <fmt/color.h>
 #include <fmt/ranges.h>
 #include <memory>
-#include <oneapi/tbb/concurrent_queue.h>
 #include <span>
 #include <spdlog/common.h>
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <tbb/concurrent_queue.h>
 
 #include <spdlog/spdlog.h>
 #include <stdexcept>

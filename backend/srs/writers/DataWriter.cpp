@@ -116,7 +116,8 @@ namespace srs::writer
         return false;
     }
 
-    auto Manager::add_root_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
+    auto Manager::add_root_file([[maybe_unused]] const std::string& filename,
+                                [[maybe_unused]] process::DataConvertOptions prev_conversion) -> bool
     {
 #ifdef HAS_ROOT
         return root_files_

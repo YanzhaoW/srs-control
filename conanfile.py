@@ -65,7 +65,7 @@ PROTOBUF_OPTIONS = {
     "with_zlib": True,
     "with_rtti": False,
     "fPIC": True,
-    "shared": True,
+    "shared": False,
     "lite": False,
 }
 

@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
-#include <oneapi/tbb/concurrent_queue.h>
 #include <optional>
 #include <ranges>
 #include <spdlog/spdlog.h>
@@ -22,6 +21,12 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#ifdef USE_ONEAPI_TBB
+#include <oneapi/tbb/concurrent_queue.h>
+#else
+#include <tbb/concurrent_queue.h>
+#endif
 
 namespace srs::workflow
 {

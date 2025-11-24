@@ -1,20 +1,19 @@
 #pragma once
 
+#ifdef HAS_ROOT
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
+#include <TFile.h>
+#include <TSystem.h>
+#include <TTree.h>
 #include <cassert>
 #include <cstddef>
 #include <memory>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
-
-#ifdef HAS_ROOT
-#include <TFile.h>
-#include <TSystem.h>
-#include <TTree.h>
 
 namespace srs::writer
 {

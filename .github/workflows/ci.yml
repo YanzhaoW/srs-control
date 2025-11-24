@@ -1,3 +1,12 @@
+# Main Github CI pipeline to check the building and testing processes
+#
+# Required secrets and variables:
+#
+# secrets:
+# - GITHUB_TOKEN: The default github token (It should be automatically created by Github).
+#
+# variables: none
+
 name: ci
 on:
   pull_request:
