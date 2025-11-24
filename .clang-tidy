@@ -26,6 +26,7 @@ Checks: >
   modernize-*,
   performance-*,
   readability-*,
+  -readability-static-accessed-through-instance,
   -modernize-use-trailing-return-type
 
 CheckOptions:

@@ -2,17 +2,23 @@
 
 #include "EnumConvertFunctions.hpp"  // IWYU pragma: export
 #include "srs/utils/CommonAlias.hpp" // IWYU pragma: keep
+#include "srs/utils/CommonConcepts.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <bit>
 #include <bitset>
 #include <boost/asio.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/thread/future.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <format>
 #include <magic_enum/magic_enum.hpp>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace srs::common
@@ -74,6 +80,15 @@ namespace srs::common
     consteval auto get_enum_names()
     {
         auto names = magic_enum::enum_names<srs::common::ActionMode>();
+        return names;
+    }
+
+    constexpr auto insert_index_to_filename(std::string_view native_name, int idx) -> std::string
+    {
+        auto filepath = std::filesystem::path{ native_name };
+        auto extension = filepath.extension().string();
+        auto file_basename = filepath.replace_extension().string();
+        return std::format("{}_{}{}", file_basename, idx, extension);
     }
 
     auto create_coro_future(auto& coro, auto&& pre_fut)
@@ -108,5 +123,34 @@ namespace srs::common
     {
         asio::co_spawn(coro.get_executor(), coro.async_resume(std::forward<decltype(args)>(args)...), asio::use_future)
             .get();
+    }
+
+    auto create_coro_task(auto task, asio::any_io_executor executor)
+    {
+        auto task_handle = task();
+        using input_type = decltype(task_handle)::input_type;
+        asio::co_spawn(executor, task_handle.async_resume(input_type{}, asio::use_awaitable), asio::use_future).get();
+        return task_handle;
+    }
+
+    inline void initialize_coro(auto& coroutine)
+    {
+        using input_type = std::remove_cvref_t<decltype(coroutine)>::input_type;
+        asio::co_spawn(
+            coroutine.get_executor(), coroutine.async_resume(input_type{}, asio::use_awaitable), asio::use_future)
+            .get();
+    }
+
+    inline auto make_initialized_coro(DataConverter auto& task)
+    {
+        auto task_handle = task.generate_coro();
+        initialize_coro(task_handle);
+        return task_handle;
+    }
+
+    inline auto make_unique_coro(DataConverter auto& task)
+    {
+        return std::make_unique<typename std::remove_reference_t<decltype(task)>::CoroType>(
+            make_initialized_coro(task));
     }
 } // namespace srs::common

@@ -1,26 +1,25 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
+#include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
-#include "srs/utils/CommonFunctions.hpp"
-#include "srs/workflow/TaskDiagram.hpp"
+#include "srs/writers/DataWriterOptions.hpp"
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/experimental/coro.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/thread/future.hpp>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <glaze/core/opts.hpp>
 #include <glaze/core/write.hpp>
 #include <glaze/glaze.hpp>
-#include <ios>
 #include <map>
-#include <optional>
 #include <spdlog/spdlog.h>
-#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace srs::writer
@@ -38,141 +37,52 @@ namespace srs::writer
                                                                 { "vmm_id", {} },
                                                                 { "adc", {} },
                                                                 { "bc_id", {} } };
-        // HitDataVec hit_data;
 
-        void set_value(const StructData& data_struct)
-        {
-            header = data_struct.header;
-            fill_hit_data(data_struct.hit_data);
-            fill_marker_data(data_struct.marker_data);
-        }
+        void set_value(const StructData& data_struct);
 
       private:
-        void fill_hit_data(const std::vector<HitData>& hits)
-        {
-            hit_size = hits.size();
-            for (auto& [key, value] : hit_data)
-            {
-                value.clear();
-                value.reserve(hit_size);
-            }
-            for (const auto& hit : hits)
-            {
-                hit_data.at("is_over_threshold").push_back(static_cast<uint16_t>(hit.is_over_threshold));
-                hit_data.at("channel_num").push_back(hit.channel_num);
-                hit_data.at("tdc").push_back(hit.tdc);
-                hit_data.at("offset").push_back(hit.offset);
-                hit_data.at("vmm_id").push_back(hit.vmm_id);
-                hit_data.at("adc").push_back(hit.adc);
-                hit_data.at("bc_id").push_back(hit.bc_id);
-            }
-        }
-
-        void fill_marker_data(const std::vector<MarkerData>& markers)
-        {
-            marker_size = markers.size();
-            for (auto& [key, value] : marker_data)
-            {
-                value.clear();
-                value.reserve(marker_size);
-            }
-            for (const auto& marker : markers)
-            {
-                marker_data.at("vmm_id").push_back(marker.vmm_id);
-                marker_data.at("srs_timestamp").push_back(marker.srs_timestamp);
-            }
-        }
+        void fill_hit_data(const std::vector<HitData>& hits);
+        void fill_marker_data(const std::vector<MarkerData>& markers);
     };
 
-    class Json
+    class Json : public process::WriterTask<DataWriterOption::json, StructData*, std::size_t>
     {
       public:
-        using InputType = const StructData*;
-        using OutputType = int;
-        using CoroType = asio::experimental::coro<OutputType(std::optional<InputType>)>;
-        using InputFuture = boost::shared_future<std::optional<InputType>>;
-        using OutputFuture = boost::unique_future<std::optional<OutputType>>;
         static constexpr auto IsStructType = true;
-
-        explicit Json(asio::thread_pool& thread_pool, const std::string& filename)
-            : filename_{ filename }
-            , file_stream_{ filename, std::ios::out | std::ios::trunc }
+        struct Bool
         {
-            if (not file_stream_.is_open())
-            {
-                spdlog::critical("JsonWriter: cannot open the file with filename {:?}", filename);
-                throw std::runtime_error("Error occurred with JsonWriter");
-            }
-            file_stream_ << "[\n";
-            coro_ = generate_coro(thread_pool.get_executor());
-            common::coro_sync_start(coro_, std::optional<InputType>{}, asio::use_awaitable);
-        }
+            bool value = true;
+            explicit operator bool() const { return value; }
+        };
 
-        [[nodiscard]] static auto get_convert_mode() -> process::DataConvertOptions
+        explicit Json(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines = 1);
+
+        Json(const Json&) = delete;
+        Json(Json&&) = delete;
+        Json& operator=(const Json&) = delete;
+        Json& operator=(Json&&) = delete;
+        ~Json();
+
+        [[nodiscard]] auto get_data(std::size_t line_number) const -> OutputType { return output_data_[line_number]; }
+        [[nodiscard]] auto get_filename() const -> const std::string& { return filename_; }
+
+        void run_task(const auto& prev_data_converter, std::size_t line_number)
         {
-            return process::DataConvertOptions::structure;
+            assert(line_number < get_line_num());
+            const auto* data_struct = prev_data_converter.get_data_view(line_number);
+            write_json(*data_struct, line_number);
         }
-        auto write(auto pre_future) -> OutputFuture { return common::create_coro_future(coro_, pre_future); }
 
       private:
-        bool is_first_item = true;
+        static constexpr auto name_ = std::string_view{};
+        std::vector<Bool> is_first_item_;
         std::string filename_;
-        std::fstream file_stream_;
-        CompactExportData data_buffer_;
-        std::string string_buffer_;
-        CoroType coro_;
+        std::vector<OutputType> output_data_;
+        std::vector<std::fstream> file_streams_;
+        std::vector<CompactExportData> data_buffers_;
+        std::vector<std::string> string_buffers_;
 
-        // NOLINTNEXTLINE(readability-static-accessed-through-instance)
-        auto generate_coro(asio::any_io_executor /*unused*/) -> CoroType
-        {
-            InputType data_struct{};
-            auto res = 0;
-            while (true)
-            {
-                res = 0;
-                if (data_struct != nullptr)
-                {
-                    write_json(*data_struct);
-                    res = 1;
-                }
-                auto data_temp = co_yield res;
-                if (data_temp.has_value())
-                {
-                    data_struct = data_temp.value();
-                }
-                else
-                {
-                    file_stream_ << "]\n";
-                    file_stream_.close();
-                    spdlog::info("JSON file {} is closed successfully", filename_);
-                    co_return;
-                }
-            }
-        }
-
-        void write_json(const StructData& data_struct)
-        {
-            if (not is_first_item)
-            {
-                file_stream_ << ", ";
-            }
-            else
-            {
-                is_first_item = false;
-            }
-
-            data_buffer_.set_value(data_struct);
-            auto error_code =
-                glz::write<glz::opts{ .prettify = true, .new_lines_in_arrays = false }>(data_buffer_, string_buffer_);
-            if (error_code)
-            {
-                spdlog::critical("JsonWriter: cannot interpret data struct to json. Error: {}",
-                                 error_code.custom_error_message);
-                throw std::runtime_error("Error occured with JsonWriter");
-            }
-            file_stream_ << string_buffer_;
-            string_buffer_.clear();
-        }
+        void write_json(const StructData& data_struct, std::size_t line_num);
     };
 
 } // namespace srs::writer

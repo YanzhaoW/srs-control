@@ -1,0 +1,14 @@
+compiler:
+    gcc:
+        version: ["15", "15.1", "15.2"]
+        libcxx: [libstdc++, libstdc++11]
+        cppstd: [20, gnu20, 23, gnu23, 26, gnu26]
+        cstd: [null, 99, gnu99, 11, gnu11, 17, gnu17, 23, gnu23]
+    clang:
+        version: [ "20", "21"]
+        cppstd: [null, 98, gnu98, 11, gnu11, 14, gnu14, 17, gnu17, 20, gnu20, 23, gnu23, 26, gnu26]
+        runtime: [null, static, dynamic]
+        runtime_type: [null, Debug, Release]
+        runtime_version: [null, v140, v141, v142, v143, v144]
+        cstd: [null, 99, gnu99, 11, gnu11, 17, gnu17, 23, gnu23]
+

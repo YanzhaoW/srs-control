@@ -1,22 +1,16 @@
 include(FetchContent)
 
-fetchcontent_declare(
-    glaze
-    GIT_REPOSITORY https://github.com/stephenberry/glaze.git
-    GIT_TAG main
-    GIT_SHALLOW TRUE
-    EXCLUDE_FROM_ALL)
-
-fetchcontent_makeavailable(glaze)
-
 find_package(Boost REQUIRED CONFIG COMPONENTS thread)
-find_package(fmt REQUIRED)
-find_package(zpp_bits REQUIRED)
-find_package(gsl-lite REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(CLI11 REQUIRED)
-find_package(TBB REQUIRED)
-find_package(magic_enum REQUIRED)
+find_package(fmt REQUIRED CONFIG)
+find_package(zpp_bits REQUIRED CONFIG)
+find_package(gsl-lite REQUIRED CONFIG)
+find_package(spdlog REQUIRED CONFIG)
+find_package(CLI11 REQUIRED CONFIG)
+find_package(TBB REQUIRED CONFIG)
+
+find_package(magic_enum REQUIRED CONFIG)
+find_package(Taskflow REQUIRED CONFIG)
+find_package(glaze REQUIRED CONFIG)
 
 set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
 set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH OFF)

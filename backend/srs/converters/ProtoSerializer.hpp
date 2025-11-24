@@ -1,6 +1,11 @@
 #pragma once
 
-#include <srs/converters/ProtoSerializerBase.hpp>
+#include "srs/converters/DataConvertOptions.hpp"
+#include "srs/converters/ProtoSerializerBase.hpp"
+#include "srs/data/message.pb.h"
+#include <cstddef>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
+#include <string>
 
 namespace srs::process
 {
@@ -13,13 +18,13 @@ namespace srs::process
         return 0;
     };
 
-    class ProtoSerializer : public ProtoSerializerBase<decltype(protobuf_deserializer_converter)>
+    class ProtoSerializer
+        : public ProtoSerializerBase<decltype(protobuf_deserializer_converter), DataConvertOptions::proto>
     {
       public:
-        explicit ProtoSerializer(asio::thread_pool& thread_pool)
-            : ProtoSerializerBase{ thread_pool, "ProtoSerializer", protobuf_deserializer_converter }
+        explicit ProtoSerializer(std::size_t n_lines)
+            : ProtoSerializerBase{ "ProtoSerializer", protobuf_deserializer_converter, n_lines }
         {
         }
-        static constexpr auto ConverterOption = std::array{ proto };
     };
-} // namespace srs
+} // namespace srs::process

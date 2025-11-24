@@ -1,3 +1,13 @@
+# CD pipeline to build the project and create releases with version tags.
+#
+# Required secrets and variables:
+#
+# secrets:
+# - SIGN_KEY_SECRET: A private key to sign the package, used for creating debian package.
+# - SRS_GH_TOKEN : the Github token, which has the permission to make new releases.
+#
+# variables: none
+
 name: release
 on:
   push:
@@ -94,6 +104,7 @@ jobs:
           conda activate srs
           mkdir srs-download
           conan remote update conancenter --url https://center2.conan.io
+          conan config install utils/settings/conan/settings_user.yml
           export LD_LIBRARY_PATH="/usr/local/lib64:${LD_LIBRARY_PATH}"
           cmake --preset ${{ matrix.preset}} -DCMAKE_INSTALL_PREFIX="./srs-download" -DNO_ROOT=$DISABLE_ROOT
           cmake --build ./build --target install -- -j2

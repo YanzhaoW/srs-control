@@ -1,3 +1,16 @@
+# Main Github CD pipeline to generate ReadMeDoc and Doxygen documentations
+#
+# Required secrets and variables:
+#
+# secrets:
+# - DOXY_HOST: The remote server name (SSH server name) to host doxygen documentaiton.
+# - DOXY_USERNAME: The user name from the remote server.
+# - DOXY_HOST_PASSWORD: The password to access the remote server.
+# - DOXY_LOCATION: Location of the doxygen folder in the remote server.
+# - DOXY_PROXY_SERVER: Jump server of the SSH server.
+#
+# variables: none
+
 name: publish-doc
 on:
   push:

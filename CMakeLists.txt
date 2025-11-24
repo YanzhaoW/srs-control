@@ -12,6 +12,8 @@ project(
     VERSION 0.1.4
     LANGUAGES CXX C)
 
+enable_testing()
+
 if(BUILD_ONLY_DOC)
     add_subdirectory(doc)
 else()

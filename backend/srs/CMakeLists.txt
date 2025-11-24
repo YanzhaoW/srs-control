@@ -23,12 +23,20 @@ target_sources(
             BASE_DIRS
             ${CMAKE_SOURCE_DIR}/backend)
 
+if(TBB_VERSION VERSION_GREATER "2020.3.1")
+    message(STATUS "using oneAPI tbb")
+    target_compile_definitions(srscpp PRIVATE USE_ONEAPI_TBB=1)
+else()
+    message(STATUS "using tbb without oneAPI")
+endif()
+
 target_link_libraries(
     srscpp
     PRIVATE $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
             $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
             $<BUILD_LOCAL_INTERFACE:Boost::thread>
             $<BUILD_LOCAL_INTERFACE:fmt::fmt>
+            $<BUILD_LOCAL_INTERFACE:Taskflow::Taskflow>
             $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>
             $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>)
 
@@ -53,3 +61,10 @@ target_sources(
 target_link_libraries(srscpp PRIVATE $<BUILD_LOCAL_INTERFACE:srs_data>)
 target_compile_definitions(srscpp PUBLIC BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION
                                          BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY)
+target_compile_options(
+    srscpp
+    PRIVATE -Werror
+            -Wall
+            -Wextra
+            -Wconversion
+            -pedantic)

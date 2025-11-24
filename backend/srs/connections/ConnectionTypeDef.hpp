@@ -16,7 +16,6 @@ namespace srs::connection
     using udp = boost::asio::ip::udp;
     using UDPEndpoint = boost::asio::ip::basic_endpoint<boost::asio::ip::udp>;
 
-    template <int buffer_size>
     class Base;
 
     template <typename T>
@@ -36,19 +35,19 @@ namespace srs::connection
     {
     };
 
-    template <int buffer_size>
-    struct IsConnectionType<Base<buffer_size>> : std::true_type
+    template <>
+    struct IsConnectionType<Base> : std::true_type
     {
     };
 
-    struct Info
-    {
-        explicit Info(App* control_ptr)
-            : control{ control_ptr }
-        {
-        }
-        App* control = nullptr;
-        int local_port_number = 0;
-    };
+    // struct Info
+    // {
+    //     explicit Info(App* control_ptr)
+    //         : control{ control_ptr }
+    //     {
+    //     }
+    //     App* control = nullptr;
+    //     int local_port_number = 0;
+    // };
 
 } // namespace srs::connection

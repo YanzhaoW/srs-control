@@ -3,7 +3,6 @@
 #include "srs/devices/Configuration.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
-
 #include <CLI/CLI.hpp>
 #include <cstdlib>
 #include <exception>
@@ -50,6 +49,7 @@ auto main(int argc, char** argv) -> int
         auto is_version_print = false;
         auto is_root_version_print = false;
         auto is_dump_needed = false;
+        auto n_output_split = 1;
         const auto home_dir = std::string_view{ getenv("HOME") };
         auto json_filepath = home_dir.empty() ? "" : std::format("{}/.config/srs-control/config.json", getenv("HOME"));
         auto action_mode_enum = srs::common::ActionMode::all;
@@ -84,6 +84,8 @@ auto main(int argc, char** argv) -> int
             ->default_str(get_enum_dashed_name(print_mode));
 
         cli_args.add_option("-c, --config-file", json_filepath, "Set the path of the JSON config file")
+            ->capture_default_str();
+        cli_args.add_option("-s, --split-output", n_output_split, "Splitting the output data into different files.")
             ->capture_default_str();
         cli_args
             .add_option_function<std::string>(
@@ -126,7 +128,7 @@ auto main(int argc, char** argv) -> int
         srs::config::set_config_from_json(app_config, json_filepath);
         app.set_options(std::move(app_config));
         app.set_print_mode(print_mode);
-        app.set_output_filenames(output_filenames);
+        app.set_output_filenames(output_filenames, n_output_split);
 
         app.init();
 
@@ -135,9 +137,10 @@ auto main(int argc, char** argv) -> int
             using enum srs::common::ActionMode;
             case all:
             {
+                app.start_workflow();
                 app.read_data();
                 app.switch_on();
-                app.start_workflow();
+                app.wait_for_workflow();
                 break;
             }
             case acq_on:
@@ -153,8 +156,9 @@ auto main(int argc, char** argv) -> int
             case read_only:
             {
 
-                app.read_data();
                 app.start_workflow();
+                app.read_data();
+                app.wait_for_workflow();
                 break;
             }
             default:

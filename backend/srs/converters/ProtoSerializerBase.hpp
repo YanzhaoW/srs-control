@@ -1,53 +1,57 @@
 #pragma once
 
+#include "DataConverterBase.hpp"
+#include "srs/converters/DataConvertOptions.hpp"
+#include <cassert>
+#include <concepts>
+#include <cstddef>
+#include <spdlog/spdlog.h>
 #include <srs/data/message.pb.h>
-#include <srs/converters/StructDeserializer.hpp>
+#include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 namespace srs::process
 {
-    template <typename Converter>
-    class ProtoSerializerBase : public DataConverterBase<const proto::Data*, std::string_view>
+    template <typename Converter, DataConvertOptions Conversion>
+    class ProtoSerializerBase : public ConverterTask<Conversion, const proto::Data*, std::string_view>
     {
       public:
-        explicit ProtoSerializerBase(asio::thread_pool& thread_pool, std::string name, Converter converter)
-            : DataConverterBase{ generate_coro(thread_pool.get_executor()) }
+        explicit ProtoSerializerBase(std::string name, Converter converter, std::size_t n_lines = 1)
+            : ConverterTask<Conversion, const proto::Data*, std::string_view>{ name,
+                                                                               DataConvertOptions::structure_to_proto,
+                                                                               n_lines }
             , name_{ std::move(name) }
             , converter_{ converter }
         {
+            output_data_.resize(n_lines);
         }
-        [[nodiscard]] auto data() const -> std::string_view { return output_data_; }
+
+        ProtoSerializerBase(const ProtoSerializerBase&) = delete;
+        ProtoSerializerBase(ProtoSerializerBase&&) = delete;
+        ProtoSerializerBase& operator=(const ProtoSerializerBase&) = delete;
+        ProtoSerializerBase& operator=(ProtoSerializerBase&&) = delete;
+        ~ProtoSerializerBase() { spdlog::debug("Shutting down {:?} serializer.", name_); }
+
+        [[nodiscard]] auto get_data_view(std::size_t line_num) const -> std::string_view
+        {
+            assert(line_num < n_lines_);
+            return output_data_[line_num];
+        }
+        void run_task(const auto& prev_data_converter, std::size_t line_num)
+        {
+            assert(line_num < n_lines_);
+            output_data_[line_num].clear();
+            const auto* input_data = prev_data_converter.get_data_view(line_num);
+            static_assert(std::same_as<decltype(input_data), const proto::Data*>);
+            converter_(*input_data, output_data_[line_num]);
+        }
 
       private:
         std::string name_;
-        std::string output_data_;
+        std::vector<std::string> output_data_;
         Converter converter_;
-
-        void reset() { output_data_.clear(); }
-
-        // NOLINTNEXTLINE(readability-static-accessed-through-instance)
-        auto generate_coro(asio::any_io_executor /*unused*/) -> CoroType
-        {
-            InputType temp_data{};
-            while (true)
-            {
-                if (temp_data != nullptr)
-                {
-                    reset();
-                    converter_(*temp_data, output_data_);
-                }
-                auto data = co_yield (std::string_view{ output_data_ });
-                if (data.has_value())
-                {
-                    temp_data = data.value();
-                }
-                else
-                {
-                    spdlog::debug("Shutting down {:?} serializer.", name_);
-                    co_return;
-                }
-            }
-        }
     };
 
-} // namespace srs
+} // namespace srs::process

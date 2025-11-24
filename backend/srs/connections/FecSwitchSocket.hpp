@@ -3,7 +3,7 @@
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
-#include "srs/utils/CommonDefinitions.hpp"
+// #include "srs/utils/CommonDefinitions.hpp"
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/deferred.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
@@ -20,13 +20,12 @@
 
 namespace srs::connection
 {
-    template <int buffer_size>
     class Base;
 
     class FecSwitchSocket : public SpecialSocket
     {
       public:
-        using SmallConnection = Base<common::SMALL_READ_MSG_BUFFER_SIZE>;
+        using SmallConnection = Base;
         using ConnectionType = SmallConnection;
 
         // getters:
@@ -44,7 +43,7 @@ namespace srs::connection
         asio::strand<io_context_type::executor_type> strand_;
         std::mutex mut_;
         std::map<UDPEndpoint, SmallConnections> all_connections_;
-        ReadBufferType<common::SMALL_READ_MSG_BUFFER_SIZE> read_msg_buffer_{};
+        std::vector<char> read_msg_buffer_;
         std::chrono::time_point<std::chrono::steady_clock> start_time_ = std::chrono::steady_clock::now();
 
         using ActionType = decltype(asio::co_spawn(strand_, asio::awaitable<void>(), asio::deferred));
