@@ -1,10 +1,6 @@
 add_library(srscpp SHARED)
 target_sources(srscpp PRIVATE Application.cpp)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(srscpp PRIVATE "-fclang-abi-compat=17")
-endif()
-
 target_sources(
     srscpp
     PUBLIC FILE_SET
