@@ -26,12 +26,18 @@ jobs:
     defaults:
       run:
         shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        base-image: [fedora-42]
+        build-type: [Debug, RelWithDebInfo]
+        compiler: [gcc, clang, libc++]
     container:
-      image: yanzhaowang/srs-env:fedora-41
+      image: yanzhaowang/srs-env:${{ matrix.base-image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           submodules: 'true'
       - name: install and env vars
         run: |
@@ -40,6 +46,20 @@ jobs:
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
+          if [[ ${{ matrix.compiler }} == "libc++" ]]; then
+            echo "CXX=clang++" >> $GITHUB_ENV
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
+          elif [[ ${{ matrix.compiler }} == "gcc" ]]; then
+            echo "CXX=g++" >> $GITHUB_ENV
+            echo "CC=gcc" >> $GITHUB_ENV
+          elif [[ ${{ matrix.compiler }} == "clang" ]]; then
+            echo "CXX=clang++" >> $GITHUB_ENV
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXXFLAGS=-stdlib=libstdc++" >> $GITHUB_ENV
+          else
+            exit 1
+          fi
 
       - name: restore cache
         id: cache-restore
@@ -47,21 +67,19 @@ jobs:
         with:
           path: |
             ${{ env.PARENT_DIR }}/.conan2
-          key: srs-cache
+          key: ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }}
 
-      - name: build
+      - name: set env variables for cdash
+        if: github.event_name != 'push'
         run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          cmake --preset default
-          cmake --build ./build -- -j2
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
+          export PULL_NR=${{ github.event.number }}
+          echo "TEST_NAME=\"${{ matrix.compiler }}-${{ matrix.build-type }} (pr ${PULL_NR})\"" >> $GITHUB_ENV
 
-      - name: test
+      - name: build-test-submit
         run: |
-          cd build
-          ctest --rerun-failed --output-on-failure
-          # ./srs_backend_test --gtest_output=xml
+          ctest -S test/project_ctest.cmake -VV -DCTEST_CONFIGURATION_TYPE=${{ matrix.build-type }} -DCTEST_BUILD_NAME="$TEST_NAME" --rerun-failed --output-on-failure
+        # ./srs_backend_test --gtest_output=xml
 
       # - name: publish test report
       #   uses: dorny/test-reporter@v1
@@ -71,18 +89,3 @@ jobs:
       #     path: 'build/bin/test_detail.xml'
       #     fail-on-error: true
       #     reporter: java-junit
-
-      - name: cache-delete
-        run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          gh cache delete ${{ steps.cache-restore.outputs.cache-primary-key }} || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: save cache
-        id: cache-save
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ${{ env.PARENT_DIR }}/.conan2
-          key: ${{ steps.cache-restore.outputs.cache-primary-key }}

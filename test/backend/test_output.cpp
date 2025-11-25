@@ -48,7 +48,7 @@ namespace
 } // namespace
 
 constexpr auto DEFAULT_RUN_TIME_S = 5;
-constexpr auto DEFAULT_DELAY_TIME_US = 500;
+constexpr auto DEFAULT_DELAY_TIME_US = 10000;
 auto main(int argc, char** argv) -> int
 {
     auto cli_args = CLI::App{ "SRS integration test" };
