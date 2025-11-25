@@ -64,3 +64,9 @@ target_compile_options(
             -Wextra
             -Wconversion
             -pedantic)
+
+# Set coverage
+if(ENABLE_COVERAGE)
+    target_compile_options(srscpp PRIVATE --coverage)
+    target_link_options(srscpp PRIVATE --coverage)
+endif()

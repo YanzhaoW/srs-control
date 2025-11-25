@@ -82,11 +82,8 @@ namespace srs::process
     {
       public:
         explicit ProtoDelimSerializer(std::size_t n_lines)
-            : ProtoSerializerBase{ "ProtoDelimSerializer", protobuf_delim_deserializer_converter{}, n_lines }
+            : ProtoSerializerBase{ "ProtoSerializer(delim)", protobuf_delim_deserializer_converter{}, n_lines }
         {
         }
-        static constexpr auto name_ = std::string_view{ "Struct deserializer(delim)" };
-        static constexpr auto get_name() -> std::string_view { return name_; };
-        static auto get_name_str() -> std::string { return std::string{ name_ }; };
     };
 } // namespace srs::process

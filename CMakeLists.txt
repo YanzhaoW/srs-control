@@ -10,7 +10,7 @@ set(ENV{CMAKE_ENABLE_TEST} ${ENABLE_TEST})
 project(
     SRS-control
     VERSION 0.1.4
-    LANGUAGES CXX)
+    LANGUAGES CXX C)
 
 include(CTest)
 enable_testing()

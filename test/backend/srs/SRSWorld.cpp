@@ -16,8 +16,7 @@ namespace srs::test
             std::make_unique<SRSEmulator>(SRSEmulator::Config{ .data_port = app_config_.fec_data_receive_port,
                                                                .listen_port = app_config_.fec_control_remote_port,
                                                                .write_port = app_config_.fec_control_local_port,
-                                                               .filename = input_filename },
-                                          app_);
+                                                               .filename = input_filename });
     }
 
     void World::init() { app_.init(); }

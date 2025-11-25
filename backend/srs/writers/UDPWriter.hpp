@@ -9,9 +9,6 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/uses_executor.hpp>
-#include <boost/cobalt/generator.hpp>
-#include <boost/cobalt/this_coro.hpp>
-#include <boost/cobalt/this_thread.hpp>
 #include <boost/thread/future.hpp>
 #include <cassert>
 #include <cstddef>
@@ -20,7 +17,6 @@
 #include <spdlog/spdlog.h>
 #include <srs/connections/ConnectionBase.hpp>
 #include <srs/writers/DataWriterOptions.hpp>
-#include <string>
 #include <string_view>
 #include <vector>
 
