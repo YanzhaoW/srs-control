@@ -2,11 +2,12 @@
 ## Then modify the CMakeLists.txt file in the root directory of your
 ## project to incorporate the testing dashboard.
 ##
-## # The following are required to submit to the CDash dashboard:
-##   ENABLE_TESTING()
-##   INCLUDE(CTest)
 
 set(CTEST_PROJECT_NAME srs-control)
 set(CTEST_NIGHTLY_START_TIME 01:00:00 UTC)
 set(CTEST_SUBMIT_URL https://my.cdash.org/submit.php?project=srs-control)
 set(CTEST_DROP_SITE_CDASH TRUE)
+
+# Optional, but recommended so that command lines can be seen in the CDash logs
+set(CTEST_USE_LAUNCHERS YES)
+include(CTestUseLaunchers)

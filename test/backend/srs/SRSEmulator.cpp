@@ -64,6 +64,7 @@ namespace srs::test
                     auto acq_off_connect = connection::Stopper{};
                     return std::string{ acq_off_connect.get_response_msg() };
             }
+            return {};
         }
         auto get_send_msg_from_receive_type(SRSEmulator::ReceiveType rec_type) -> std::string
         {
@@ -86,6 +87,7 @@ namespace srs::test
                     buffer.serialize(send_suffix);
                     return std::string{ buffer.data() };
             }
+            return {};
         }
 
         auto check_receive_msg_type(std::string_view msg) -> SRSEmulator::ReceiveType
