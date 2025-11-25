@@ -30,7 +30,7 @@ namespace srs::process
         {
         }
 
-        [[nodiscard]] auto get_n_lines() const -> int { return n_lines_; }
+        [[nodiscard]] auto get_n_lines() const -> std::size_t { return n_lines_; }
         [[nodiscard]] auto get_required_conversion() const -> DataConvertOptions { return previous_conversion_; }
         [[nodiscard]] auto get_name() const -> std::string_view { return name_; };
         [[nodiscard]] auto get_name_str() const -> std::string { return std::string{ name_ }; };

@@ -27,6 +27,7 @@ namespace srs::process
         {
             output_data_.resize(n_lines);
         }
+        using Base = ConverterTask<Conversion, const proto::Data*, std::string_view>;
 
         ProtoSerializerBase(const ProtoSerializerBase&) = delete;
         ProtoSerializerBase(ProtoSerializerBase&&) = delete;
@@ -36,12 +37,12 @@ namespace srs::process
 
         [[nodiscard]] auto get_data_view(std::size_t line_num) const -> std::string_view
         {
-            assert(line_num < n_lines_);
+            assert(line_num < Base::get_n_lines());
             return output_data_[line_num];
         }
         void run_task(const auto& prev_data_converter, std::size_t line_num)
         {
-            assert(line_num < n_lines_);
+            assert(line_num < Base::get_n_lines());
             output_data_[line_num].clear();
             const auto* input_data = prev_data_converter.get_data_view(line_num);
             static_assert(std::same_as<decltype(input_data), const proto::Data*>);

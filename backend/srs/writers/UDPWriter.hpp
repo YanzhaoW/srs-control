@@ -94,7 +94,7 @@ namespace srs::writer
 
         void run_task(const auto& prev_data_converter, std::size_t line_number)
         {
-            assert(not static_cast<bool>(input_source_));
+            assert(line_number < get_n_lines());
             output_data_[line_number] =
                 connections_[line_number]->send_sync_message(prev_data_converter.get_data_view(line_number));
         }

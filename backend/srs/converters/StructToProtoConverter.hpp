@@ -25,13 +25,13 @@ namespace srs::process
 
         [[nodiscard]] auto get_data_view(std::size_t line_num) const -> OutputType
         {
-            assert(line_num < get_n_line());
+            assert(line_num < get_n_lines());
             return &output_data_[line_num];
         }
 
         void run_task(const auto& prev_data_converter, std::size_t line_num)
         {
-            assert(line_num < get_n_line());
+            assert(line_num < get_n_lines());
             auto& output_data = output_data_[line_num];
             output_data.Clear();
             auto input_data = prev_data_converter.get_data_view(line_num);

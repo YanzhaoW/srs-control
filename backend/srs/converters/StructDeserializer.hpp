@@ -3,7 +3,6 @@
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include <array>
 #include <bitset>
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -32,13 +31,13 @@ namespace srs::process
 
         [[nodiscard]] auto get_data_view(std::size_t line_number) const -> OutputType
         {
-            assert(line_number < get_line_num());
+            assert(line_number < get_n_lines());
             return &output_data_[line_number];
         }
 
         void run_task(const auto& prev_data_converter, size_t line_number)
         {
-            assert(line_number < get_line_num());
+            assert(line_number < get_n_lines());
             auto& output_data = output_data_[line_number];
             auto& receive_raw_data = receive_raw_data_[line_number];
             reset_struct_data(output_data);
