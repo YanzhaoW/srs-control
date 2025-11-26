@@ -2,7 +2,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CPACK_PACKAGE_DIRECTORY ${CMAKE_BINARY_DIR}/package)
     set(CPACK_PACKAGE_NAME srs-control)
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-        "Control software for the SRS/VMM3a data acquisition system.")
+        "Control software for the SRS/VMM3a data acquisition system."
+    )
     # set(CPACK_PACKAGE_VENDOR "Humantiy")
     set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
     set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
@@ -29,5 +30,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 
     include(CPack)
 else()
-    message(FATAL_ERROR "Packaging should be done in the top level CMakeLists.txt")
+    message(
+        FATAL_ERROR
+        "Packaging should be done in the top level CMakeLists.txt"
+    )
 endif()
