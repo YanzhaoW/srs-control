@@ -39,7 +39,7 @@ namespace srs::writer
             "Writer: Binary file {} data size written: \n\t{}",
             file_name_,
             fmt::join(
-                std::views::enumerate(output_data_) |
+                std::views::zip(std::views::iota(0), output_data_) |
                     std::views::transform(
                         [](const auto& idex_data_size) -> std::string
                         { return fmt::format("{}: {}", std::get<0>(idex_data_size), std::get<1>(idex_data_size)); }),

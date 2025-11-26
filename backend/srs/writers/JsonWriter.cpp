@@ -88,7 +88,7 @@ namespace srs::writer
     }
     Json::~Json()
     {
-        for (auto [idx, file_stream] : std::views::enumerate(file_streams_))
+        for (auto [idx, file_stream] : std::views::zip(std::views::iota(0), file_streams_))
         {
             file_stream << "]\n";
             file_stream.close();
