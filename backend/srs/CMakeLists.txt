@@ -1,10 +1,6 @@
 add_library(srscpp SHARED)
 target_sources(srscpp PRIVATE Application.cpp)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(srscpp PRIVATE "-fclang-abi-compat=17")
-endif()
-
 target_sources(
     srscpp
     PUBLIC FILE_SET
@@ -68,3 +64,9 @@ target_compile_options(
             -Wextra
             -Wconversion
             -pedantic)
+
+# Set coverage
+if(ENABLE_COVERAGE)
+    target_compile_options(srscpp PRIVATE --coverage)
+    target_link_options(srscpp PRIVATE --coverage)
+endif()

@@ -22,13 +22,6 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/asio/uses_executor.hpp>
-#include <boost/cobalt/op.hpp>
-#include <boost/cobalt/promise.hpp>
-#include <boost/cobalt/race.hpp>
-#include <boost/cobalt/result.hpp>
-#include <boost/cobalt/spawn.hpp>
-#include <boost/cobalt/task.hpp>
-#include <boost/cobalt/this_thread.hpp>
 #include <boost/thread/future.hpp>
 #include <chrono>
 #include <cstddef>
@@ -64,6 +57,7 @@ namespace srs::test
                     auto acq_off_connect = connection::Stopper{};
                     return std::string{ acq_off_connect.get_response_msg() };
             }
+            return {};
         }
         auto get_send_msg_from_receive_type(SRSEmulator::ReceiveType rec_type) -> std::string
         {
@@ -86,6 +80,7 @@ namespace srs::test
                     buffer.serialize(send_suffix);
                     return std::string{ buffer.data() };
             }
+            return {};
         }
 
         auto check_receive_msg_type(std::string_view msg) -> SRSEmulator::ReceiveType
@@ -115,7 +110,7 @@ namespace srs::test
         }
     } // namespace
 
-    SRSEmulator::SRSEmulator(const Config& config, App& app)
+    SRSEmulator::SRSEmulator(const Config& config)
         : config_{ config }
         , udp_socket_{ io_context_,
                        asio::ip::udp::endpoint{ asio::ip::udp::v4(),
@@ -167,7 +162,7 @@ namespace srs::test
     {
         auto msg_buffer = std::vector<char>{};
         msg_buffer.resize(common::SMALL_READ_MSG_BUFFER_SIZE);
-        auto executor = co_await cobalt::this_coro::executor;
+        auto executor = co_await asio::this_coro::executor;
         for (;;)
         {
             spdlog::trace("SRS server: listening on the local port {}", udp_socket_.local_endpoint());

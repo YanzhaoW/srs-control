@@ -1,7 +1,6 @@
 #pragma once
 
 #include "srs/Application.hpp"
-#include "srs/converters/ProtoDelimSerializer.hpp"
 #include "srs/converters/ProtoSerializer.hpp"
 #include "srs/converters/RawToDelimRawConveter.hpp"
 #include "srs/converters/SerializableBuffer.hpp"

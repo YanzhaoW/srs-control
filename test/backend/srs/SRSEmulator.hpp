@@ -16,9 +16,6 @@
 #include <boost/asio/system_timer.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/uses_executor.hpp>
-#include <boost/cobalt/promise.hpp>
-#include <boost/cobalt/task.hpp>
-#include <boost/cobalt/this_thread.hpp>
 #include <boost/thread/future.hpp>
 #include <chrono>
 #include <cstddef>
@@ -48,7 +45,7 @@ namespace srs::test
         };
 
         void set_delay_time(std::size_t time) { delay_time_ = std::chrono::microseconds{ time }; }
-        explicit SRSEmulator(const Config& config, App& app);
+        explicit SRSEmulator(const Config& config);
         void set_continue_output(bool is_continue) { is_continue_.store(is_continue); }
         void wait_for_connection();
         void wait_for_data_sender();

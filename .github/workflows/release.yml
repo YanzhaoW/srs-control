@@ -55,13 +55,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian-bullseye, fedora-41]
+        os: [debian-bullseye, fedora-42]
         root: ['with-root', 'no-root']
         include:
           - os: debian-bullseye
             preset: static
             pack: true
-          - os: fedora-41
+          - os: fedora-42
             preset: default
             pack: false
     name: ${{ matrix.os }}-${{ matrix.root }}

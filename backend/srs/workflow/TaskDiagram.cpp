@@ -60,7 +60,7 @@ namespace srs::workflow
         const std::atomic<bool>& is_stopped)
     {
         taskflow_lines_.resize(n_lines_);
-        for (const auto [line_number, taskflow] : std::views::enumerate(taskflow_lines_))
+        for (const auto [line_number, taskflow] : std::views::zip(std::views::iota(0), taskflow_lines_))
         {
             construct_taskflow_line(taskflow, static_cast<std::size_t>(line_number));
         }
@@ -112,7 +112,8 @@ namespace srs::workflow
 
     auto TaskDiagram::is_taskflow_abort_ready() const -> bool
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        static constexpr auto SLEEP_TIME = std::chrono::milliseconds(10);
+        std::this_thread::sleep_for(SLEEP_TIME);
         auto res = std::ranges::all_of(is_pipeline_stopped_,
                                        [](const std::atomic<bool>& is_pipe_stopped) -> bool
                                        { return is_pipe_stopped.load(); });

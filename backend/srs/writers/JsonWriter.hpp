@@ -68,7 +68,7 @@ namespace srs::writer
 
         void run_task(const auto& prev_data_converter, std::size_t line_number)
         {
-            assert(line_number < get_line_num());
+            assert(line_number < get_n_lines());
             const auto* data_struct = prev_data_converter.get_data_view(line_number);
             write_json(*data_struct, line_number);
         }

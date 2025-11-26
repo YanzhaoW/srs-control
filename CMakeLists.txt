@@ -5,13 +5,12 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(option_settings)
 include(check_submodules)
 
-set(ENV{CMAKE_ENABLE_TEST} ${ENABLE_TEST})
-
 project(
     SRS-control
     VERSION 0.1.4
     LANGUAGES CXX C)
 
+include(CTest)
 enable_testing()
 
 if(BUILD_ONLY_DOC)
@@ -28,10 +27,6 @@ else()
     set(CMAKE_CXX_EXTENSIONS ON)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-
-    # if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # list(APPEND CMAKE_CXX_FLAGS "-fexperimental-library")
-    # endif()
 
     include(import_packages)
 

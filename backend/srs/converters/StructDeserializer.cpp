@@ -101,7 +101,7 @@ namespace srs::process
         constexpr auto header_bytes = sizeof(output_data.header);
         constexpr auto element_bytes = common::HIT_DATA_BIT_LENGTH / common::BYTE_BIT_LENGTH;
         auto vector_size = (read_bytes - header_bytes) / element_bytes;
-        if (vector_size < 0)
+        if (vector_size <= 0)
         {
             throw std::runtime_error("Deserialization: Wrong header type!");
         }

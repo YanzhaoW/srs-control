@@ -26,20 +26,38 @@ jobs:
     defaults:
       run:
         shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        base-image: [fedora-42]
+        build-type: [Debug]
+        compiler: [gcc, clang, libc++]
+    name: ${{ matrix.base-image }}-${{ matrix.compiler }}
     container:
-      image: yanzhaowang/srs-env:fedora-41
+      image: yanzhaowang/srs-env:${{ matrix.base-image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           submodules: 'true'
       - name: install and env vars
         run: |
           dnf upgrade -y
-          dnf install -y conan nodejs
+          dnf install -y conan nodejs hostname
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
+
+      - name: set env variables for cdash
+        run: |
+          if [[ $GITHUB_EVENT_NAME == "push" ]]; then
+            echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
+          else
+            echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
+            export PULL_NR=${{ github.event.number }}
+            echo "TEST_NAME=\"${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
+          fi
 
       - name: restore cache
         id: cache-restore
@@ -47,21 +65,26 @@ jobs:
         with:
           path: |
             ${{ env.PARENT_DIR }}/.conan2
-          key: srs-cache
+          key: ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }}
 
-      - name: build
+      - name: build-test-submit
         run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          cmake --preset default
-          cmake --build ./build -- -j2
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ctest -S test/project_ctest.cmake -VV\
+            -DTEST_MODEL=${TEST_MODEL}\
+            -DCTEST_CONFIGURATION_TYPE=${{ matrix.build-type }}\
+            -DCTEST_BUILD_NAME="$TEST_NAME"\
+            -DCTEST_SITE="Github CI/CD"\
+            -DCONFIGURE_PRESET="${{ matrix.compiler }}"\
+            --output-on-failure
+        # ./srs_backend_test --gtest_output=xml
 
-      - name: test
+      - name: test coverage
+        if: github.event_name == 'push'
         run: |
-          cd build
-          ctest --rerun-failed --output-on-failure
-          # ./srs_backend_test --gtest_output=xml
+          if [[ $CXX == "gcc" ]]; then
+            ctest -T coverage
+            ctest -T Submit
+          fi
 
       # - name: publish test report
       #   uses: dorny/test-reporter@v1
@@ -71,18 +94,3 @@ jobs:
       #     path: 'build/bin/test_detail.xml'
       #     fail-on-error: true
       #     reporter: java-junit
-
-      - name: cache-delete
-        run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          gh cache delete ${{ steps.cache-restore.outputs.cache-primary-key }} || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: save cache
-        id: cache-save
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ${{ env.PARENT_DIR }}/.conan2
-          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
