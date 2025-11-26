@@ -47,21 +47,6 @@ jobs:
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
-          if [[ ${{ matrix.compiler }} == "libc++" ]]; then
-            echo "CXX=clang++" >> $GITHUB_ENV
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
-            echo "ADDITIONAL_CONFIGURE_OPTIONS=\"NO_ROOT=OFF -DCMAKE_EXE_LINKER_FLAGS=-lc++abi\"" >> $GITHUB_ENV
-          elif [[ ${{ matrix.compiler }} == "gcc" ]]; then
-            echo "CXX=g++" >> $GITHUB_ENV
-            echo "CC=gcc" >> $GITHUB_ENV
-          elif [[ ${{ matrix.compiler }} == "clang" ]]; then
-            echo "CXX=clang++" >> $GITHUB_ENV
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXXFLAGS=-stdlib=libstdc++" >> $GITHUB_ENV
-          else
-            exit 1
-          fi
 
       - name: set env variables for cdash
         run: |
@@ -89,7 +74,7 @@ jobs:
             -DCTEST_CONFIGURATION_TYPE=${{ matrix.build-type }}\
             -DCTEST_BUILD_NAME="$TEST_NAME"\
             -DCTEST_SITE="Github CI/CD"\
-            -DADDITIONAL_CONFIGURE_OPTIONS="${ADDITIONAL_CONFIGURE_OPTIONS}"\
+            -DCONFIGURE_PRESET="${{ matrix.compiler }}"\
             --output-on-failure
         # ./srs_backend_test --gtest_output=xml
 

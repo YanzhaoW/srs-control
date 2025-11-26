@@ -32,6 +32,55 @@
             }
         },
         {
+            "name": "libc++",
+            "displayName": "libc++ build",
+            "description": "Build with libc++",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+                "CMAKE_EXE_LINKER_FLAGS": "-lc++abi",
+                "NO_ROOT": "ON",
+                "USE_SYSTEM_LIBRARIES": "OFF",
+                "CONAN_INSTALL_ARGS": "--build=missing;-scompiler.cppstd=gnu23"
+            }
+        },
+        {
+            "name": "clang",
+            "displayName": "clang build",
+            "description": "Build with clang",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_FLAGS": "-stdlib=libstdc++",
+                "USE_SYSTEM_LIBRARIES": "ON",
+                "CONAN_INSTALL_ARGS": "--build=missing;-scompiler.cppstd=gnu23"
+            }
+        },
+        {
+            "name": "gcc",
+            "displayName": "gcc build",
+            "description": "Build with gcc",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_C_COMPILER": "gcc",
+                "USE_SYSTEM_LIBRARIES": "ON",
+                "CONAN_INSTALL_ARGS": "--build=missing;-scompiler.cppstd=gnu23"
+            }
+        },
+        {
             "name": "build-doc",
             "displayName": "build-doc",
             "description": "Documentation only build",

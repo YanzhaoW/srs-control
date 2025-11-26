@@ -5,8 +5,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(option_settings)
 include(check_submodules)
 
-set(ENV{CMAKE_ENABLE_TEST} ${ENABLE_TEST})
-
 project(
     SRS-control
     VERSION 0.1.4

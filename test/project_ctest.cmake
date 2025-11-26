@@ -11,22 +11,31 @@ endif()
 if(NOT DEFINED CTEST_BUILD_NAME)
     set(CTEST_BUILD_NAME "${CMAKE_HOST_SYSTEM_NAME} local machine")
 endif()
+
 if(NOT DEFINED CTEST_CONFIGURATION_TYPE)
     set(CTEST_CONFIGURATION_TYPE Debug)
 endif()
+
+if(NOT DEFINED CONFIGURE_PRESET)
+    set(CONFIGURE_PRESET default)
+endif()
+
+if(NOT DEFINED TEST_MODEL)
+    set(TEST_MODEL "Experimental")
+endif()
+
 set(CTEST_SOURCE_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/..")
 set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../build")
 set(CTEST_CMAKE_GENERATOR Ninja)
 set(CTEST_COVERAGE_COMMAND "gcov")
 
 set(CONFIGURE_OPTIONS
-    "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=${CTEST_SCRIPT_DIRECTORY}/../utils/conan/conan_provider.cmake"
-    "-DCONAN_INSTALL_ARGS=--build=missing\;-scompiler.cppstd=gnu23"
+    "--preset ${CONFIGURE_PRESET}"
     "-DENABLE_COVERAGE=ON"
     ${ADDITIONAL_CONFIGURE_OPTIONS})
 
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
-ctest_start(Experimental)
+ctest_start(${TEST_MODEL})
 ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
 ctest_build()
 ctest_test()

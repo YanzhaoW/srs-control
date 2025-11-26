@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         base-image: [fedora-42]
-        build-type: [Debug, RelWithDebInfo]
+        build-type: [Debug]
         compiler: [gcc, clang, libc++]
     container:
       image: yanzhaowang/srs-env:${{ matrix.base-image }}
@@ -37,26 +37,11 @@ jobs:
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
-          if [[ ${{ matrix.compiler }} == "libc++" ]]; then
-            echo "CXX=clang++" >> $GITHUB_ENV
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
-          elif [[ ${{ matrix.compiler }} == "gcc" ]]; then
-            echo "CXX=g++" >> $GITHUB_ENV
-            echo "CC=gcc" >> $GITHUB_ENV
-          elif [[ ${{ matrix.compiler }} == "clang" ]]; then
-            echo "CXX=clang++" >> $GITHUB_ENV
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXXFLAGS=-stdlib=libstdc++" >> $GITHUB_ENV
-          else
-            exit 1
-          fi
 
       - name: build
         run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
           conan config install utils/settings/conan/settings_user.yml
-          cmake --preset default -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+          cmake --preset ${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
