@@ -24,12 +24,10 @@ namespace srs::writer
         output_data_.resize(n_lines);
         for ([[maybe_unused]] const auto idx : std::views::iota(0, static_cast<int>(n_lines)))
         {
-            auto& connection = connections_.emplace_back(std::make_unique<connection::UDPWriterConnection>(
-                connection::Base::Config{ .name = "UDP writer", .buffer_size = common::LARGE_READ_MSG_BUFFER_SIZE },
-                io_context));
-            connection->set_socket(
-                std::make_unique<asio::ip::udp::socket>(io_context, asio::ip::udp::endpoint{ asio::ip::udp::v4(), 0 }));
-            connection->set_remote_endpoint(std::move(remote_endpoint));
+            connections_.emplace_back(std::make_unique<connection::UDPWriterConnection>(io_context, remote_endpoint));
+            // connection->set_socket(
+            //     std::make_unique<asio::ip::udp::socket>(io_context, asio::ip::udp::endpoint{ asio::ip::udp::v4(), 0
+            //     }));
         }
     }
 

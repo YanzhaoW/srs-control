@@ -1,10 +1,12 @@
 #pragma once
 
+
 #ifdef HAS_ROOT
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
+#include "srs/utils/CommonConcepts.hpp"
 #include <TFile.h>
 #include <TSystem.h>
 #include <TTree.h>

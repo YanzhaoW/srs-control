@@ -35,7 +35,6 @@ namespace srs::connection
     {
 
         spdlog::debug("Creating connection {} with buffer size: {}", config_.name, config.buffer_size);
-        read_msg_buffer_.resize(config.buffer_size);
     }
 
     void Base::read_data_handle(std::span<BufferElementType> read_data)
@@ -93,23 +92,5 @@ namespace srs::connection
             return true;
         }
         return write_msg_response_buffer_ == response_msg;
-    }
-
-    void Base::close_socket()
-    {
-        if (not is_socket_closed_.load())
-        {
-            is_socket_closed_.store(true);
-            spdlog::trace("Connection {}: Closing the socket ...", config_.name);
-            // socket_->cancel();
-            socket_->close();
-            if (signal_set_ != nullptr)
-            {
-                spdlog::trace("Connection {}: cancelling signal ...", config_.name);
-                signal_set_->cancel();
-                spdlog::trace("Connection {}: signal is cancelled.", config_.name);
-            }
-            spdlog::trace("Connection {}: Socket is closed and cancelled.", config_.name);
-        }
     }
 } // namespace srs::connection

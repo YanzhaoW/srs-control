@@ -24,15 +24,6 @@ namespace srs::connection
         Starter();
         void close();
         void send_message_from(std::shared_ptr<FecSwitchSocket> socket);
-        // void acq_on();
-        void on_fail()
-        {
-            set_connection_bad();
-            const auto& endpoint = get_remote_endpoint();
-            spdlog::critical("Cannot establish a connection to the FEC with the IP: \"{}:{}\"!",
-                             endpoint.address().to_string(),
-                             endpoint.port());
-        }
         auto get_send_suffix() const -> const auto& { return send_suffix_; }
 
       private:
@@ -78,15 +69,6 @@ namespace srs::connection
          * @see Status
          */
         ~Stopper() = default;
-
-        /**
-         * \brief called if an error occurs
-         */
-        void on_fail()
-        {
-            spdlog::debug("on_fail of stopper is called");
-            set_connection_bad();
-        }
 
         /**
          * \brief Turn off the data acquisition from SRS system
