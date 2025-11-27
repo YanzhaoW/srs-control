@@ -44,12 +44,21 @@ jobs:
         run: |
           if [[ $GITHUB_EVENT_NAME == "push" ]]; then
             echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
-            echo "TEST_NAME=\"macos-debug (master)\"" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.os }}-appleclang-Debug (master)\"" >> $GITHUB_ENV
           else
             echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
             export PULL_NR=${{ github.event.number }}
-            echo "TEST_NAME=\"macos-debug (pr.${PULL_NR})\"" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.os }}-appleclang-Debug (pr.${PULL_NR})\"" >> $GITHUB_ENV
           fi
+
+      - name: restore cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.PARENT_DIR }}/.conan2
+          key: ${{ matrix.os }}-Debug
+
       - name: build-test-submit
         run: |
           export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
@@ -62,7 +71,7 @@ jobs:
             -DCONFIGURE_PRESET=default\
             --output-on-failure
 
-  ci-test:
+  linux-test:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -93,11 +102,11 @@ jobs:
         run: |
           if [[ $GITHUB_EVENT_NAME == "push" ]]; then
             echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
-            echo "TEST_NAME=\"${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
           else
             echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
             export PULL_NR=${{ github.event.number }}
-            echo "TEST_NAME=\"${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
           fi
 
       - name: restore cache
@@ -108,6 +117,7 @@ jobs:
             ${{ env.PARENT_DIR }}/.conan2
           key: ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }}
 
+      # Be very careful about CTEST_BUILD_NAME. It shouldn't contain additional double quotations
       - name: build-test-submit
         run: |
           ctest -S test/project_ctest.cmake -VV\
