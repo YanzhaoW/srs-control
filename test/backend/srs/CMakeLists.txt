@@ -11,7 +11,7 @@ target_link_libraries(
     test_utility
     PUBLIC srscpp
            srs_data
-           Boost::system
+           Boost::headers
            fmt::fmt
            zpp_bits::zpp_bits
            magic_enum::magic_enum

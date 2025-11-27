@@ -29,14 +29,25 @@ set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../build")
 set(CTEST_CMAKE_GENERATOR Ninja)
 set(CTEST_COVERAGE_COMMAND "gcov")
 
-set(CONFIGURE_OPTIONS
-    "--preset ${CONFIGURE_PRESET}"
-    "-DENABLE_COVERAGE=ON"
-    ${ADDITIONAL_CONFIGURE_OPTIONS})
+set(CONFIGURE_OPTIONS "--preset ${CONFIGURE_PRESET}" "-DENABLE_COVERAGE=ON"
+                      ${ADDITIONAL_CONFIGURE_OPTIONS})
 
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
+
 ctest_start(${TEST_MODEL})
+
 ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
+
+ctest_submit(PARTS Start Configure)
+
 ctest_build()
-ctest_test()
-ctest_submit()
+
+ctest_submit(PARTS Build)
+
+ctest_test(RETURN_VALUE _ctest_test_ret_val)
+
+ctest_submit(RETRY_COUNT 3 RETRY_DELAY 2)
+
+if(_ctest_test_ret_val)
+    message(FATAL_ERROR "Some tests failed!")
+endif()

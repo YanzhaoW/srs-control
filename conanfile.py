@@ -80,12 +80,13 @@ class CompressorRecipe(ConanFile):
         self.requires("spdlog/1.15.1")  # type: ignore
         self.requires("zpp_bits/4.4.24")  # type: ignore
         self.requires("magic_enum/0.9.7")  # type: ignore
-        self.requires("fmt/12.1.0", override=True)  # type: ignore
         self.requires("taskflow/3.10.0")  # type: ignore
         self.requires("glaze/6.0.1")  # type: ignore
 
         if os.environ["CMAKE_USE_SYSTEM_BOOST"] == "OFF":
-            print("---- Conan: compiling protobuf from the conan package manager.")
+            print(
+                "---- Conan: compiling protobuf from the conan package manager."
+            )
             self.requires("boost/1.88.0", options=BOOST_OPTIONS)  # type: ignore
         else:
             print("---- Conan: using Boost from the local system.")
