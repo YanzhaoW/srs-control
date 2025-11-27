@@ -30,30 +30,7 @@
 namespace srs::connection
 {
 
-    Base::Base(const Config& config)
-        : config_{ config }
-    {
-
-        spdlog::debug("Creating connection {} with buffer size: {}", config_.name, config.buffer_size);
-    }
-
-    void Base::read_data_handle(std::span<BufferElementType> read_data)
-    {
-        spdlog::trace(
-            "Connection {}: received {} bytes data: {:02x}", config_.name, read_data.size(), fmt::join(read_data, " "));
-        if (write_msg_response_buffer_ == read_data)
-        {
-            spdlog::trace("Connection {}: received data is correct!", config_.name);
-        }
-        else
-        {
-            spdlog::trace("Connection {}: received data is incorrect! Supposed response should be: {:02x}",
-                          config_.name,
-                          fmt::join(write_msg_response_buffer_.data(), " "));
-        }
-    }
-
-    auto Base::send_message(std::shared_ptr<FecSwitchSocket> socket, std::shared_ptr<Base> connection)
+    auto Base::send_message(std::shared_ptr<FecCommandSocket> socket, std::shared_ptr<Base> connection)
         -> asio::awaitable<void>
     {
         spdlog::debug("Connection {}: Sending data using external socket at time {} us...",

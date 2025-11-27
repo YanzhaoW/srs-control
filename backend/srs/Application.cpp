@@ -187,16 +187,14 @@ namespace srs
     template <typename T>
     auto App::switch_FECs(std::string_view connection_name) -> SwitchFutureType
     {
-        return connection::SpecialSocket::create<connection::FecSwitchSocket>(config_.fec_control_local_port,
-                                                                              io_context_)
+        return connection::SpecialSocket::create<connection::FecCommandSocket>(config_.fec_control_local_port,
+                                                                               io_context_)
             .transform(
-                [this, connection_name](const std::shared_ptr<connection::FecSwitchSocket>& socket)
+                [this, connection_name](const std::shared_ptr<connection::FecCommandSocket>& socket)
                 {
                     for (const auto& remote_endpoint : remote_fec_endpoints_)
                     {
-                        auto fec_connection = std::make_shared<T>(
-                            connection::Base::Config{ .name = std::string{ connection_name },
-                                                      .buffer_size = common::SMALL_READ_MSG_BUFFER_SIZE });
+                        auto fec_connection = std::make_shared<T>( connection_name );
                         fec_connection->set_remote_endpoint(remote_endpoint);
                         fec_connection->send_message_from(socket);
                     }

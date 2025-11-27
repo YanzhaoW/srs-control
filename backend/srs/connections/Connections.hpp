@@ -6,6 +6,7 @@
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
+#include <string_view>
 #include <vector>
 
 namespace srs::workflow
@@ -15,15 +16,15 @@ namespace srs::workflow
 
 namespace srs::connection
 {
-    class FecSwitchSocket;
+    class FecCommandSocket;
     class Starter : public Base
     {
       public:
         // explicit Starter(const Info& info);
-        explicit Starter(const Config& config);
+        explicit Starter(std::string_view name);
         Starter();
         void close();
-        void send_message_from(std::shared_ptr<FecSwitchSocket> socket);
+        void send_message_from(std::shared_ptr<FecCommandSocket> socket);
         auto get_send_suffix() const -> const auto& { return send_suffix_; }
 
       private:
@@ -56,9 +57,9 @@ namespace srs::connection
         /**
          * \brief Constructor for Stopper connection class
          *
-         * @param config connection configuration
+         * @param name Name of the command
          */
-        explicit Stopper(const Config& config);
+        explicit Stopper(std::string_view name);
 
         Stopper();
 
@@ -79,7 +80,7 @@ namespace srs::connection
          * @see connection::Base::communicate
          */
         // void acq_off();
-        void send_message_from(std::shared_ptr<FecSwitchSocket> socket);
+        void send_message_from(std::shared_ptr<FecCommandSocket> socket);
         // void close() {}
         auto get_send_suffix() const -> const auto& { return send_suffix_; }
 
