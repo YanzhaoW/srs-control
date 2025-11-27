@@ -8,7 +8,43 @@ on:
 permissions: write-all
 
 jobs:
-  build-caches:
+  macos-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          submodules: 'true'
+      - name: install and env vars
+        run: |
+          brew install boost conan nodejs tbb tree gh
+          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
+          echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
+          echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV
+
+      - name: build
+        run: |
+          cmake --preset ${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Debug -DUSE_SYSTEM_BOOST=ON
+
+      - name: cache-delete
+        run: |
+          gh cache delete ${{ matrix.os }}-Debug  || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: save cache
+        id: cache-save
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.PARENT_DIR }}/.conan2
+          key: ${{ matrix.os }}-Debug
+
+  build-linux-caches:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

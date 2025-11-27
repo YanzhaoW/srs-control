@@ -164,15 +164,16 @@ namespace srs::workflow
         spdlog::trace("Analysis workflow: current is_stopped status: {}", is_stopped_.load());
         if (is_stopped_.compare_exchange_strong(expected, true))
         {
-            spdlog::trace("------->> Analysis workflow shutdown: Try to stop data monitor");
+            spdlog::trace("------->> Analysis workflow shutdown: Try to monitor and tasks.");
             monitor_.stop();
 
             while (not task_diagram_->is_taskflow_abort_ready())
             {
+                // spdlog::trace("waiting for task diagram to be abort ready");
             }
             data_queue_.abort();
 
-            spdlog::trace("<<------- Analysis workflow shutdown: successfully stopped");
+            spdlog::trace("<<------- Analysis workflow shutdown: monitor and tasks successfully stopped.");
         }
     }
     auto Handler::get_data_workflow() const -> const TaskDiagram&

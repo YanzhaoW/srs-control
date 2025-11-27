@@ -1,6 +1,6 @@
 include(FetchContent)
 
-find_package(Boost REQUIRED CONFIG COMPONENTS thread system)
+find_package(Boost REQUIRED CONFIG COMPONENTS thread)
 find_package(fmt REQUIRED CONFIG)
 find_package(zpp_bits REQUIRED CONFIG)
 find_package(gsl-lite REQUIRED CONFIG)

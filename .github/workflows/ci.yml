@@ -21,7 +21,57 @@ on:
 permissions: write-all
 
 jobs:
-  ci-test:
+  macos-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26]
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }}-apple_clang
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          submodules: 'true'
+      - name: install and env vars
+        run: |
+          brew install boost conan nodejs tbb tree
+          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
+          echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
+          echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV
+
+      - name: set env variables for cdash
+        run: |
+          if [[ $GITHUB_EVENT_NAME == "push" ]]; then
+            echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.os }}-appleclang-Debug (master)\"" >> $GITHUB_ENV
+          else
+            echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
+            export PULL_NR=${{ github.event.number }}
+            echo "TEST_NAME=\"${{ matrix.os }}-appleclang-Debug (pr.${PULL_NR})\"" >> $GITHUB_ENV
+          fi
+
+      - name: restore cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.PARENT_DIR }}/.conan2
+          key: ${{ matrix.os }}-Debug
+
+      - name: build-test-submit
+        run: |
+          export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          ctest -S test/project_ctest.cmake -VV\
+            -DTEST_MODEL=${TEST_MODEL}\
+            -DCTEST_CONFIGURATION_TYPE=Debug\
+            -DCTEST_BUILD_NAME=${{ env.TEST_NAME }}\
+            -DCTEST_SITE="Github CI/CD"\
+            -DADDITIONAL_CONFIGURE_OPTIONS="-DUSE_SYSTEM_BOOST=ON"\
+            -DCONFIGURE_PRESET=default\
+            --output-on-failure
+
+  linux-test:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,11 +102,11 @@ jobs:
         run: |
           if [[ $GITHUB_EVENT_NAME == "push" ]]; then
             echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
-            echo "TEST_NAME=\"${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
           else
             echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
             export PULL_NR=${{ github.event.number }}
-            echo "TEST_NAME=\"${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
+            echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
           fi
 
       - name: restore cache
@@ -67,12 +117,13 @@ jobs:
             ${{ env.PARENT_DIR }}/.conan2
           key: ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }}
 
+      # Be very careful about CTEST_BUILD_NAME. It shouldn't contain additional double quotations
       - name: build-test-submit
         run: |
           ctest -S test/project_ctest.cmake -VV\
             -DTEST_MODEL=${TEST_MODEL}\
             -DCTEST_CONFIGURATION_TYPE=${{ matrix.build-type }}\
-            -DCTEST_BUILD_NAME="$TEST_NAME"\
+            -DCTEST_BUILD_NAME=${{ env.TEST_NAME }}\
             -DCTEST_SITE="Github CI/CD"\
             -DCONFIGURE_PRESET="${{ matrix.compiler }}"\
             --output-on-failure
