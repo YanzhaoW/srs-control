@@ -26,6 +26,7 @@
 #include <spdlog/spdlog.h>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -253,8 +254,15 @@ namespace srs
         {
             return std::unexpected{ asio::error::make_error_code(asio::error::basic_errors::invalid_argument) };
         }
-        return switch_future.transform([](const std::future<void>& switch_fut)
-                                       { return switch_fut.wait_for(common::DEFAULT_STATUS_WAITING_TIME_SECONDS); });
+        return switch_future.transform(
+            [](const std::future<void>& switch_fut)
+            {
+                if (switch_fut.valid())
+                {
+                    return switch_fut.wait_for(common::DEFAULT_STATUS_WAITING_TIME_SECONDS);
+                };
+                return std::future_status::ready;
+            });
     }
 
     void App::set_remote_fec_endpoints()

@@ -9,6 +9,7 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/uses_executor.hpp>
+#include <boost/system/detail/error_code.hpp>
 #include <boost/thread/future.hpp>
 #include <cassert>
 #include <cstddef>
@@ -39,8 +40,9 @@ namespace srs::connection
         auto send_sync_message(InputType input_data) -> OutputType
         {
             auto* socket = get_socket_ptr();
-            const auto read_size =
-                (not input_data.empty()) ? socket->send_to(asio::buffer(input_data), get_remote_endpoint()) : 0;
+            const auto read_size = (not input_data.empty())
+                                       ? socket->send_to(asio::buffer(input_data), get_remote_endpoint(), 0, err_)
+                                       : 0;
             return read_size;
         }
 
@@ -67,6 +69,7 @@ namespace srs::connection
         }
 
       private:
+        boost::system::error_code err_;
         io_context_type* io_context_ = nullptr;
     };
 } // namespace srs::connection

@@ -265,6 +265,10 @@ namespace srs
          */
         std::jthread workflow_thread_;
 
+        SwitchFutureType switch_on_future_;
+
+        SwitchFutureType switch_off_future_;
+
         /**
          * @brief Exit helper for App class. This is called after calling the destructor.
          *
@@ -280,10 +284,6 @@ namespace srs
         // std::shared_ptr<connection::DataReader> data_reader_;
 
         std::shared_ptr<connection::DataSocket> data_socket_;
-
-        SwitchFutureType switch_on_future_;
-
-        SwitchFutureType switch_off_future_;
 
         void wait_for_reading_finish();
         void set_remote_fec_endpoints();
