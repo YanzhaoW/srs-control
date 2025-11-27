@@ -3,11 +3,11 @@
 #include "ConnectionBase.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include <array>
 #include <gsl/gsl-lite.hpp>
-#include <memory>
+#include <span>
 #include <spdlog/spdlog.h>
 #include <string_view>
-#include <vector>
 
 namespace srs::workflow
 {
@@ -20,15 +20,17 @@ namespace srs::connection
     class Starter : public Base
     {
       public:
-        // explicit Starter(const Info& info);
         explicit Starter(std::string_view name);
         Starter();
         void close();
-        void send_message_from(std::shared_ptr<FecCommandSocket> socket);
-        auto get_send_suffix() const -> const auto& { return send_suffix_; }
+        static auto get_send_suffix() -> const auto& { return send_suffix_; }
+        static auto get_suffix() -> std::span<const CommunicateEntryType>
+        {
+            return std::span{ send_suffix_.cbegin(), send_suffix_.cend() };
+        }
 
       private:
-        std::vector<CommunicateEntryType> send_suffix_ = { 0, 15, 1 };
+        static constexpr std::array<CommunicateEntryType, 3> send_suffix_ = { 0, 15, 1 };
     };
 
     class Stopper : public Base
@@ -71,20 +73,13 @@ namespace srs::connection
          */
         ~Stopper() = default;
 
-        /**
-         * \brief Turn off the data acquisition from SRS system
-         *
-         * This is the primary execution from the Stopper class. It first checks if the Status::is_acq_on from the App
-         * is true. If the status is still false after 4 seconds, an exception will be **thrown**. If the status is
-         * true, member function connection::Base::communicate would be called.
-         * @see connection::Base::communicate
-         */
-        // void acq_off();
-        void send_message_from(std::shared_ptr<FecCommandSocket> socket);
-        // void close() {}
-        auto get_send_suffix() const -> const auto& { return send_suffix_; }
+        static auto get_send_suffix() -> const auto& { return send_suffix_; }
+        static auto get_suffix() -> std::span<const CommunicateEntryType>
+        {
+            return std::span{ send_suffix_.cbegin(), send_suffix_.cend() };
+        }
 
       private:
-        std::vector<CommunicateEntryType> send_suffix_ = { 0, 15, 0 };
+        static constexpr std::array<CommunicateEntryType, 3> send_suffix_ = { 0, 15, 0 };
     };
 } // namespace srs::connection

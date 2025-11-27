@@ -4,20 +4,9 @@
 #include "srs/converters/SerializableBuffer.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/deferred.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/experimental/cancellation_condition.hpp>
-#include <boost/asio/experimental/coro.hpp>
-#include <boost/asio/ip/basic_endpoint.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
 #include <cstdint>
 #include <fmt/base.h>
 #include <fmt/core.h>
@@ -25,7 +14,6 @@
 #include <memory>
 #include <span>
 #include <spdlog/spdlog.h>
-#include <vector>
 
 namespace srs::connection
 {
@@ -49,9 +37,10 @@ namespace srs::connection
 
     void Base::encode_write_msg(process::SerializableMsgBuffer& buffer,
                                 uint32_t counter,
-                                const std::vector<CommunicateEntryType>& data,
+                                std::span<const CommunicateEntryType> data,
                                 uint16_t address)
     {
+        // TODO: make the end part a static data
         buffer.serialize(counter,
                          common::ZERO_UINT16_PADDING,
                          address,
