@@ -9,7 +9,9 @@ else()
 endif()
 
 if(NOT DEFINED CTEST_BUILD_NAME)
-    set(CTEST_BUILD_NAME "${CMAKE_HOST_SYSTEM_NAME} local machine")
+    execute_process(COMMAND git config --global user.name OUTPUT_VARIABLE output_user_name)
+    string(STRIP ${output_user_name} output_user_name)
+    set(CTEST_BUILD_NAME "${CMAKE_HOST_SYSTEM_NAME} local machine ${output_user_name}")
 endif()
 
 if(NOT DEFINED CTEST_CONFIGURATION_TYPE)
