@@ -91,40 +91,6 @@ namespace srs::common
         return std::format("{}_{}{}", file_basename, idx, extension);
     }
 
-    auto create_coro_future(auto& coro, auto&& pre_fut)
-    {
-        if (not pre_fut.valid())
-        {
-            throw std::runtime_error("Previous future is not valid!");
-        }
-        return pre_fut.then(
-            [&coro](std::remove_cvref_t<decltype(pre_fut)> fut)
-            {
-                ;
-                return asio::co_spawn(
-                           coro.get_executor(), coro.async_resume(fut.get(), asio::use_awaitable), asio::use_future)
-                    .get();
-            });
-    }
-
-    auto create_coro_future(auto& coro, bool is_terminated)
-    {
-        // WARN: Which thread is this launched?
-        return boost::async(
-            [&coro, is_terminated]()
-            {
-                return asio::co_spawn(
-                           coro.get_executor(), coro.async_resume(is_terminated, asio::use_awaitable), asio::use_future)
-                    .get();
-            });
-    }
-
-    void coro_sync_start(auto& coro, auto&&... args)
-    {
-        asio::co_spawn(coro.get_executor(), coro.async_resume(std::forward<decltype(args)>(args)...), asio::use_future)
-            .get();
-    }
-
     auto create_coro_task(auto task, asio::any_io_executor executor)
     {
         auto task_handle = task();
@@ -133,24 +99,4 @@ namespace srs::common
         return task_handle;
     }
 
-    inline void initialize_coro(auto& coroutine)
-    {
-        using input_type = std::remove_cvref_t<decltype(coroutine)>::input_type;
-        asio::co_spawn(
-            coroutine.get_executor(), coroutine.async_resume(input_type{}, asio::use_awaitable), asio::use_future)
-            .get();
-    }
-
-    inline auto make_initialized_coro(DataConverter auto& task)
-    {
-        auto task_handle = task.generate_coro();
-        initialize_coro(task_handle);
-        return task_handle;
-    }
-
-    inline auto make_unique_coro(DataConverter auto& task)
-    {
-        return std::make_unique<typename std::remove_reference_t<decltype(task)>::CoroType>(
-            make_initialized_coro(task));
-    }
 } // namespace srs::common

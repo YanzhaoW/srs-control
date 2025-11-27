@@ -4,6 +4,7 @@
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonConcepts.hpp"
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/experimental/coro.hpp>
 #include <boost/asio/ip/udp.hpp>
@@ -91,11 +92,12 @@ namespace srs::writer
         UDP& operator=(const UDP&) = default;
         UDP& operator=(UDP&&) = delete;
 
-        void run_task(const auto& prev_data_converter, std::size_t line_number)
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
         {
             assert(line_number < get_n_lines());
             output_data_[line_number] =
                 connections_[line_number]->send_sync_message(prev_data_converter.get_data_view(line_number));
+            return output_data_[line_number];
         }
 
         [[nodiscard]] auto is_deserialize_valid() const

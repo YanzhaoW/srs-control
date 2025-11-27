@@ -28,7 +28,7 @@ jobs:
 
       - name: build
         run: |
-          cmake --preset ${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Debug -DUSE_SYSTEM_BOOST=ON
+          cmake --preset default -DCMAKE_BUILD_TYPE=Debug -DUSE_SYSTEM_BOOST=ON
 
       - name: cache-delete
         run: |

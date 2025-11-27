@@ -1,29 +1,28 @@
 #pragma once
 
+#include "srs/converters/DataConverterBase.hpp"
 #include <concepts>
 #include <cstddef>
-#include <string_view>
-#include <utility>
-
-namespace srs::process
-{
-    class Raw2DelimRawConverter;
-    class StructDeserializer;
-    class Struct2ProtoConverter;
-    class ProtoSerializer;
-    class ProtoDelimSerializer;
-}; // namespace srs::process
 
 namespace srs::writer
 {
+
+    namespace internal
+    {
+
+        template <typename T>
+        class Dumpy
+        {
+          public:
+        };
+
+    } // namespace internal
+
     template <typename T>
     concept WritableFile = requires(T writer) {
-        { writer.get_name() } -> std::same_as<std::string_view>;
-        { writer.write(std::declval<process::Raw2DelimRawConverter>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::StructDeserializer>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::Struct2ProtoConverter>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::ProtoSerializer>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::ProtoDelimSerializer>(), std::size_t{}) } -> std::same_as<void>;
-        T{ std::string_view{}, std::size_t{} };
+        typename T::InputType;
+        typename T::OutputType;
+        std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
+        writer.run_task();
     };
 } // namespace srs::writer

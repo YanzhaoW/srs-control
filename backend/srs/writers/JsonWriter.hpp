@@ -3,6 +3,7 @@
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
+#include "srs/utils/CommonConcepts.hpp"
 #include "srs/writers/DataWriterOptions.hpp"
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/experimental/coro.hpp>
@@ -45,7 +46,7 @@ namespace srs::writer
         void fill_marker_data(const std::vector<MarkerData>& markers);
     };
 
-    class Json : public process::WriterTask<DataWriterOption::json, StructData*, std::size_t>
+    class Json : public process::WriterTask<DataWriterOption::json, const StructData*, std::size_t>
     {
       public:
         static constexpr auto IsStructType = true;
@@ -66,11 +67,12 @@ namespace srs::writer
         [[nodiscard]] auto get_data(std::size_t line_number) const -> OutputType { return output_data_[line_number]; }
         [[nodiscard]] auto get_filename() const -> const std::string& { return filename_; }
 
-        void run_task(const auto& prev_data_converter, std::size_t line_number)
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
         {
             assert(line_number < get_n_lines());
             const auto* data_struct = prev_data_converter.get_data_view(line_number);
             write_json(*data_struct, line_number);
+            return get_data(line_number);
         }
 
       private:

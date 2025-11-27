@@ -130,12 +130,10 @@ jobs:
         # ./srs_backend_test --gtest_output=xml
 
       - name: test coverage
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && matrix.compiler == 'gcc'
         run: |
-          if [[ $CXX == "gcc" ]]; then
-            ctest -T coverage
-            ctest -T Submit
-          fi
+          ctest -T coverage
+          ctest -T Submit
 
       # - name: publish test report
       #   uses: dorny/test-reporter@v1

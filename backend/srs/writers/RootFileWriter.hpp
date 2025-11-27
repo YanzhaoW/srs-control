@@ -24,13 +24,14 @@ namespace srs::writer
 
         RootFile(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines);
 
-        void run_task(const auto& prev_data_converter, std::size_t line_number)
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
         {
             assert(line_number < get_n_lines());
             const auto* input_data = prev_data_converter.get_data_view(line_number);
             assert(input_data != nullptr);
             data_struct_buffers_[line_number] = *input_data;
             output_data_[line_number] = static_cast<std::size_t>(trees_[line_number]->Fill());
+            return output_data_[line_number];
         }
 
         ~RootFile();
