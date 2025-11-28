@@ -22,9 +22,9 @@ namespace srs::writer
 
         BinaryFile(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines);
         BinaryFile(const BinaryFile&) = delete;
-        BinaryFile(BinaryFile&&) = delete;
+        BinaryFile(BinaryFile&&) = default;
         BinaryFile& operator=(const BinaryFile&) = delete;
-        BinaryFile& operator=(BinaryFile&&) = delete;
+        BinaryFile& operator=(BinaryFile&&) = default;
         ~BinaryFile();
 
         auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult

@@ -11,7 +11,6 @@ name: ci
 on:
   pull_request:
     branches:
-      - dev
       - master
   push:
     branches:
@@ -105,10 +104,12 @@ jobs:
           if [[ $GITHUB_EVENT_NAME == "push" ]]; then
             echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
             echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
+            echo "ENABLE_COVERAGE=ON" >> $GITHUB_ENV
           else
             echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
             export PULL_NR=${{ github.event.number }}
             echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
+            echo "ENABLE_COVERAGE=OFF" >> $GITHUB_ENV
           fi
 
       - name: restore cache
@@ -128,11 +129,5 @@ jobs:
             -DCTEST_BUILD_NAME=${{ env.TEST_NAME }}\
             -DCTEST_SITE="Github CI/CD"\
             -DCONFIGURE_PRESET="${{ matrix.compiler }}"\
+            -DENABLE_COVERAGE=${ENABLE_COVERAGE}\
             --output-on-failure
-
-      - name: test coverage
-        if: github.event_name == 'push' && matrix.compiler == 'gcc'
-        run: |
-          cd build
-          ctest -T coverage
-          ctest -T Submit

@@ -25,12 +25,12 @@ namespace srs::writer
     concept WritableFile = requires(T writer, const internal::Dumpy<typename T::InputType>& converter) {
         typename T::InputType;
         typename T::OutputType;
-        std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
+        requires std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
         { writer.run(converter, 0) } -> std::same_as<std::expected<typename T::OutputType, std::string_view>>;
         { writer.run(converter) } -> std::same_as<std::expected<typename T::OutputType, std::string_view>>;
         { writer() } -> std::same_as<typename T::OutputType>;
         { writer(0) } -> std::same_as<typename T::OutputType>;
-        not std::copyable<T>;
-        std::movable<T>;
+        requires not std::copyable<T>;
+        requires std::movable<T>;
     };
 } // namespace srs::writer

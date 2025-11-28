@@ -33,15 +33,6 @@ namespace srs
         std::is_same_v<DataType, std::remove_cvref_t<decltype(task.get_output_data())>>;
     };
 
-    template <typename T>
-    concept DataConverter = requires(T converter) {
-        typename T::InputType;
-        typename T::OutputType;
-        typename T::CoroType;
-        { converter.get_executor() } -> std::convertible_to<asio::any_io_executor>;
-        { converter.generate_coro() } -> std::convertible_to<typename T::CoroType>;
-    };
-
     template <typename Converter, typename OutputType>
     concept OutputTo = requires(Converter converter) {
         std::is_const_v<OutputType>;

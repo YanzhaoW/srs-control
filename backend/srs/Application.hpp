@@ -1,7 +1,6 @@
 #pragma once
 
 #include "srs/devices/Configuration.hpp"
-#include "srs/utils/AppStatus.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <boost/asio/executor_work_guard.hpp>
@@ -10,7 +9,6 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/system/detail/error_code.hpp>
-#include <chrono>
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
@@ -186,37 +184,21 @@ namespace srs
         /**
          * @brief Set the error messages (internal usage).
          */
-        void set_error_string(std::string_view err_msg) { error_string_ = err_msg; }
 
         /**
          * @brief Set the configuration values.
          */
         void set_options(Config options) { config_ = std::move(options); }
 
-        void disable_switch_off(bool is_disabled = true) { is_switch_off_disabled_ = is_disabled; }
-
         void exit_and_switch_off();
 
         // internal usage
         // TODO: Refactor the code to not expose those methods for the internal usage
 
-        auto wait_for_status(auto&& condition,
-                             std::chrono::seconds time_duration = common::DEFAULT_STATUS_WAITING_TIME_SECONDS) -> bool
-        {
-            return status_.wait_for_status(std::forward<decltype(condition)>(condition), time_duration);
-        }
-        void notify_status_change() { status_.status_change.notify_all(); }
-        void set_status_acq_on(bool val = true) { status_.is_acq_on.store(val); }
-        void set_status_acq_off(bool val = true) { status_.is_acq_off.store(val); }
-        void set_status_is_reading(bool val = true) { status_.is_reading.store(val); }
         // getters:
         [[nodiscard]] auto get_channel_address() const -> uint16_t { return channel_address_; }
-        // [[nodiscard]] auto get_fec_config() const -> const auto& { return fec_config_; }
-        [[nodiscard]] auto get_status() const -> const auto& { return status_; }
         [[nodiscard]] auto get_io_context() -> auto& { return io_context_; }
         [[nodiscard]] auto get_fec_strand() -> auto& { return fec_strand_; }
-        auto get_data_reader_socket() -> connection::DataSocket* { return data_socket_.get(); }
-        [[nodiscard]] auto get_error_string() const -> const std::string& { return error_string_; }
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
         [[nodiscard]] auto get_config() const -> const auto& { return config_; }
         [[nodiscard]] auto get_config_ref() -> auto& { return config_; }
@@ -229,11 +211,8 @@ namespace srs
         using SwitchFutureType = std::expected<std::future<void>, boost::system::error_code>;
         using SwitchFutureStatusType = std::expected<std::future_status, boost::system::error_code>;
 
-        Status status_;
-        bool is_switch_off_disabled_ = false;
         uint16_t channel_address_ = common::DEFAULT_CHANNEL_ADDRE;
         Config config_;
-        std::string error_string_;
 
         // Destructors are called in the inverse order
 
