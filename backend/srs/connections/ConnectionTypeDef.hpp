@@ -16,7 +16,7 @@ namespace srs::connection
     using udp = boost::asio::ip::udp;
     using UDPEndpoint = boost::asio::ip::basic_endpoint<boost::asio::ip::udp>;
 
-    class Base;
+    class CommandBase;
 
     template <typename T>
     struct is_shared_ptr : std::false_type
@@ -36,7 +36,7 @@ namespace srs::connection
     };
 
     template <>
-    struct IsConnectionType<Base> : std::true_type
+    struct IsConnectionType<CommandBase> : std::true_type
     {
     };
 

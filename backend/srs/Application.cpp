@@ -194,7 +194,7 @@ namespace srs
                 {
                     for (const auto& remote_endpoint : remote_fec_endpoints_)
                     {
-                        auto fec_connection = std::make_shared<T>( connection_name );
+                        auto fec_connection = std::make_shared<T>(connection_name);
                         fec_connection->set_remote_endpoint(remote_endpoint);
                         fec_connection->send_message_from(socket);
                     }

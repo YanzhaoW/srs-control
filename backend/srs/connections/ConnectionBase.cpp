@@ -18,7 +18,7 @@
 namespace srs::connection
 {
 
-    auto Base::send_message(std::shared_ptr<FecCommandSocket> socket, std::shared_ptr<Base> connection)
+    auto CommandBase::send_message(std::shared_ptr<FecCommandSocket> socket, std::shared_ptr<CommandBase> connection)
         -> asio::awaitable<void>
     {
         spdlog::debug("Connection {}: Sending data using external socket at time {} us...",
@@ -35,10 +35,10 @@ namespace srs::connection
         co_return;
     }
 
-    void Base::encode_write_msg(process::SerializableMsgBuffer& buffer,
-                                uint32_t counter,
-                                std::span<const CommunicateEntryType> data,
-                                uint16_t address)
+    void CommandBase::encode_write_msg(process::SerializableMsgBuffer& buffer,
+                                       uint32_t counter,
+                                       std::span<const CommunicateEntryType> data,
+                                       uint16_t address)
     {
         // TODO: make the end part a static data
         buffer.serialize(counter,
@@ -50,7 +50,7 @@ namespace srs::connection
         buffer.serialize(data);
     }
 
-    auto Base::check_response(std::span<char> response_msg) -> bool
+    auto CommandBase::check_response(std::span<char> response_msg) const -> bool
     {
         if (write_msg_response_buffer_.empty())
         {

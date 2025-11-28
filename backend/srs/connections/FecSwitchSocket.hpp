@@ -20,12 +20,12 @@
 
 namespace srs::connection
 {
-    class Base;
+    class CommandBase;
 
     class FecCommandSocket : public SpecialSocket
     {
       public:
-        using SmallConnection = Base;
+        using SmallConnection = CommandBase;
         using ConnectionType = SmallConnection;
 
         // getters:

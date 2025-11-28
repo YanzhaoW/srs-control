@@ -24,10 +24,10 @@ namespace srs::connection
 {
     class FecCommandSocket;
 
-    class Base : public std::enable_shared_from_this<Base>
+    class CommandBase : public std::enable_shared_from_this<CommandBase>
     {
       public:
-        explicit Base(const std::string_view name)
+        explicit CommandBase(const std::string_view name)
             : name_{ name }
         {
         }
@@ -37,7 +37,7 @@ namespace srs::connection
             self.communicate(self.get_suffix(), common::NULL_ADDRESS, std::move(socket));
         }
 
-        auto check_response(std::span<char> response_msg) -> bool;
+        [[nodiscard]] auto check_response(std::span<char> response_msg) const -> bool;
 
         // Setters:
         void set_remote_endpoint(asio::ip::udp::endpoint endpoint) { remote_endpoint_ = std::move(endpoint); }
@@ -69,7 +69,7 @@ namespace srs::connection
 
         static auto timer_countdown(auto* connection) -> asio::awaitable<void>;
 
-        static auto send_message(std::shared_ptr<FecCommandSocket> socket, std::shared_ptr<Base> connection)
+        static auto send_message(std::shared_ptr<FecCommandSocket> socket, std::shared_ptr<CommandBase> connection)
             -> asio::awaitable<void>;
 
         void communicate(this auto&& self,

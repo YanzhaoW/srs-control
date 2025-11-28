@@ -17,7 +17,7 @@ namespace srs::workflow
 namespace srs::connection
 {
     class FecCommandSocket;
-    class Starter : public Base
+    class Starter : public CommandBase
     {
       public:
         explicit Starter(std::string_view name);
@@ -33,7 +33,7 @@ namespace srs::connection
         static constexpr std::array<CommunicateEntryType, 3> send_suffix_ = { 0, 15, 1 };
     };
 
-    class Stopper : public Base
+    class Stopper : public CommandBase
     {
       public:
         /**

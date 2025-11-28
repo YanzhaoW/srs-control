@@ -10,7 +10,7 @@
 namespace srs::connection
 {
     Starter::Starter(std::string_view name)
-        : Base{ name }
+        : CommandBase{ name }
     {
         const auto response_data = std::vector<CommunicateEntryType>{ 0, 0, 1 };
         set_write_response_msg(response_data, common::NULL_ADDRESS);
@@ -22,7 +22,7 @@ namespace srs::connection
     }
 
     Stopper::Stopper(std::string_view name)
-        : Base(name)
+        : CommandBase(name)
     {
         const auto response_data = std::vector<CommunicateEntryType>{ 0, 0, 0 };
         set_write_response_msg(response_data, common::NULL_ADDRESS);
