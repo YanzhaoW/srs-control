@@ -133,5 +133,6 @@ jobs:
       - name: test coverage
         if: github.event_name == 'push' && matrix.compiler == 'gcc'
         run: |
+          cd build
           ctest -T coverage
           ctest -T Submit
