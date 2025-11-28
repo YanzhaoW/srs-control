@@ -7,3 +7,9 @@ dependencies:
   - ninja=1.12.1
   - nodejs=22.9.0
   - delimited-protobuf
+  - sphinx
+  - breathe
+  - sphinx-rtd-theme
+  - esbonio
+  - cmake-language-server
+  - cmakelang
