@@ -3,6 +3,7 @@
 #include "DataConverterBase.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/data/message.pb.h"
+#include "srs/utils/CommonConcepts.hpp"
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -36,18 +37,21 @@ namespace srs::process
         ProtoSerializerBase& operator=(ProtoSerializerBase&&) = delete;
         ~ProtoSerializerBase() { spdlog::debug("Shutting down {:?} serializer.", name_); }
 
-        [[nodiscard]] auto get_data_view(std::size_t line_num) const -> std::string_view
+        [[nodiscard]] auto get_data_view(std::size_t line_num) const -> Base::OutputType
         {
             assert(line_num < Base::get_n_lines());
             return output_data_[line_num];
         }
-        void run_task(const auto& prev_data_converter, std::size_t line_num)
+
+        auto operator()(const OutputTo<typename Base::InputType> auto& prev_data_converter, std::size_t line_number)
+            -> Base::OutputType
         {
-            assert(line_num < Base::get_n_lines());
-            output_data_[line_num].clear();
-            const auto* input_data = prev_data_converter.get_data_view(line_num);
+            assert(line_number < Base::get_n_lines());
+            output_data_[line_number].clear();
+            const auto* input_data = prev_data_converter.get_data_view(line_number);
             static_assert(std::same_as<decltype(input_data), const proto::Data*>);
-            converter_(*input_data, output_data_[line_num]);
+            converter_(*input_data, output_data_[line_number]);
+            return get_data_view(line_number);
         }
 
       private:

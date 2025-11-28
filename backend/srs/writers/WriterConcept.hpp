@@ -1,29 +1,34 @@
 #pragma once
 
+#include "srs/converters/DataConverterBase.hpp"
 #include <concepts>
 #include <cstddef>
-#include <string_view>
-#include <utility>
-
-namespace srs::process
-{
-    class Raw2DelimRawConverter;
-    class StructDeserializer;
-    class Struct2ProtoConverter;
-    class ProtoSerializer;
-    class ProtoDelimSerializer;
-}; // namespace srs::process
 
 namespace srs::writer
 {
+
+    namespace internal
+    {
+
+        template <typename T>
+        class Dumpy
+        {
+          public:
+            auto get_data_view(std::size_t /*unused*/) -> T { return T{}; }
+        };
+
+    } // namespace internal
+
     template <typename T>
-    concept WritableFile = requires(T writer) {
-        { writer.get_name() } -> std::same_as<std::string_view>;
-        { writer.write(std::declval<process::Raw2DelimRawConverter>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::StructDeserializer>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::Struct2ProtoConverter>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::ProtoSerializer>(), std::size_t{}) } -> std::same_as<void>;
-        { writer.write(std::declval<process::ProtoDelimSerializer>(), std::size_t{}) } -> std::same_as<void>;
-        T{ std::string_view{}, std::size_t{} };
+    concept WritableFile = requires(T writer, const internal::Dumpy<typename T::InputType>& converter) {
+        typename T::InputType;
+        typename T::OutputType;
+        std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
+        { writer(converter, 0) } -> std::same_as<typename T::OutputType>;
+        { writer(converter) } -> std::same_as<typename T::OutputType>;
+        { writer.get_data() } -> std::same_as<typename T::OutputType>;
+        { writer.get_data(0) } -> std::same_as<typename T::OutputType>;
+        not std::copyable<T>;
+        std::movable<T>;
     };
 } // namespace srs::writer

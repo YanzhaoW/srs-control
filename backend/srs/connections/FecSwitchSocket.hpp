@@ -20,12 +20,12 @@
 
 namespace srs::connection
 {
-    class Base;
+    class CommandBase;
 
-    class FecSwitchSocket : public SpecialSocket
+    class FecCommandSocket : public SpecialSocket
     {
       public:
-        using SmallConnection = Base;
+        using SmallConnection = CommandBase;
         using ConnectionType = SmallConnection;
 
         // getters:
@@ -55,7 +55,7 @@ namespace srs::connection
         void print_error() const;
         void response_handler(const UDPEndpoint& endpoint, std::span<char> response);
 
-        explicit FecSwitchSocket(int port_number, io_context_type& io_context);
+        explicit FecCommandSocket(int port_number, io_context_type& io_context);
         void deregister_connection(const UDPEndpoint& endpoint,
                                    std::span<char> response,
                                    SmallConnections& connections);

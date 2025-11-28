@@ -42,4 +42,10 @@ namespace srs
         { converter.generate_coro() } -> std::convertible_to<typename T::CoroType>;
     };
 
+    template <typename Converter, typename OutputType>
+    concept OutputTo = requires(Converter converter) {
+        std::is_const_v<OutputType>;
+        std::is_reference_v<OutputType>;
+        { converter.get_data_view(0) } -> std::same_as<OutputType>;
+    };
 }; // namespace srs

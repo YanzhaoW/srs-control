@@ -4,6 +4,7 @@
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/data/message.pb.h"
+#include "srs/utils/CommonConcepts.hpp"
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <cassert>
@@ -29,13 +30,14 @@ namespace srs::process
             return &output_data_[line_num];
         }
 
-        void run_task(const auto& prev_data_converter, std::size_t line_num)
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
         {
-            assert(line_num < get_n_lines());
-            auto& output_data = output_data_[line_num];
+            assert(line_number < get_n_lines());
+            auto& output_data = output_data_[line_number];
             output_data.Clear();
-            auto input_data = prev_data_converter.get_data_view(line_num);
+            auto input_data = prev_data_converter.get_data_view(line_number);
             convert(*input_data, output_data);
+            return get_data_view(line_number);
         }
 
       private:

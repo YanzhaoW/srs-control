@@ -57,7 +57,7 @@ namespace srs::connection
         }
     } // namespace
 
-    FecSwitchSocket::FecSwitchSocket(int port_number, io_context_type& io_context)
+    FecCommandSocket::FecCommandSocket(int port_number, io_context_type& io_context)
         : SpecialSocket{ port_number, io_context }
         , strand_{ asio::make_strand(io_context.get_executor()) }
 
@@ -65,7 +65,7 @@ namespace srs::connection
         read_msg_buffer_.resize(common::SMALL_READ_MSG_BUFFER_SIZE);
     }
 
-    void FecSwitchSocket::register_send_action_imp(asio::awaitable<void> action,
+    void FecCommandSocket::register_send_action_imp(asio::awaitable<void> action,
                                                    std::shared_ptr<SmallConnection> connection)
     {
         auto time = get_time_us();
@@ -81,14 +81,14 @@ namespace srs::connection
         connections.push_back(std::move(connection));
     }
 
-    void FecSwitchSocket::launch_actions()
+    void FecCommandSocket::launch_actions()
     {
         asio::experimental::make_parallel_group(std::move(action_queue_))
             .async_wait(asio::experimental::wait_for_all(), asio::use_future)
             .get();
     }
 
-    void FecSwitchSocket::deregister_connection(const UDPEndpoint& endpoint,
+    void FecCommandSocket::deregister_connection(const UDPEndpoint& endpoint,
                                                 std::span<char> response,
                                                 SmallConnections& connections)
     {
@@ -123,7 +123,7 @@ namespace srs::connection
         }
     }
 
-    void FecSwitchSocket::print_available_responses() const
+    void FecCommandSocket::print_available_responses() const
     {
         spdlog::info(
             "Available responses are:\n\t{}",
@@ -133,7 +133,7 @@ namespace srs::connection
                       "\n\t"));
     }
 
-    void FecSwitchSocket::print_error() const
+    void FecCommandSocket::print_error() const
     {
         spdlog::error(
             "TIMEOUT during local port {} waiting for the responses from the following ip/port:\n\t{}",
@@ -147,7 +147,7 @@ namespace srs::connection
                 "\n\t"));
     }
 
-    void FecSwitchSocket::response_handler(const UDPEndpoint& endpoint, std::span<char> response)
+    void FecCommandSocket::response_handler(const UDPEndpoint& endpoint, std::span<char> response)
     {
         auto lock = std::lock_guard{ mut_ };
         spdlog::trace("Local port {} received a response from a remote endpoint {}: \n\t{:02x}",
@@ -163,7 +163,7 @@ namespace srs::connection
         deregister_connection(endpoint, response, connections_iter->second);
     }
 
-    auto FecSwitchSocket::is_finished() -> bool
+    auto FecCommandSocket::is_finished() -> bool
     {
 
         return std::ranges::all_of(all_connections_ | std::views::values,

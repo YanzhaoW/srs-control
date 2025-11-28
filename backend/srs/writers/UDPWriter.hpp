@@ -1,9 +1,9 @@
 #pragma once
 
-#include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonConcepts.hpp"
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/experimental/coro.hpp>
 #include <boost/asio/ip/udp.hpp>
@@ -19,38 +19,38 @@
 #include <srs/connections/ConnectionBase.hpp>
 #include <srs/writers/DataWriterOptions.hpp>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace srs::connection
 {
-    class UDPWriterConnection : public Base
+    class UDPWriterConnection
     {
       public:
-        explicit UDPWriterConnection(const Config& config, io_context_type& io_executor)
-            // : Base(info, "UDP writer")
-            : Base(config)
-            , io_context_{ &io_executor }
+        explicit UDPWriterConnection(io_context_type& io_executor, asio::ip::udp::endpoint remote_endpoint)
+            : io_context_{ &io_executor }
+            , remote_endpoint_{ std::move(remote_endpoint) }
+            , socket_{ io_executor, asio::ip::udp::endpoint{ asio::ip::udp::v4(), 0 } }
         {
         }
-
-        auto get_executor() const { return io_context_->get_executor(); }
         using OutputType = std::size_t;
         using InputType = std::string_view;
 
+        [[nodiscard]] auto get_executor() const { return io_context_->get_executor(); }
+
         auto send_sync_message(InputType input_data) -> OutputType
         {
-            auto* socket = get_socket_ptr();
-            const auto read_size = (not input_data.empty())
-                                       ? socket->send_to(asio::buffer(input_data), get_remote_endpoint(), 0, err_)
-                                       : 0;
+            const auto read_size =
+                (not input_data.empty()) ? socket_.send_to(asio::buffer(input_data), remote_endpoint_, 0, err_) : 0;
             return read_size;
         }
 
+        void close() { socket_.close(); }
+
         auto send_continuous_message() -> asio::experimental::coro<OutputType(std::optional<InputType>)>
         {
-            auto* socket = get_socket_ptr();
             auto total_size = std::size_t{};
-            spdlog::debug("UDP: Starting to send data to the remote point {}", get_remote_endpoint());
+            spdlog::debug("UDP: Starting to send data to the remote point {}", remote_endpoint_);
             auto msg = co_yield OutputType{};
             while (true)
             {
@@ -59,7 +59,7 @@ namespace srs::connection
                     break;
                 }
                 const auto read_size =
-                    (not msg.value().empty()) ? socket->send_to(asio::buffer(msg.value()), get_remote_endpoint()) : 0;
+                    (not msg.value().empty()) ? socket_.send_to(asio::buffer(msg.value()), remote_endpoint_) : 0;
                 total_size += read_size;
                 msg = co_yield read_size;
             }
@@ -71,6 +71,8 @@ namespace srs::connection
       private:
         boost::system::error_code err_;
         io_context_type* io_context_ = nullptr;
+        asio::ip::udp::endpoint remote_endpoint_;
+        asio::ip::udp::socket socket_;
     };
 } // namespace srs::connection
 
@@ -86,23 +88,27 @@ namespace srs::writer
         static constexpr auto IsStructType = false;
 
         ~UDP();
-        UDP(const UDP&) = default;
-        UDP(UDP&&) = delete;
-        UDP& operator=(const UDP&) = default;
-        UDP& operator=(UDP&&) = delete;
+        UDP(const UDP&) = delete;
+        UDP(UDP&&) = default;
+        UDP& operator=(const UDP&) = delete;
+        UDP& operator=(UDP&&) = default;
 
-        void run_task(const auto& prev_data_converter, std::size_t line_number)
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
         {
             assert(line_number < get_n_lines());
             output_data_[line_number] =
                 connections_[line_number]->send_sync_message(prev_data_converter.get_data_view(line_number));
+            return output_data_[line_number];
         }
 
         [[nodiscard]] auto is_deserialize_valid() const
         {
             return get_required_conversion() == raw or get_required_conversion() == proto;
         }
-        [[nodiscard]] auto get_data(std::size_t line_number) const -> OutputType { return output_data_[line_number]; }
+        [[nodiscard]] auto get_data(std::size_t line_number = 0) const -> OutputType
+        {
+            return output_data_[line_number];
+        }
 
       private:
         std::vector<OutputType> output_data_;

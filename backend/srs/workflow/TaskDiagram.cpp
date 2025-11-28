@@ -139,7 +139,7 @@ namespace srs::workflow
             }
             auto task = taskflow
                             .emplace([line_number, &converter, &prev_converter = prev_task.value().first]()
-                                     { converter.run_task(prev_converter, line_number); })
+                                     { converter(prev_converter, line_number); })
                             .name(converter.get_name_str());
             if (not prev_task.value().second.empty())
             {

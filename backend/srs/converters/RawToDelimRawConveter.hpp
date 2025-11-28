@@ -1,6 +1,7 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
+#include "srs/utils/CommonConcepts.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <array>
 #include <cassert>
@@ -42,12 +43,13 @@ namespace srs::process
             return std::string_view{ output_data_[line_num].data(), output_data_[line_num].size() };
         }
 
-        void run_task(const auto& prev_data_converter, std::size_t line_number)
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
         {
             assert(line_number < get_n_lines());
             auto& output_data = output_data_[line_number];
             output_data.clear();
             convert(prev_data_converter.get_data_view(line_number), output_data);
+            return get_data_view(line_number);
         }
 
       private:

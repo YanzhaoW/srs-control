@@ -2,6 +2,7 @@
 
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
+#include "srs/utils/CommonConcepts.hpp"
 #include "srs/writers/DataWriterOptions.hpp"
 #include <cassert>
 #include <cstddef>
@@ -26,17 +27,21 @@ namespace srs::writer
         BinaryFile& operator=(BinaryFile&&) = delete;
         ~BinaryFile();
 
-        void run_task(const auto& prev_data_converter, std::size_t line_number)
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
         {
             assert(line_number < get_n_lines());
             auto input_data = prev_data_converter.get_data_view(line_number);
             output_data_[line_number] += input_data.size();
             output_streams_[line_number] << input_data;
+            return output_data_[line_number];
         }
         void close();
 
         [[nodiscard]] auto get_filename() const -> const std::string& { return file_name_; }
-        [[nodiscard]] auto get_data(std::size_t line_number) const -> OutputType { return output_data_[line_number]; }
+        [[nodiscard]] auto get_data(std::size_t line_number = 0) const -> OutputType
+        {
+            return output_data_[line_number];
+        }
 
       private:
         std::string file_name_;

@@ -4,20 +4,9 @@
 #include "srs/converters/SerializableBuffer.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/deferred.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/experimental/cancellation_condition.hpp>
-#include <boost/asio/experimental/coro.hpp>
-#include <boost/asio/ip/basic_endpoint.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
 #include <cstdint>
 #include <fmt/base.h>
 #include <fmt/core.h>
@@ -25,36 +14,11 @@
 #include <memory>
 #include <span>
 #include <spdlog/spdlog.h>
-#include <vector>
 
 namespace srs::connection
 {
 
-    Base::Base(const Config& config)
-        : config_{ config }
-    {
-
-        spdlog::debug("Creating connection {} with buffer size: {}", config_.name, config.buffer_size);
-        read_msg_buffer_.resize(config.buffer_size);
-    }
-
-    void Base::read_data_handle(std::span<BufferElementType> read_data)
-    {
-        spdlog::trace(
-            "Connection {}: received {} bytes data: {:02x}", config_.name, read_data.size(), fmt::join(read_data, " "));
-        if (write_msg_response_buffer_ == read_data)
-        {
-            spdlog::trace("Connection {}: received data is correct!", config_.name);
-        }
-        else
-        {
-            spdlog::trace("Connection {}: received data is incorrect! Supposed response should be: {:02x}",
-                          config_.name,
-                          fmt::join(write_msg_response_buffer_.data(), " "));
-        }
-    }
-
-    auto Base::send_message(std::shared_ptr<FecSwitchSocket> socket, std::shared_ptr<Base> connection)
+    auto CommandBase::send_message(std::shared_ptr<FecCommandSocket> socket, std::shared_ptr<CommandBase> connection)
         -> asio::awaitable<void>
     {
         spdlog::debug("Connection {}: Sending data using external socket at time {} us...",
@@ -71,11 +35,12 @@ namespace srs::connection
         co_return;
     }
 
-    void Base::encode_write_msg(process::SerializableMsgBuffer& buffer,
-                                uint32_t counter,
-                                const std::vector<CommunicateEntryType>& data,
-                                uint16_t address)
+    void CommandBase::encode_write_msg(process::SerializableMsgBuffer& buffer,
+                                       uint32_t counter,
+                                       std::span<const CommunicateEntryType> data,
+                                       uint16_t address)
     {
+        // TODO: make the end part a static data
         buffer.serialize(counter,
                          common::ZERO_UINT16_PADDING,
                          address,
@@ -85,7 +50,7 @@ namespace srs::connection
         buffer.serialize(data);
     }
 
-    auto Base::check_response(std::span<char> response_msg) -> bool
+    auto CommandBase::check_response(std::span<char> response_msg) const -> bool
     {
         if (write_msg_response_buffer_.empty())
         {
@@ -93,23 +58,5 @@ namespace srs::connection
             return true;
         }
         return write_msg_response_buffer_ == response_msg;
-    }
-
-    void Base::close_socket()
-    {
-        if (not is_socket_closed_.load())
-        {
-            is_socket_closed_.store(true);
-            spdlog::trace("Connection {}: Closing the socket ...", config_.name);
-            // socket_->cancel();
-            socket_->close();
-            if (signal_set_ != nullptr)
-            {
-                spdlog::trace("Connection {}: cancelling signal ...", config_.name);
-                signal_set_->cancel();
-                spdlog::trace("Connection {}: signal is cancelled.", config_.name);
-            }
-            spdlog::trace("Connection {}: Socket is closed and cancelled.", config_.name);
-        }
     }
 } // namespace srs::connection

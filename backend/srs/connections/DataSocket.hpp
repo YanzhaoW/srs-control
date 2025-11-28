@@ -17,7 +17,7 @@ namespace srs::connection
     class DataSocket : public SpecialSocket
     {
       public:
-        using ConnectionType = Base;
+        using ConnectionType = CommandBase;
         void set_buffer_size(std::size_t buffer_size);
         void cancel();
 

@@ -3,10 +3,11 @@
 #include "ConnectionBase.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include <array>
 #include <gsl/gsl-lite.hpp>
-#include <memory>
+#include <span>
 #include <spdlog/spdlog.h>
-#include <vector>
+#include <string_view>
 
 namespace srs::workflow
 {
@@ -15,31 +16,24 @@ namespace srs::workflow
 
 namespace srs::connection
 {
-    class FecSwitchSocket;
-    class Starter : public Base
+    class FecCommandSocket;
+    class Starter : public CommandBase
     {
       public:
-        // explicit Starter(const Info& info);
-        explicit Starter(const Config& config);
+        explicit Starter(std::string_view name);
         Starter();
         void close();
-        void send_message_from(std::shared_ptr<FecSwitchSocket> socket);
-        // void acq_on();
-        void on_fail()
+        static auto get_send_suffix() -> const auto& { return send_suffix_; }
+        static auto get_suffix() -> std::span<const CommunicateEntryType>
         {
-            set_connection_bad();
-            const auto& endpoint = get_remote_endpoint();
-            spdlog::critical("Cannot establish a connection to the FEC with the IP: \"{}:{}\"!",
-                             endpoint.address().to_string(),
-                             endpoint.port());
+            return std::span{ send_suffix_.cbegin(), send_suffix_.cend() };
         }
-        auto get_send_suffix() const -> const auto& { return send_suffix_; }
 
       private:
-        std::vector<CommunicateEntryType> send_suffix_ = { 0, 15, 1 };
+        static constexpr std::array<CommunicateEntryType, 3> send_suffix_ = { 0, 15, 1 };
     };
 
-    class Stopper : public Base
+    class Stopper : public CommandBase
     {
       public:
         /**
@@ -65,9 +59,9 @@ namespace srs::connection
         /**
          * \brief Constructor for Stopper connection class
          *
-         * @param config connection configuration
+         * @param name Name of the command
          */
-        explicit Stopper(const Config& config);
+        explicit Stopper(std::string_view name);
 
         Stopper();
 
@@ -79,29 +73,13 @@ namespace srs::connection
          */
         ~Stopper() = default;
 
-        /**
-         * \brief called if an error occurs
-         */
-        void on_fail()
+        static auto get_send_suffix() -> const auto& { return send_suffix_; }
+        static auto get_suffix() -> std::span<const CommunicateEntryType>
         {
-            spdlog::debug("on_fail of stopper is called");
-            set_connection_bad();
+            return std::span{ send_suffix_.cbegin(), send_suffix_.cend() };
         }
 
-        /**
-         * \brief Turn off the data acquisition from SRS system
-         *
-         * This is the primary execution from the Stopper class. It first checks if the Status::is_acq_on from the App
-         * is true. If the status is still false after 4 seconds, an exception will be **thrown**. If the status is
-         * true, member function connection::Base::communicate would be called.
-         * @see connection::Base::communicate
-         */
-        // void acq_off();
-        void send_message_from(std::shared_ptr<FecSwitchSocket> socket);
-        // void close() {}
-        auto get_send_suffix() const -> const auto& { return send_suffix_; }
-
       private:
-        std::vector<CommunicateEntryType> send_suffix_ = { 0, 15, 0 };
+        static constexpr std::array<CommunicateEntryType, 3> send_suffix_ = { 0, 15, 0 };
     };
 } // namespace srs::connection
