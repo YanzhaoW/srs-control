@@ -93,7 +93,7 @@ namespace srs::writer
         UDP& operator=(const UDP&) = delete;
         UDP& operator=(UDP&&) = default;
 
-        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
             assert(line_number < get_n_lines());
             output_data_[line_number] = connections_[line_number]->send_sync_message(prev_data_converter(line_number));

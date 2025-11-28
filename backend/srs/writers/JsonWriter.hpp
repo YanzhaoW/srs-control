@@ -71,7 +71,7 @@ namespace srs::writer
 
         [[nodiscard]] auto get_filename() const -> const std::string& { return filename_; }
 
-        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
             assert(line_number < get_n_lines());
             const auto* data_struct = prev_data_converter(line_number);

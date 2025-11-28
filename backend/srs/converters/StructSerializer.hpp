@@ -5,6 +5,7 @@
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonConcepts.hpp"
 #include <cstddef>
+#include <expected>
 #include <string_view>
 #include <vector>
 
@@ -15,15 +16,16 @@ namespace srs::process
       public:
         explicit StructSerializer(size_t n_lines = 1);
 
-        void convert(const StructData* input, std::vector<char>& output);
+        auto convert(const StructData* input, std::vector<char>& output)
+            -> std::expected<std::size_t, std::string_view>;
 
-        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
-            convert(prev_data_converter(line_number), output_data_[line_number]);
-            return this->operator()(line_number);
+            auto res = convert(prev_data_converter(line_number), output_data_[line_number]);
+            return res.transform([this, line_number](auto) { return this->operator()(line_number); });
         }
 
-        [[nodiscard]] auto operator()(std::size_t line_number = 1) const -> OutputType
+        [[nodiscard]] auto operator()(std::size_t line_number = 0) const -> OutputType
         {
             return std::string_view{ output_data_[line_number].data(), output_data_[line_number].size() };
         }

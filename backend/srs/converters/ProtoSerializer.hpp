@@ -44,7 +44,7 @@ namespace srs::process
         }
 
         auto run(const OutputTo<typename Base::InputType> auto& prev_data_converter, std::size_t line_number)
-            -> Base::OutputType
+            -> Base::RunResult
         {
             assert(line_number < Base::get_n_lines());
             output_data_[line_number].clear();

@@ -9,6 +9,7 @@
 #include <boost/asio/thread_pool.hpp>
 #include <cassert>
 #include <cstddef>
+#include <expected>
 #include <string_view>
 #include <vector>
 #include <zpp_bits.h>
@@ -30,21 +31,21 @@ namespace srs::process
         using ReceiveDataSquence = std::vector<DataElementType>;
         explicit StructDeserializer(size_t n_lines = 1);
 
-        [[nodiscard]] auto operator()(std::size_t line_number) const -> OutputType
+        [[nodiscard]] auto operator()(std::size_t line_number = 0) const -> OutputType
         {
             assert(line_number < get_n_lines());
             return &output_data_[line_number];
         }
 
-        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
             assert(line_number < get_n_lines());
             auto& output_data = output_data_[line_number];
             auto& raw_body_part_data = raw_body_part_data_[line_number];
             reset_struct_data(output_data);
             raw_body_part_data.clear();
-            convert(prev_data_converter(line_number), output_data, raw_body_part_data);
-            return this->operator()(line_number);
+            auto res = convert(prev_data_converter(line_number), output_data, raw_body_part_data);
+            return res.transform([line_number, this](auto) { return this->operator()(line_number); });
         }
 
       private:
@@ -52,7 +53,7 @@ namespace srs::process
         std::vector<StructData> output_data_;
 
         static auto convert(std::string_view binary_data, StructData& output, ReceiveDataSquence& body_part_data)
-            -> std::size_t;
+            -> std::expected<std::size_t, std::string_view>;
         static void translate_raw_data(StructData& struct_data, ReceiveDataSquence& receive_raw_data);
         static void byte_reverse_data_sq(ReceiveDataSquence& receive_raw_data);
         static auto check_is_hit(const DataElementType& element) -> bool

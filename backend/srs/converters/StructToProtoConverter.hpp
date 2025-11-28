@@ -30,7 +30,7 @@ namespace srs::process
             return &output_data_[line_num];
         }
 
-        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> RunResult
         {
             assert(line_number < get_n_lines());
             auto& output_data = output_data_[line_number];

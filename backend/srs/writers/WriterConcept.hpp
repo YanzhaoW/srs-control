@@ -3,6 +3,8 @@
 #include "srs/converters/DataConverterBase.hpp"
 #include <concepts>
 #include <cstddef>
+#include <expected>
+#include <string_view>
 
 namespace srs::writer
 {
@@ -24,8 +26,8 @@ namespace srs::writer
         typename T::InputType;
         typename T::OutputType;
         std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
-        { writer.run(converter, 0) } -> std::same_as<typename T::OutputType>;
-        { writer.run(converter) } -> std::same_as<typename T::OutputType>;
+        { writer.run(converter, 0) } -> std::same_as<std::expected<typename T::OutputType, std::string_view>>;
+        { writer.run(converter) } -> std::same_as<std::expected<typename T::OutputType, std::string_view>>;
         { writer() } -> std::same_as<typename T::OutputType>;
         { writer(0) } -> std::same_as<typename T::OutputType>;
         not std::copyable<T>;

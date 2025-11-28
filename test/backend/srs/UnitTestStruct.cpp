@@ -3,6 +3,7 @@
 #include "srs/data/SRSDataStructs.hpp"
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <gtest/gtest.h>
 #include <random>
@@ -21,7 +22,7 @@ namespace
         auto struct_data = StructData{};
 
         auto random_device = std::random_device{};
-        auto random_gen = std::mt19937_64{ random_device };
+        auto random_gen = std::mt19937_64{ random_device() };
 
         auto data_size_gen = std::uniform_int_distribution<uint32_t>{ 1, MAX_NUM_SIZE };
 
@@ -34,7 +35,7 @@ namespace
 
         // NOLINTBEGIN (cppcoreguidelines-avoid-magic-numbers)
         auto vmm_id_gen = std::uniform_int_distribution<uint8_t>{ 0, (1U << 5U) - 1 };
-        auto srs_timestamp_gen = std::uniform_int_distribution<uint64_t>{ 0, (1U << 42U) - 1 };
+        auto srs_timestamp_gen = std::uniform_int_distribution<uint64_t>{ 0, (uint64_t{ 1 } << 42U) - 1 };
 
         struct_data.marker_data.reserve(marker_size);
         for (auto idx : std::views::iota(uint32_t{ 0 }, marker_size))
@@ -74,4 +75,14 @@ TEST(data_structure, check_de_serialization)
 
     auto serializer_converter = process::StructSerializer();
     auto deserializer_converter = process::StructDeserializer();
+
+    auto initial_converter = [&random_data](std::size_t /*line_number*/ = 0) -> const StructData*
+    { return &random_data; };
+
+    auto res = serializer_converter.run(initial_converter);
+
+    EXPECT_FALSE(res.has_value());
+    auto struct_data = deserializer_converter.run(serializer_converter);
+    EXPECT_FALSE(struct_data.has_value());
+
 }

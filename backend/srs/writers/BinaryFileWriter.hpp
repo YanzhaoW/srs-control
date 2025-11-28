@@ -27,7 +27,7 @@ namespace srs::writer
         BinaryFile& operator=(BinaryFile&&) = delete;
         ~BinaryFile();
 
-        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
             assert(line_number < get_n_lines());
             auto input_data = prev_data_converter(line_number);

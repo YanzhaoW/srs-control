@@ -1,6 +1,5 @@
 #pragma once
 
-
 #ifdef HAS_ROOT
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
@@ -26,7 +25,7 @@ namespace srs::writer
 
         RootFile(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines);
 
-        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> RunResult
         {
             assert(line_number < get_n_lines());
             const auto* input_data = prev_data_converter(line_number);

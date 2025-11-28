@@ -9,6 +9,7 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string_view>
@@ -92,17 +93,21 @@ namespace srs::process
     // thread safe
     auto StructDeserializer::convert(std::string_view binary_data,
                                      StructData& output_data,
-                                     ReceiveDataSquence& body_part_data) -> std::size_t
+                                     ReceiveDataSquence& body_part_data) -> std::expected<std::size_t, std::string_view>
     {
         auto deserialize_to = zpp::bits::in{ binary_data, zpp::bits::endian::network{}, zpp::bits::no_size{} };
 
         auto read_bytes = binary_data.size() * sizeof(BufferElementType);
         constexpr auto header_bytes = sizeof(output_data.header);
         constexpr auto element_bytes = common::HIT_DATA_BIT_LENGTH / common::BYTE_BIT_LENGTH;
-        auto vector_size = (read_bytes - header_bytes) / element_bytes;
-        if (vector_size <= 0)
+        if (read_bytes <= header_bytes)
         {
-            throw std::runtime_error("Deserialization: Wrong header type!");
+            return std::unexpected{ "Deserialization: The size of the binary data is too small!" };
+        }
+        auto vector_size = (read_bytes - header_bytes) / element_bytes;
+        if (vector_size == 0)
+        {
+            return std::unexpected{ "Deserialization: Cannot read the header correctly!" };
         }
 
         // locking mutex to prevent data racing

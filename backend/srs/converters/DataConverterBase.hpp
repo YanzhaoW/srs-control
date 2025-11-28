@@ -6,6 +6,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/thread/future.hpp>
 #include <cstddef>
+#include <expected>
 #include <fmt/ranges.h>
 #include <gsl/gsl-lite.hpp>
 #include <string>
@@ -22,6 +23,8 @@ namespace srs::process
         using OutputType = Output;
 
         using enum DataConvertOptions;
+
+        using RunResult = std::expected<OutputType, std::string_view>;
 
         explicit BaseTask(std::string_view name, DataConvertOptions prev_convert, std::size_t n_lines = 1)
             : previous_conversion_{ prev_convert }
