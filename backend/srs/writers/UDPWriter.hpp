@@ -93,11 +93,10 @@ namespace srs::writer
         UDP& operator=(const UDP&) = delete;
         UDP& operator=(UDP&&) = default;
 
-        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
         {
             assert(line_number < get_n_lines());
-            output_data_[line_number] =
-                connections_[line_number]->send_sync_message(prev_data_converter.get_data_view(line_number));
+            output_data_[line_number] = connections_[line_number]->send_sync_message(prev_data_converter(line_number));
             return output_data_[line_number];
         }
 
@@ -105,7 +104,7 @@ namespace srs::writer
         {
             return get_required_conversion() == raw or get_required_conversion() == proto;
         }
-        [[nodiscard]] auto get_data(std::size_t line_number = 0) const -> OutputType
+        [[nodiscard]] auto operator()(std::size_t line_number = 0) const -> OutputType
         {
             return output_data_[line_number];
         }

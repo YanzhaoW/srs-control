@@ -13,21 +13,22 @@ namespace srs::process
     class StructSerializer : public ConverterTask<DataConvertOptions::structure, const StructData*, std::string_view>
     {
       public:
-        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        explicit StructSerializer(size_t n_lines = 1);
+
+        void convert(const StructData* input, std::vector<char>& output);
+
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
         {
-            convert(prev_data_converter.get_data_view(line_number = 1),
-                    output_data_[line_number],
-                    receive_raw_data_[line_number]);
+            convert(prev_data_converter(line_number), output_data_[line_number]);
+            return this->operator()(line_number);
         }
 
-        [[nodiscard]] auto get_data_view(std::size_t line_number = 1) const -> OutputType
+        [[nodiscard]] auto operator()(std::size_t line_number = 1) const -> OutputType
         {
             return std::string_view{ output_data_[line_number].data(), output_data_[line_number].size() };
         }
-        void convert(const StructData* input, std::vector<char>& output);
 
       private:
-        std::vector<ReceiveDataHeader> receive_raw_data_;
         std::vector<std::vector<char>> output_data_;
     };
 } // namespace srs::process

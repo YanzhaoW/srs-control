@@ -37,21 +37,21 @@ namespace srs::process
         ProtoSerializerBase& operator=(ProtoSerializerBase&&) = delete;
         ~ProtoSerializerBase() { spdlog::debug("Shutting down {:?} serializer.", name_); }
 
-        [[nodiscard]] auto get_data_view(std::size_t line_num) const -> Base::OutputType
+        [[nodiscard]] auto operator()(std::size_t line_num) const -> Base::OutputType
         {
             assert(line_num < Base::get_n_lines());
             return output_data_[line_num];
         }
 
-        auto operator()(const OutputTo<typename Base::InputType> auto& prev_data_converter, std::size_t line_number)
+        auto run(const OutputTo<typename Base::InputType> auto& prev_data_converter, std::size_t line_number)
             -> Base::OutputType
         {
             assert(line_number < Base::get_n_lines());
             output_data_[line_number].clear();
-            const auto* input_data = prev_data_converter.get_data_view(line_number);
+            const auto* input_data = prev_data_converter(line_number);
             static_assert(std::same_as<decltype(input_data), const proto::Data*>);
             converter_(*input_data, output_data_[line_number]);
-            return get_data_view(line_number);
+            return this->operator()(line_number);
         }
 
       private:

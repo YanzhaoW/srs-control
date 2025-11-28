@@ -14,7 +14,7 @@ namespace srs::writer
         class Dumpy
         {
           public:
-            auto get_data_view(std::size_t /*unused*/) -> T { return T{}; }
+            auto operator()(std::size_t /*unused*/) -> T { return T{}; }
         };
 
     } // namespace internal
@@ -24,10 +24,10 @@ namespace srs::writer
         typename T::InputType;
         typename T::OutputType;
         std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
-        { writer(converter, 0) } -> std::same_as<typename T::OutputType>;
-        { writer(converter) } -> std::same_as<typename T::OutputType>;
-        { writer.get_data() } -> std::same_as<typename T::OutputType>;
-        { writer.get_data(0) } -> std::same_as<typename T::OutputType>;
+        { writer.run(converter, 0) } -> std::same_as<typename T::OutputType>;
+        { writer.run(converter) } -> std::same_as<typename T::OutputType>;
+        { writer() } -> std::same_as<typename T::OutputType>;
+        { writer(0) } -> std::same_as<typename T::OutputType>;
         not std::copyable<T>;
         std::movable<T>;
     };

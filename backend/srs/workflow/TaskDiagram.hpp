@@ -40,7 +40,7 @@ namespace srs::workflow
                       std::size_t line_number);
         void run();
         auto is_taskflow_abort_ready() const -> bool;
-        [[nodiscard]] auto get_data_view(std::size_t line_number) const -> std::string_view
+        [[nodiscard]] auto operator()(std::size_t line_number) const -> std::string_view
         {
             return raw_data_[line_number].data();
         }
@@ -48,7 +48,7 @@ namespace srs::workflow
         [[nodiscard]] auto get_data_bytes() const -> uint64_t { return total_read_data_bytes_.load(); }
         [[nodiscard]] auto get_n_lines() const -> std::size_t { return n_lines_; }
 
-        auto get_struct_data() -> const auto* { return struct_deserializer_converter_.get_data_view(0); }
+        auto get_struct_data() -> const auto* { return struct_deserializer_converter_(0); }
         // auto generate_coro() -> asio::experimental::coro<std::size_t(bool)>;
 
       private:

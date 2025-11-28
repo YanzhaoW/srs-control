@@ -27,10 +27,10 @@ namespace srs::writer
         BinaryFile& operator=(BinaryFile&&) = delete;
         ~BinaryFile();
 
-        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
         {
             assert(line_number < get_n_lines());
-            auto input_data = prev_data_converter.get_data_view(line_number);
+            auto input_data = prev_data_converter(line_number);
             output_data_[line_number] += input_data.size();
             output_streams_[line_number] << input_data;
             return output_data_[line_number];
@@ -38,7 +38,7 @@ namespace srs::writer
         void close();
 
         [[nodiscard]] auto get_filename() const -> const std::string& { return file_name_; }
-        [[nodiscard]] auto get_data(std::size_t line_number = 0) const -> OutputType
+        [[nodiscard]] auto operator()(std::size_t line_number = 0) const -> OutputType
         {
             return output_data_[line_number];
         }
