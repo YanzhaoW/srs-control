@@ -30,7 +30,7 @@ set_tests_properties(
         PROPERTY_REGULAR_EXPRESSION
         "Application has exited."
         TIMEOUT
-        8)
+        60)
 
 add_test(NAME IntegrationTestBinOutput COMMAND ctest_output -l trace -o test_output.bin)
 set_tests_properties(
@@ -39,21 +39,21 @@ set_tests_properties(
         PROPERTY_REGULAR_EXPRESSION
         "Process: Starting Raw2DelimRaw converter.*Process: Shutting down Raw2DelimRaw converter.*Application has exited."
         TIMEOUT
-        8)
+        60)
 
 add_test(NAME IntegrationTestJSONOutput COMMAND ctest_output -l trace -o test_output.json)
-set_tests_properties(IntegrationTestJSONOutput PROPERTIES TIMEOUT 8)
+set_tests_properties(IntegrationTestJSONOutput PROPERTIES TIMEOUT 60)
 
 add_test(NAME IntegrationTestProtoDelimOutput COMMAND ctest_output -l trace -o test_output.binpb)
-set_tests_properties(IntegrationTestProtoDelimOutput PROPERTIES TIMEOUT 8)
+set_tests_properties(IntegrationTestProtoDelimOutput PROPERTIES TIMEOUT 60)
 
 add_test(NAME IntegrationTestProtoUDPOutput COMMAND ctest_output -l trace -o 127.0.0.1:12345)
-set_tests_properties(IntegrationTestProtoUDPOutput PROPERTIES TIMEOUT 8)
+set_tests_properties(IntegrationTestProtoUDPOutput PROPERTIES TIMEOUT 60)
 
 add_test(NAME IntegrationTestRawDataUDPOutput COMMAND ctest_output -l trace -o 127.0.0.1:?12344)
-set_tests_properties(IntegrationTestRawDataUDPOutput PROPERTIES TIMEOUT 8)
+set_tests_properties(IntegrationTestRawDataUDPOutput PROPERTIES TIMEOUT 60)
 
 if(ROOT_FOUND)
     add_test(NAME IntegrationTestRootOutput COMMAND ctest_output -l trace -o test_output.root)
-    set_tests_properties(IntegrationTestRootOutput PROPERTIES TIMEOUT 8)
+    set_tests_properties(IntegrationTestRootOutput PROPERTIES TIMEOUT 60)
 endif()

@@ -37,19 +37,19 @@ namespace srs::process
 
         using SizeType = common::RawDelimSizeType;
 
-        [[nodiscard]] auto get_data_view(std::size_t line_num) const -> OutputType
+        [[nodiscard]] auto operator()(std::size_t line_num) const -> OutputType
         {
             assert(line_num < get_n_lines());
             return std::string_view{ output_data_[line_num].data(), output_data_[line_num].size() };
         }
 
-        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> RunResult
         {
             assert(line_number < get_n_lines());
             auto& output_data = output_data_[line_number];
             output_data.clear();
-            convert(prev_data_converter.get_data_view(line_number), output_data);
-            return get_data_view(line_number);
+            convert(prev_data_converter(line_number), output_data);
+            return this->operator()(line_number);
         }
 
       private:

@@ -3,6 +3,8 @@
 #include "srs/converters/DataConverterBase.hpp"
 #include <concepts>
 #include <cstddef>
+#include <expected>
+#include <string_view>
 
 namespace srs::writer
 {
@@ -14,7 +16,7 @@ namespace srs::writer
         class Dumpy
         {
           public:
-            auto get_data_view(std::size_t /*unused*/) -> T { return T{}; }
+            auto operator()(std::size_t /*unused*/) -> T { return T{}; }
         };
 
     } // namespace internal
@@ -23,12 +25,12 @@ namespace srs::writer
     concept WritableFile = requires(T writer, const internal::Dumpy<typename T::InputType>& converter) {
         typename T::InputType;
         typename T::OutputType;
-        std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
-        { writer(converter, 0) } -> std::same_as<typename T::OutputType>;
-        { writer(converter) } -> std::same_as<typename T::OutputType>;
-        { writer.get_data() } -> std::same_as<typename T::OutputType>;
-        { writer.get_data(0) } -> std::same_as<typename T::OutputType>;
-        not std::copyable<T>;
-        std::movable<T>;
+        requires std::derived_from<T, process::BaseTask<typename T::InputType, typename T::OutputType>>;
+        { writer.run(converter, 0) } -> std::same_as<std::expected<typename T::OutputType, std::string_view>>;
+        { writer.run(converter) } -> std::same_as<std::expected<typename T::OutputType, std::string_view>>;
+        { writer() } -> std::same_as<typename T::OutputType>;
+        { writer(0) } -> std::same_as<typename T::OutputType>;
+        requires not std::copyable<T>;
+        requires std::movable<T>;
     };
 } // namespace srs::writer

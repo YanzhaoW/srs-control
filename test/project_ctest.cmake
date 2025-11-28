@@ -8,6 +8,10 @@ else()
     site_name(CTEST_SITE)
 endif()
 
+if(NOT DEFINED ENABLE_COVERAGE)
+    set(ENABLE_COVERAGE OFF)
+endif()
+
 if(NOT DEFINED CTEST_BUILD_NAME)
     execute_process(COMMAND git config --global user.name OUTPUT_VARIABLE output_user_name)
     string(STRIP ${output_user_name} output_user_name)
@@ -25,6 +29,9 @@ endif()
 if(NOT DEFINED TEST_MODEL)
     set(TEST_MODEL "Experimental")
 endif()
+
+set(CTEST_CUSTOM_WARNING_EXCEPTION
+    ".*Warning in cling::IncrementalParser::CheckABICompatibility().*")
 
 set(CTEST_SOURCE_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/..")
 set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../build")
@@ -47,6 +54,10 @@ ctest_build()
 ctest_submit(PARTS Build)
 
 ctest_test(RETURN_VALUE _ctest_test_ret_val)
+
+if(ENABLE_COVERAGE)
+    ctest_coverage(QUIET)
+endif()
 
 ctest_submit(RETRY_COUNT 3 RETRY_DELAY 2)
 

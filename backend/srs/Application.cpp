@@ -4,7 +4,6 @@
 #include "srs/connections/DataSocket.hpp"
 #include "srs/connections/FecSwitchSocket.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
-#include "srs/utils/AppStatus.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/workflow/Handler.hpp"
 
@@ -46,11 +45,6 @@ namespace srs
     {
         spdlog::trace("Application: Resetting io context workguard ... ");
         io_work_guard_.reset();
-        // if (not status_.is_acq_off.load())
-        // {
-        //     spdlog::critical(
-        //         "Failed to close srs system! Please manually close the system with\n\n srs_control --acq-off\n");
-        // }
         if (auto switch_off_status = wait_for_switch_action(switch_off_future_);
             switch_off_status == std::future_status::ready)
         {
@@ -74,7 +68,6 @@ namespace srs
         if (working_thread_.joinable())
         {
             spdlog::debug("Application: Wait until working thread finishes ...");
-            // io_context_.stop();
             working_thread_.join();
             spdlog::debug("Application: All tasks in main io_context are finished.");
         }
@@ -134,7 +127,6 @@ namespace srs
     {
         fmt::println("");
         spdlog::debug("Application: exit is called");
-        status_.is_on_exit.store(true);
         wait_for_reading_finish();
         workflow_handler_->stop();
 

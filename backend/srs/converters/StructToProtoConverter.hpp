@@ -24,20 +24,20 @@ namespace srs::process
             output_data_.resize(n_lines);
         }
 
-        [[nodiscard]] auto get_data_view(std::size_t line_num) const -> OutputType
+        [[nodiscard]] auto operator()(std::size_t line_num) const -> OutputType
         {
             assert(line_num < get_n_lines());
             return &output_data_[line_num];
         }
 
-        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> RunResult
         {
             assert(line_number < get_n_lines());
             auto& output_data = output_data_[line_number];
             output_data.Clear();
-            auto input_data = prev_data_converter.get_data_view(line_number);
+            auto input_data = prev_data_converter(line_number);
             convert(*input_data, output_data);
-            return get_data_view(line_number);
+            return this->operator()(line_number);
         }
 
       private:
