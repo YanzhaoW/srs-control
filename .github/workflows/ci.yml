@@ -39,6 +39,7 @@ jobs:
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
           echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV
+          echo "GTEST_COLOR=1" >> $GITHUB_ENV
 
       - name: set env variables for cdash
         run: |
@@ -97,6 +98,7 @@ jobs:
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
+          echo "GTEST_COLOR=1" >> $GITHUB_ENV
 
       - name: set env variables for cdash
         run: |
@@ -127,19 +129,9 @@ jobs:
             -DCTEST_SITE="Github CI/CD"\
             -DCONFIGURE_PRESET="${{ matrix.compiler }}"\
             --output-on-failure
-        # ./srs_backend_test --gtest_output=xml
 
       - name: test coverage
         if: github.event_name == 'push' && matrix.compiler == 'gcc'
         run: |
           ctest -T coverage
           ctest -T Submit
-
-      # - name: publish test report
-      #   uses: dorny/test-reporter@v1
-      #   if: success() || failure()
-      #   with:
-      #     name: Google test
-      #     path: 'build/bin/test_detail.xml'
-      #     fail-on-error: true
-      #     reporter: java-junit

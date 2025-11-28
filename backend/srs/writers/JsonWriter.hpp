@@ -59,15 +59,19 @@ namespace srs::writer
         explicit Json(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines = 1);
 
         Json(const Json&) = delete;
-        Json(Json&&) = delete;
+        Json(Json&&) = default;
         Json& operator=(const Json&) = delete;
-        Json& operator=(Json&&) = delete;
+        Json& operator=(Json&&) = default;
         ~Json();
 
-        [[nodiscard]] auto get_data(std::size_t line_number) const -> OutputType { return output_data_[line_number]; }
+        [[nodiscard]] auto get_data(std::size_t line_number = 0) const -> OutputType
+        {
+            return output_data_[line_number];
+        }
+
         [[nodiscard]] auto get_filename() const -> const std::string& { return filename_; }
 
-        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
         {
             assert(line_number < get_n_lines());
             const auto* data_struct = prev_data_converter.get_data_view(line_number);

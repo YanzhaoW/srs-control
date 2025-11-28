@@ -1,16 +1,13 @@
 #include "UDPWriter.hpp"
-#include "srs/connections/ConnectionBase.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
-#include "srs/utils/CommonDefinitions.hpp"
 #include <boost/asio/ip/udp.hpp>
 #include <cstddef>
 #include <fmt/format.h>
 #include <memory>
 #include <ranges>
 #include <spdlog/spdlog.h>
-#include <utility>
 
 namespace srs::writer
 {
@@ -25,9 +22,6 @@ namespace srs::writer
         for ([[maybe_unused]] const auto idx : std::views::iota(0, static_cast<int>(n_lines)))
         {
             connections_.emplace_back(std::make_unique<connection::UDPWriterConnection>(io_context, remote_endpoint));
-            // connection->set_socket(
-            //     std::make_unique<asio::ip::udp::socket>(io_context, asio::ip::udp::endpoint{ asio::ip::udp::v4(), 0
-            //     }));
         }
     }
 

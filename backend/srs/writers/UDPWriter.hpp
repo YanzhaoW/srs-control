@@ -88,12 +88,12 @@ namespace srs::writer
         static constexpr auto IsStructType = false;
 
         ~UDP();
-        UDP(const UDP&) = default;
-        UDP(UDP&&) = delete;
-        UDP& operator=(const UDP&) = default;
-        UDP& operator=(UDP&&) = delete;
+        UDP(const UDP&) = delete;
+        UDP(UDP&&) = default;
+        UDP& operator=(const UDP&) = delete;
+        UDP& operator=(UDP&&) = default;
 
-        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number) -> OutputType
+        auto operator()(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> OutputType
         {
             assert(line_number < get_n_lines());
             output_data_[line_number] =
@@ -105,7 +105,10 @@ namespace srs::writer
         {
             return get_required_conversion() == raw or get_required_conversion() == proto;
         }
-        [[nodiscard]] auto get_data(std::size_t line_number) const -> OutputType { return output_data_[line_number]; }
+        [[nodiscard]] auto get_data(std::size_t line_number = 0) const -> OutputType
+        {
+            return output_data_[line_number];
+        }
 
       private:
         std::vector<OutputType> output_data_;

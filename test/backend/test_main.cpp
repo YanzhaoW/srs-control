@@ -4,6 +4,7 @@
 
 auto main(int argc, char** argv) -> int
 {
+    spdlog::set_level(spdlog::level::err);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

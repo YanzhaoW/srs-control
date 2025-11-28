@@ -1,4 +1,5 @@
 enable_testing()
+include(GoogleTest)
 
 configure_file(${CMAKE_SOURCE_DIR}/test/data/test_data.bin ${CMAKE_CURRENT_BINARY_DIR} COPYONLY
                USE_SOURCE_PERMISSIONS)
@@ -13,6 +14,10 @@ add_subdirectory(srs)
 
 add_executable(ctest_output test_output.cpp)
 target_link_libraries(ctest_output PRIVATE test_utility CLI11::CLI11)
+
+# Add GTest to ctest
+
+gtest_discover_tests(unit_test_srs_backend)
 
 # CTest
 
