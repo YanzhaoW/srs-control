@@ -4,3 +4,5 @@ build
 .cache
 tsconfig.app.tsbuildinfo
 __pycache__
+*.bkp
+*.drawio.dtmp

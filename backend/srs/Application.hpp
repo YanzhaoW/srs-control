@@ -1,7 +1,6 @@
 #pragma once
 
 #include "srs/devices/Configuration.hpp"
-#include "srs/utils/AppStatus.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <boost/asio/executor_work_guard.hpp>
@@ -10,8 +9,8 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/system/detail/error_code.hpp>
-#include <chrono>
 #include <csignal>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <future>
@@ -132,10 +131,12 @@ namespace srs
          * @brief Establish the communications to the available FECs to start the data acquisition.
          */
         void switch_on();
+
         /**
          * @brief Establish the communications to the available FECs to stop the data acquisition.
          */
         void switch_off();
+
         /**
          * @brief Start reading the input data stream from the port specified by srs::Config::fec_data_receive_port. If
          * \a is_non_stop is true, the reading process will not be stopped until an interrupt happens, such as pressing
@@ -149,12 +150,10 @@ namespace srs
         /**
          * @brief Start data analysis workflow, triggering data conversions.
          *
-         * This function call is executed in the main thread, which can be blocked if there is no data to ba analyzed.
-         * In the non-block, the process will just be in a spin loop until the new data is available
+         * This function call is executed in the main thread.
          *
-         * @param is_blocking Flag to set the block mode.
          */
-        void start_workflow(bool is_blocking = true);
+        void start_workflow();
 
         /**
          * @brief Manually wait for the working thread to finish.
@@ -164,11 +163,13 @@ namespace srs
          */
         void wait_for_finish();
 
+        void wait_for_workflow() { workflow_thread_.join(); }
+
         // setters:
         /**
          * @brief Set the local listen port number for the communications to FEC devices
          */
-        void set_fec_data_receiv_port(int port_num) { configurations_.fec_data_receive_port = port_num; }
+        void set_fec_data_receiv_port(int port_num) { config_.fec_data_receive_port = port_num; }
 
         /**
          * @brief Set the print mode.
@@ -178,39 +179,29 @@ namespace srs
         /**
          * @brief Set the output filenames.
          */
-        void set_output_filenames(const std::vector<std::string>& filenames);
+        void set_output_filenames(const std::vector<std::string>& filenames, std::size_t n_lines = 1);
+
         /**
          * @brief Set the error messages (internal usage).
          */
-        void set_error_string(std::string_view err_msg) { error_string_ = err_msg; }
+
         /**
          * @brief Set the configuration values.
          */
-        void set_options(Config options) { configurations_ = std::move(options); }
+        void set_options(Config options) { config_ = std::move(options); }
 
-        void disable_switch_off(bool is_disabled = true) { is_switch_off_disabled_ = is_disabled; }
+        void exit_and_switch_off();
 
         // internal usage
         // TODO: Refactor the code to not expose those methods for the internal usage
 
-        auto wait_for_status(auto&& condition,
-                             std::chrono::seconds time_duration = common::DEFAULT_STATUS_WAITING_TIME_SECONDS) -> bool
-        {
-            return status_.wait_for_status(std::forward<decltype(condition)>(condition), time_duration);
-        }
-        void notify_status_change() { status_.status_change.notify_all(); }
-        void set_status_acq_on(bool val = true) { status_.is_acq_on.store(val); }
-        void set_status_acq_off(bool val = true) { status_.is_acq_off.store(val); }
-        void set_status_is_reading(bool val = true) { status_.is_reading.store(val); }
         // getters:
         [[nodiscard]] auto get_channel_address() const -> uint16_t { return channel_address_; }
-        // [[nodiscard]] auto get_fec_config() const -> const auto& { return fec_config_; }
-        [[nodiscard]] auto get_status() const -> const auto& { return status_; }
         [[nodiscard]] auto get_io_context() -> auto& { return io_context_; }
         [[nodiscard]] auto get_fec_strand() -> auto& { return fec_strand_; }
-        auto get_data_reader_socket() -> connection::DataSocket* { return data_socket_.get(); }
-        [[nodiscard]] auto get_error_string() const -> const std::string& { return error_string_; }
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
+        [[nodiscard]] auto get_config() const -> const auto& { return config_; }
+        [[nodiscard]] auto get_config_ref() -> auto& { return config_; }
 
         // called by ExitHelper
         void action_after_destructor();
@@ -220,11 +211,8 @@ namespace srs
         using SwitchFutureType = std::expected<std::future<void>, boost::system::error_code>;
         using SwitchFutureStatusType = std::expected<std::future_status, boost::system::error_code>;
 
-        Status status_;
-        bool is_switch_off_disabled_ = false;
         uint16_t channel_address_ = common::DEFAULT_CHANNEL_ADDRE;
-        Config configurations_;
-        std::string error_string_;
+        Config config_;
 
         // Destructors are called in the inverse order
 
@@ -252,6 +240,14 @@ namespace srs
          */
         std::jthread working_thread_;
 
+        /** @brief Main thread to run workflow.
+         */
+        std::jthread workflow_thread_;
+
+        SwitchFutureType switch_on_future_;
+
+        SwitchFutureType switch_off_future_;
+
         /**
          * @brief Exit helper for App class. This is called after calling the destructor.
          *
@@ -268,18 +264,13 @@ namespace srs
 
         std::shared_ptr<connection::DataSocket> data_socket_;
 
-        SwitchFutureType switch_on_future_;
-
-        SwitchFutureType switch_off_future_;
-
-        void exit();
         void wait_for_reading_finish();
         void set_remote_fec_endpoints();
         void add_remote_fec_endpoint(std::string_view remote_ip, int port_number);
         static auto wait_for_switch_action(const SwitchFutureType& switch_future) -> SwitchFutureStatusType;
 
         template <typename T>
-        auto switch_FECs() -> SwitchFutureType;
+        auto switch_FECs(std::string_view connection_name) -> SwitchFutureType;
     };
 
 } // namespace srs

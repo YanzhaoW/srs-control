@@ -28,6 +28,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     endif()
 
     include(CPack)
-elseif()
+else()
     message(FATAL_ERROR "Packaging should be done in the top level CMakeLists.txt")
 endif()

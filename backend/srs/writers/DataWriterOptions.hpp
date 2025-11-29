@@ -12,7 +12,6 @@ namespace srs
 {
     enum class DataWriterOption : uint8_t
     {
-
         no_output = 0x00,
         root = 0x01,
         json = 0x02,

@@ -2,3 +2,5 @@ Diagnostics:
   UnusedIncludes: Strict
   MissingIncludes: Strict
   AnalyzeAngledIncludes: Yes
+CompileFlags:
+  Remove: [-DNDEBUG]

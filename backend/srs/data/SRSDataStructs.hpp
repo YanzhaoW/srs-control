@@ -14,7 +14,7 @@ namespace srs
     struct ReceiveDataHeader
     {
         uint32_t frame_counter{};                       //!< The counting value for current UDP data frame.
-        std::array<char, VMM_TAG_BIT_LENGTH> vmm_tag{}; //!< Hard-coded text "VMM3"
+        std::array<char, VMM_TAG_BIT_LENGTH> vmm_tag{}; //!< Hard-coded text "VM3"
         uint8_t fec_id{};                               //!< FEC ID
         uint32_t udp_timestamp{};                       //!< UDP timestamp
         uint32_t overflow{};                            //!< Overflow value

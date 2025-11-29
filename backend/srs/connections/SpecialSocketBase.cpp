@@ -26,6 +26,7 @@ namespace srs::connection
     auto SpecialSocket::cancel_coroutine() -> asio::awaitable<void>
     {
         [[maybe_unused]] auto err_code = co_await cancel_timer_.async_wait(asio::as_tuple(asio::use_awaitable));
+        spdlog::trace("Coroutine for the local socket with port {} is cancelled.", port_number_);
     }
 
     void SpecialSocket::bind_socket()

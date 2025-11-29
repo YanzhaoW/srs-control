@@ -1,4 +1,19 @@
-#include <srs/converters/StructDeserializer.hpp>
+#include "StructDeserializer.hpp"
+#include "srs/converters/DataConverterBase.hpp"
+#include "srs/data/SRSDataStructs.hpp"
+#include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
+#include "srs/utils/CommonFunctions.hpp"
+#include <algorithm>
+#include <bitset>
+#include <boost/asio/any_io_executor.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <spdlog/spdlog.h>
+#include <stdexcept>
+#include <string_view>
+#include <zpp_bits.h>
 
 namespace srs::process
 {
@@ -68,62 +83,46 @@ namespace srs::process
         }
     }; // namespace
 
-    // NOLINTNEXTLINE(readability-static-accessed-through-instance)
-    auto StructDeserializer::generate_coro(asio::any_io_executor /*unused*/) -> CoroType
+    StructDeserializer::StructDeserializer(size_t n_lines)
+        : ConverterTask{ "Struct deserializer", raw, n_lines }
     {
-        InputType temp_data{};
-        while (true)
-        {
-            if (not temp_data.empty())
-            {
-                reset();
-                convert(temp_data);
-            }
-            // spdlog::info("size: {}", output_data_.hit_data.size());
-            auto data = co_yield (&output_data_);
-            if (data.has_value())
-            {
-                temp_data = data.value();
-                // spdlog::info("get data size: {}", temp_data.size());
-            }
-            else
-            {
-                spdlog::debug("Shutting down struct deserializer.");
-                co_return;
-            }
-        }
+        raw_body_part_data_.resize(n_lines);
+        output_data_.resize(n_lines);
     }
 
     // thread safe
-    auto StructDeserializer::convert(std::string_view binary_data) -> std::size_t
+    auto StructDeserializer::convert(std::string_view binary_data,
+                                     StructData& output_data,
+                                     ReceiveDataSquence& body_part_data) -> std::expected<std::size_t, std::string_view>
     {
         auto deserialize_to = zpp::bits::in{ binary_data, zpp::bits::endian::network{}, zpp::bits::no_size{} };
 
         auto read_bytes = binary_data.size() * sizeof(BufferElementType);
-        constexpr auto header_bytes = sizeof(output_data_.header);
+        constexpr auto header_bytes = sizeof(output_data.header);
         constexpr auto element_bytes = common::HIT_DATA_BIT_LENGTH / common::BYTE_BIT_LENGTH;
-        auto vector_size = (read_bytes - header_bytes) / element_bytes;
-        if (vector_size < 0)
+        if (read_bytes <= header_bytes)
         {
-            throw std::runtime_error("Deserialization: Wrong header type!");
+            return std::unexpected{ "Deserialization: The size of the binary data is too small!" };
+        }
+        auto vector_size = (read_bytes - header_bytes) / element_bytes;
+        if (vector_size == 0)
+        {
+            return std::unexpected{ "Deserialization: Cannot read the header correctly!" };
         }
 
         // locking mutex to prevent data racing
-        receive_raw_data_.resize(vector_size);
-        std::ranges::fill(receive_raw_data_, 0);
-        deserialize_to(output_data_.header, receive_raw_data_).or_throw();
-        byte_reverse_data_sq();
-        translate_raw_data(output_data_);
+        body_part_data.resize(vector_size);
+        std::ranges::fill(body_part_data, 0);
+        deserialize_to(output_data.header, body_part_data).or_throw();
+        byte_reverse_data_sq(body_part_data);
+        translate_raw_data(output_data, body_part_data);
 
-        auto translated_size = receive_raw_data_.size();
-        receive_raw_data_.clear();
-
-        return translated_size;
+        return body_part_data.size();
     }
 
-    void StructDeserializer::translate_raw_data(StructData& struct_data)
+    void StructDeserializer::translate_raw_data(StructData& struct_data, ReceiveDataSquence& receive_raw_data)
     {
-        for (const auto& element : receive_raw_data_)
+        for (const auto& element : receive_raw_data)
         {
             // spdlog::info("raw data: {:x}", element.to_ullong());
             if (auto is_hit = check_is_hit(element); is_hit)
@@ -138,14 +137,14 @@ namespace srs::process
             }
         }
     }
-    void StructDeserializer::byte_reverse_data_sq()
+    void StructDeserializer::byte_reverse_data_sq(ReceiveDataSquence& receive_raw_data)
     {
         // reverse byte order of each element.
         // TODO: This is current due to a bug from zpp_bits. The reversion is not needed if it's fixed.
-        for (auto& element : receive_raw_data_)
+        for (auto& element : receive_raw_data)
         {
             element = common::byte_swap(element);
         }
     }
 
-} // namespace srs
+} // namespace srs::process

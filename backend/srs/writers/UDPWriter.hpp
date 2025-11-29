@@ -1,62 +1,118 @@
 #pragma once
 
+#include "srs/converters/DataConvertOptions.hpp"
+#include "srs/converters/DataConverterBase.hpp"
+#include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/CommonConcepts.hpp"
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/experimental/coro.hpp>
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <boost/asio/uses_executor.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/thread/future.hpp>
+#include <cassert>
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <spdlog/spdlog.h>
 #include <srs/connections/ConnectionBase.hpp>
-#include <srs/workflow/TaskDiagram.hpp>
 #include <srs/writers/DataWriterOptions.hpp>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace srs::connection
 {
-    class UDPWriterConnection : public Base<>
+    class UDPWriterConnection
     {
       public:
-        explicit UDPWriterConnection(const Info& info)
-            : Base(info, "UDP writer")
+        explicit UDPWriterConnection(io_context_type& io_executor, asio::ip::udp::endpoint remote_endpoint)
+            : io_context_{ &io_executor }
+            , remote_endpoint_{ std::move(remote_endpoint) }
+            , socket_{ io_executor, asio::ip::udp::endpoint{ asio::ip::udp::v4(), 0 } }
         {
         }
+        using OutputType = std::size_t;
+        using InputType = std::string_view;
+
+        [[nodiscard]] auto get_executor() const { return io_context_->get_executor(); }
+
+        auto send_sync_message(InputType input_data) -> OutputType
+        {
+            const auto read_size =
+                (not input_data.empty()) ? socket_.send_to(asio::buffer(input_data), remote_endpoint_, 0, err_) : 0;
+            return read_size;
+        }
+
+        void close() { socket_.close(); }
+
+        auto send_continuous_message() -> asio::experimental::coro<OutputType(std::optional<InputType>)>
+        {
+            auto total_size = std::size_t{};
+            spdlog::debug("UDP: Starting to send data to the remote point {}", remote_endpoint_);
+            auto msg = co_yield OutputType{};
+            while (true)
+            {
+                if (not msg.has_value())
+                {
+                    break;
+                }
+                const auto read_size =
+                    (not msg.value().empty()) ? socket_.send_to(asio::buffer(msg.value()), remote_endpoint_) : 0;
+                total_size += read_size;
+                msg = co_yield read_size;
+            }
+            close();
+            spdlog::debug("UDP: Stopped sending the message. Sent bytes: {}", total_size);
+            co_return;
+        }
+
+      private:
+        boost::system::error_code err_;
+        io_context_type* io_context_ = nullptr;
+        asio::ip::udp::endpoint remote_endpoint_;
+        asio::ip::udp::socket socket_;
     };
 } // namespace srs::connection
 
 namespace srs::writer
 {
-    class UDP
+    class UDP : public process::WriterTask<DataWriterOption::udp, std::string_view, std::size_t>
     {
       public:
-        UDP(App& app,
-            asio::ip::udp::endpoint endpoint,
-            process::DataConvertOptions derser_mode = process::DataConvertOptions::none)
-            : convert_mode_{ derser_mode }
-            , connection_{ connection::Info{ &app } }
-            , app_{ app }
-        {
-            connection_.set_socket(std::make_unique<asio::ip::udp::socket>(
-                app.get_io_context(), asio::ip::udp::endpoint{ asio::ip::udp::v4(), 0 }));
-            connection_.set_remote_endpoint(std::move(endpoint));
-            coro_ = connection_.send_continuous_message();
-            common::coro_sync_start(coro_, std::optional<std::string_view>{}, asio::use_awaitable);
-        }
-
+        UDP(io_context_type& io_context,
+            asio::ip::udp::endpoint remote_endpoint,
+            std::size_t n_lines,
+            process::DataConvertOptions deser_mode = process::DataConvertOptions::none);
         static constexpr auto IsStructType = false;
-        auto is_deserialize_valid() { return convert_mode_ == raw or convert_mode_ == proto; }
 
-        auto get_convert_mode() const -> process::DataConvertOptions { return convert_mode_; }
-        auto write(auto last_fut) -> boost::unique_future<std::optional<int>>
+        ~UDP();
+        UDP(const UDP&) = delete;
+        UDP(UDP&&) = default;
+        UDP& operator=(const UDP&) = delete;
+        UDP& operator=(UDP&&) = default;
+
+        auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
-            return common::create_coro_future(coro_, last_fut);
+            assert(line_number < get_n_lines());
+            output_data_[line_number] = connections_[line_number]->send_sync_message(prev_data_converter(line_number));
+            return output_data_[line_number];
         }
 
-        // INFO: this will be called in coroutine
-        void close() { connection_.close(); }
-
-        // Getters:
-        auto get_local_socket() -> const auto& { return connection_.get_socket(); }
-        auto get_remote_endpoint() -> const auto& { return connection_.get_remote_endpoint(); }
+        [[nodiscard]] auto is_deserialize_valid() const
+        {
+            return get_required_conversion() == raw or get_required_conversion() == proto;
+        }
+        [[nodiscard]] auto operator()(std::size_t line_number = 0) const -> OutputType
+        {
+            return output_data_[line_number];
+        }
 
       private:
+        std::vector<OutputType> output_data_;
+        std::vector<std::unique_ptr<connection::UDPWriterConnection>> connections_;
         using enum process::DataConvertOptions;
-        process::DataConvertOptions convert_mode_;
-        connection::UDPWriterConnection connection_;
-        std::reference_wrapper<App> app_;
-        asio::experimental::coro<int(std::optional<std::string_view>)> coro_;
     };
 
 } // namespace srs::writer

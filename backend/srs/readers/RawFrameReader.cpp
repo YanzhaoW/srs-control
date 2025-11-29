@@ -1,5 +1,18 @@
+#include "srs/utils/CommonDefinitions.hpp"
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <fstream>
+#include <ios>
 #include <spdlog/spdlog.h>
 #include <srs/readers/RawFrameReader.hpp>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
 #include <zpp_bits.h>
 
 namespace srs::reader
@@ -16,20 +29,20 @@ namespace srs::reader
         spdlog::debug("Open the binary file {:?}", input_filename_);
     }
 
-    auto RawFrame::read_one_frame(std::vector<char>& binary_data, std::ifstream& input_file) -> std::size_t
+    auto RawFrame::read_one_frame(std::vector<char>& binary_data, std::ifstream& input_file)
+        -> std::expected<std::size_t, std::string>
     {
         if (not input_file.is_open())
         {
-            spdlog::critical("The input file is not open!");
-            return 0;
+            return std::unexpected(fmt::format("The input file {} is not open!", input_filename_));
         }
         binary_data.reserve(common::LARGE_READ_MSG_BUFFER_SIZE);
         std::array<char, sizeof(common::RawDelimSizeType)> size_buffer{};
         auto size = common::RawDelimSizeType{};
         if (input_file.eof())
         {
-            spdlog::info("End of the binary file.");
             return 0;
+            // return std::unexpected("End of the binary file.");
         }
 
         input_file.read(size_buffer.data(), static_cast<int64_t>(size_buffer.size()));
@@ -46,9 +59,19 @@ namespace srs::reader
         return read_size;
     }
 
-    auto RawFrame::read_one_frame() -> std::string_view
+    void RawFrame::reset()
     {
-        read_one_frame(input_buffer_, input_file_);
-        return std::string_view{ input_buffer_.data(), input_buffer_.size() };
+        input_file_.clear();
+        input_file_.seekg(0, std::ios::beg);
+    }
+
+    auto RawFrame::read_one_frame() -> std::expected<std::string_view, std::string>
+    {
+        auto res = read_one_frame(input_buffer_, input_file_);
+        if (res.has_value())
+        {
+            return std::string_view{ input_buffer_.data(), input_buffer_.size() };
+        }
+        return std::unexpected{ res.error() };
     }
 } // namespace srs::reader

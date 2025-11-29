@@ -4,6 +4,7 @@
 [![CI pipeline](https://github.com/YanzhaoW/srs-control/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/YanzhaoW/srs-control/actions?query=branch%3Adev)
 [![Github Releases](https://img.shields.io/github/release/YanzhaoW/srs-control.svg)](https://github.com/YanzhaoW/srs-control/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![dashboard](https://img.shields.io/badge/dashboard-srs-blue?labelColor=gray&style=flat)](https://my.cdash.org/index.php?project=srs-control)
 
 SRS-control is a program containing a command line tool `srs_control` and additional library APIs that can be used to communicate with SRS system and interpret the received data in your own program.
 

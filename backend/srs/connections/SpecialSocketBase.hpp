@@ -5,10 +5,7 @@
 #include "srs/utils/CommonFunctions.hpp"
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
-#include <boost/asio/ip/basic_endpoint.hpp>
 #include <boost/asio/system_timer.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -132,6 +129,7 @@ namespace srs::connection
             }
         }
         // TODO: close the socket here
+        spdlog::trace("Coroutine for the local socket with port {} has existed.", socket->get_port());
         co_return;
     }
 
@@ -173,7 +171,7 @@ namespace srs::connection
             }
             auto timer = asio::system_timer{ co_await asio::this_coro::executor };
             timer.expires_after(waiting_time);
-            auto err_code = co_await timer.async_wait(asio::as_tuple(asio::use_awaitable));
+            [[maybe_unused]] auto err_code = co_await timer.async_wait(asio::as_tuple(asio::use_awaitable));
             socket->cancel_timer_.cancel();
             if (not socket->is_finished())
             {

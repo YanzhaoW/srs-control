@@ -1,8 +1,11 @@
 #pragma once
 
+#include <cstddef>
+#include <expected>
 #include <fstream>
 #include <srs/utils/CommonDefinitions.hpp>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace srs::reader
@@ -34,7 +37,8 @@ namespace srs::reader
          * @param input_file Input file handler.
          * @return The amount of bytes read from the binary file. If the binary input file is not open, return 0.
          */
-        static auto read_one_frame(std::vector<char>& binary_data, std::ifstream& input_file) -> std::size_t;
+        auto read_one_frame(std::vector<char>& binary_data, std::ifstream& input_file)
+            -> std::expected<std::size_t, std::string>;
 
         /**
          *
@@ -47,10 +51,12 @@ namespace srs::reader
          * @return Non-owning binary data.
          *
          */
-        auto read_one_frame() -> std::string_view;
+        auto read_one_frame() -> std::expected<std::string_view, std::string>;
 
         //! Getter to the internal binary data used by the member function \ref read_one_frame().
         auto get_binary_data() const -> const auto& { return input_buffer_; }
+
+        void reset();
 
       private:
         std::string input_filename_;     //!< Input binary file name.

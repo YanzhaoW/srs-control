@@ -1,13 +1,13 @@
-#pragma once
-
+#include "ProtoSerializer.hpp"
+#include "srs/utils/CommonDefinitions.hpp"
 #include <google/protobuf/io/gzip_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/util/delimited_message_util.h>
-#include <srs/converters/ProtoSerializerBase.hpp>
 
 namespace srs::process
 {
-    const auto protobuf_delim_deserializer_converter = [](const proto::Data& proto_data,
-                                                          std::string& output_data) -> int
+    auto protobuf_delim_deserializer_converter::operator()(const proto::Data& proto_data, std::string& output_data)
+        -> int
     {
         namespace protobuf = google::protobuf;
         namespace io = protobuf::io;
@@ -28,13 +28,12 @@ namespace srs::process
         return 0;
     };
 
-    class ProtoDelimSerializer : public ProtoSerializerBase<decltype(protobuf_delim_deserializer_converter)>
+    auto protobuf_deserializer_converter::operator()(const proto::Data& proto_data, std::string& output_data) -> int
     {
-      public:
-        explicit ProtoDelimSerializer(asio::thread_pool& thread_pool)
-            : ProtoSerializerBase{ thread_pool, "ProtoDelimSerializer", protobuf_delim_deserializer_converter }
-        {
-        }
-        static constexpr auto ConverterOption = std::array{ proto_frame };
+        namespace protobuf = google::protobuf;
+        namespace io = protobuf::io;
+        auto output_stream = io::StringOutputStream{ &output_data };
+        proto_data.SerializeToZeroCopyStream(&output_stream);
+        return 0;
     };
-} // namespace srs
+} // namespace srs::process
