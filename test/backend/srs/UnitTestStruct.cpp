@@ -81,8 +81,8 @@ TEST(data_structure, check_de_serialization)
 
     auto res = serializer_converter.run(initial_converter);
 
-    EXPECT_FALSE(res.has_value());
+    EXPECT_TRUE(res.has_value());
     auto struct_data = deserializer_converter.run(serializer_converter);
-    EXPECT_FALSE(struct_data.has_value());
+    EXPECT_TRUE(struct_data.has_value());
 
 }
