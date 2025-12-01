@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <iterator>
 #include <magic_enum/magic_enum.hpp>
 #include <string>
 #include <string_view>
@@ -48,6 +49,21 @@ namespace srs::common
         return std::bitset<high_size + low_size>(new_bits.to_ullong());
     }
 
+    template <std::size_t high_size, std::size_t low_size>
+    constexpr void split_bits(const std::bitset<high_size + low_size>& bits, std::bitset<high_size>& high_bits, std::bitset<low_size>& low_bits) 
+    {
+        constexpr auto max_size = 64; 
+        static_assert(high_size + low_size <= max_size);
+        for (auto i{0UZ}; i < low_size; i++)
+        {
+            low_bits[i] = bits[i];
+        }
+        for (auto j{low_size}; j < high_size; j++)
+        {
+            high_bits[j] = bits[low_size + j];
+        }
+    }
+
     template <std::size_t bit_size>
     constexpr auto byte_swap(const std::bitset<bit_size>& bits)
     {
@@ -67,6 +83,12 @@ namespace srs::common
             bin_val ^= gray_val;
         }
         return bin_val;
+    }
+
+    template<typename T>
+    constexpr auto bin_to_gray(T bin_val)
+    {
+      return bin_val ^ (bin_val >> 1);
     }
 
     constexpr auto get_shared_from_this(auto&& obj)

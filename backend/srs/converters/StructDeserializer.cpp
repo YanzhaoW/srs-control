@@ -4,6 +4,7 @@
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
+#include "srs/data/SRSDataCompact.hpp"
 #include <algorithm>
 #include <bitset>
 #include <cstddef>
@@ -29,31 +30,10 @@ namespace srs::process
             expanded_raw_data = expanded_raw_data << shifted_bits;
             return std::bit_cast<T>(expanded_raw_data.to_ullong());
         }
-        struct HitDataCompact
-        {
-            uint16_t : 16;
-            uint16_t tdc : 8;
-            uint16_t channel_num : 6;
-            uint16_t is_over_threshold : 1;
-            uint16_t flag : 1;
-            uint32_t bc_id : 12;
-            uint32_t adc : 10;
-            uint32_t vmm_id : 5;
-            uint32_t offset : 5;
-        };
-
-        struct MarkerDataCompact
-        {
-            uint16_t : 16;
-            uint16_t timestamp_low_bits : common::SRS_TIMESTAMP_LOW_BIT_LENGTH;
-            uint16_t vmm_id : 5;
-            uint16_t flag : 1;
-            uint32_t timestamp_high_bits : common::SRS_TIMESTAMP_HIGH_BIT_LENGTH;
-        };
 
         void array_to_marker(const DataElementType& raw_data, MarkerData& marker_data)
         {
-            auto marker_data_compact = convert_to<MarkerDataCompact>(raw_data);
+            auto marker_data_compact = convert_to<internal::MarkerDataCompact>(raw_data);
 
             auto timestamp_high_bits = std::bitset<common::SRS_TIMESTAMP_HIGH_BIT_LENGTH>(
                 static_cast<uint32_t>(marker_data_compact.timestamp_high_bits));
@@ -66,7 +46,7 @@ namespace srs::process
 
         void array_to_hit(const DataElementType& raw_data, HitData& hit_data)
         {
-            auto hit_data_compact = convert_to<HitDataCompact>(raw_data);
+            auto hit_data_compact = convert_to<internal::HitDataCompact>(raw_data);
 
             hit_data.is_over_threshold =
                 static_cast<decltype(hit_data.is_over_threshold)>(hit_data_compact.is_over_threshold);

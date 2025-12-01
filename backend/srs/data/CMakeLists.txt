@@ -15,6 +15,7 @@ target_sources(
            FILES
            SRSDataStructs.hpp
            DataStructsFormat.hpp
+           SRSDataCompact.hpp  # is this it? 
            ${CMAKE_CURRENT_BINARY_DIR}/message.pb.h)
 
 target_sources(srscpp PUBLIC FILE_SET publicHeaders FILES SRSDataStructs.hpp)
