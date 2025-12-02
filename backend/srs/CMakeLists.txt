@@ -70,3 +70,18 @@ if(ENABLE_COVERAGE)
     target_compile_options(srscpp PRIVATE --coverage)
     target_link_options(srscpp PRIVATE --coverage)
 endif()
+
+if(ENABLE_ASAN)
+    target_compile_options(srscpp PUBLIC -fno-omit-frame-pointer -fsanitize=address,undefined,leak)
+    target_link_options(srscpp PUBLIC -fsanitize=address,undefined,leak)
+endif()
+
+if(ENABLE_TSAN)
+    target_compile_options(srscpp PUBLIC -fno-omit-frame-pointer -fsanitize=thread)
+    target_link_options(srscpp PUBLIC -fsanitize=thread)
+endif()
+
+if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND ENABLE_MSAN)
+    target_compile_options(srscpp PUBLIC -fno-omit-frame-pointer -fsanitize=memory)
+    target_link_options(srscpp PUBLIC -fsanitize=memory)
+endif()

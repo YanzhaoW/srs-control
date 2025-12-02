@@ -12,6 +12,11 @@ option(BUILD_DOC "Build the documentation for this project." OFF)
 option(BUILD_ONLY_DOC "Only build the documentation for this project." OFF)
 option(ENABLE_COVERAGE "Enable coverage flags" OFF)
 
+# for sanitizers
+option(ENABLE_ASAN "Enable address sanitizer flags" OFF)
+option(ENABLE_TSAN "Enable thread sanitizer flags" OFF)
+option(ENABLE_MSAN "Enable memory sanitizer flags" OFF)
+
 set(SPHINX_BUILDER
     "html"
     CACHE STRING "Set the builder for sphnix-build.")
@@ -26,5 +31,5 @@ else()
     set(ENV{CMAKE_USE_SYSTEM_BOOST} ${USE_SYSTEM_BOOST})
 endif()
 
-message(STATUS "CMAKE_USE_SYSTEM_PROTOBUF: $ENV{CMAKE_USE_SYSTEM_PROTOBUF}" )
-message(STATUS "CMAKE_USE_SYSTEM_BOOST: $ENV{CMAKE_USE_SYSTEM_BOOST}" )
+message(STATUS "CMAKE_USE_SYSTEM_PROTOBUF: $ENV{CMAKE_USE_SYSTEM_PROTOBUF}")
+message(STATUS "CMAKE_USE_SYSTEM_BOOST: $ENV{CMAKE_USE_SYSTEM_BOOST}")

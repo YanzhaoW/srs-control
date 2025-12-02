@@ -18,6 +18,8 @@ if(NOT DEFINED CTEST_BUILD_NAME)
     set(CTEST_BUILD_NAME "${CMAKE_HOST_SYSTEM_NAME} local machine from ${output_user_name}")
 endif()
 
+set(CTEST_MEMORYCHECK_SANITIZER_OPTIONS "verbosity=1:symbolize=1:abort_on_error=1:detect_leaks=1")
+
 if(NOT DEFINED CTEST_CONFIGURATION_TYPE)
     set(CTEST_CONFIGURATION_TYPE Debug)
 endif()
@@ -38,29 +40,59 @@ set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../build")
 set(CTEST_CMAKE_GENERATOR Ninja)
 set(CTEST_COVERAGE_COMMAND "gcov")
 
-set(CONFIGURE_OPTIONS "--preset ${CONFIGURE_PRESET}" "-DENABLE_COVERAGE=ON"
-                      ${ADDITIONAL_CONFIGURE_OPTIONS})
-
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ctest_start(${TEST_MODEL})
 
+# ctest_submit(PARTS Start)
+
+# set(CONFIGURE_OPTIONS "--preset ${CONFIGURE_PRESET}" "-DENABLE_COVERAGE=ON"
+#                       ${ADDITIONAL_CONFIGURE_OPTIONS})
+set(CONFIGURE_OPTIONS "--preset ${CONFIGURE_PRESET}" ${ADDITIONAL_CONFIGURE_OPTIONS})
+
 ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
 
-ctest_submit(PARTS Start Configure)
+# ctest_submit(PARTS Configure)
 
+# ctest_build()
+
+# ctest_submit(PARTS Build)
+
+# ctest_test(RETURN_VALUE _ctest_test_ret_val)
+
+# if(ENABLE_COVERAGE)
+#     ctest_coverage(QUIET)
+# endif()
+
+# if(_ctest_test_ret_val)
+#     message(FATAL_ERROR "Some tests failed!")
+# endif()
+
+# ctest_submit(PARTS Coverage)
+
+# address sanitizer
+
+set(CONFIGURE_OPTIONS "-DENABLE_ASAN=ON" "-DENABLE_TSAN=OFF" "-DENABLE_MSAN=OFF")
+set(CTEST_MEMORYCHECK_TYPE AddressSanitizer)
+ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
 ctest_build()
+ctest_memcheck()
+ctest_submit(PARTS MemCheck)
 
-ctest_submit(PARTS Build)
+set(CONFIGURE_OPTIONS "-DENABLE_ASAN=OFF" "-DENABLE_TSAN=ON" "-DENABLE_MSAN=OFF")
+set(CTEST_MEMORYCHECK_TYPE ThreadSanitizer)
+ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
+ctest_build()
+ctest_memcheck()
+ctest_submit(PARTS MemCheck)
 
-ctest_test(RETURN_VALUE _ctest_test_ret_val)
+# set(CONFIGURE_OPTIONS "-DENABLE_ASAN=OFF" "-DENABLE_TSAN=OFF" "-DENABLE_MSAN=ON")
+# set(CTEST_MEMORYCHECK_TYPE MemorySanitizer)
+# ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
+# ctest_build()
+# ctest_memcheck()
+# ctest_submit(PARTS MemCheck)
 
-if(ENABLE_COVERAGE)
-    ctest_coverage(QUIET)
-endif()
-
-ctest_submit(RETRY_COUNT 3 RETRY_DELAY 2)
-
-if(_ctest_test_ret_val)
-    message(FATAL_ERROR "Some tests failed!")
-endif()
+# # address sanitizer
+# set(CTEST_MEMORYCHECK_TYPE ThreadSanitizer)
+# ctest_memcheck()

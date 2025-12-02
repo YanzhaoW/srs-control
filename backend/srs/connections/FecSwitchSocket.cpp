@@ -66,7 +66,7 @@ namespace srs::connection
     }
 
     void FecCommandSocket::register_send_action_imp(asio::awaitable<void> action,
-                                                   std::shared_ptr<SmallConnection> connection)
+                                                    std::shared_ptr<SmallConnection> connection)
     {
         auto time = get_time_us();
         spdlog::debug(
@@ -89,8 +89,8 @@ namespace srs::connection
     }
 
     void FecCommandSocket::deregister_connection(const UDPEndpoint& endpoint,
-                                                std::span<char> response,
-                                                SmallConnections& connections)
+                                                 std::span<char> response,
+                                                 SmallConnections& connections)
     {
         if (connections.empty())
         {

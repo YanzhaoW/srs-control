@@ -182,10 +182,6 @@ namespace srs
         void set_output_filenames(const std::vector<std::string>& filenames, std::size_t n_lines = 1);
 
         /**
-         * @brief Set the error messages (internal usage).
-         */
-
-        /**
          * @brief Set the configuration values.
          */
         void set_options(Config options) { config_ = std::move(options); }
