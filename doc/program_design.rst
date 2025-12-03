@@ -60,7 +60,7 @@ JSON Configuration
  Application Class
 *******************
 
-Application class `App` is the main entrance point of `srs-control` program and its member variables represent different components of the program: task workflows, connections to FECs and  writing and reading of the configurations.
+Application class `App` is the main entrance point of `srs-control` program and its member variables represent different components of the program: task workflows, network connections with FECs and writing and reading of the application configurations, etc. 
 
 
 

@@ -1,19 +1,22 @@
 target_sources(
     srscpp
-    PRIVATE StructDeserializer.cpp
-            RawToDelimRawConveter.cpp
-            StructToProtoConverter.cpp
-            ProtoSerializer.cpp
-            StructSerializer.cpp)
+    PRIVATE
+        ProtoSerializer.cpp
+        RawToDelimRawConveter.cpp
+        StructDeserializer.cpp
+        StructSerializer.cpp
+        StructToProtoConverter.cpp
+)
 
 target_sources(
     srscpp
-    PRIVATE FILE_SET
-            privateHeaders
+    PRIVATE
+        FILE_SET privateHeaders
             FILES
-            DataConvertOptions.hpp
-            ProtoSerializer.hpp
-            SerializableBuffer.hpp
-            StructDeserializer.hpp
-            StructSerializer.hpp
-            StructToProtoConverter.hpp)
+                DataConvertOptions.hpp
+                ProtoSerializer.hpp
+                SerializableBuffer.hpp
+                StructDeserializer.hpp
+                StructSerializer.hpp
+                StructToProtoConverter.hpp
+)

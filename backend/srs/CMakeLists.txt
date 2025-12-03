@@ -3,21 +3,19 @@ target_sources(srscpp PRIVATE Application.cpp)
 
 target_sources(
     srscpp
-    PUBLIC FILE_SET
-           publicHeaders
-           TYPE
-           HEADERS
-           BASE_DIRS
-           ${CMAKE_SOURCE_DIR}/backend)
+    PUBLIC
+        FILE_SET publicHeaders
+            TYPE HEADERS
+            BASE_DIRS ${CMAKE_SOURCE_DIR}/backend
+)
 
 target_sources(
     srscpp
-    PRIVATE FILE_SET
-            privateHeaders
-            TYPE
-            HEADERS
-            BASE_DIRS
-            ${CMAKE_SOURCE_DIR}/backend)
+    PRIVATE
+        FILE_SET privateHeaders
+            TYPE HEADERS
+            BASE_DIRS ${CMAKE_SOURCE_DIR}/backend
+)
 
 if(TBB_VERSION VERSION_GREATER "2020.3.1")
     message(STATUS "using oneAPI tbb")
@@ -28,13 +26,15 @@ endif()
 
 target_link_libraries(
     srscpp
-    PRIVATE $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
-            $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
-            $<BUILD_LOCAL_INTERFACE:Boost::thread>
-            $<BUILD_LOCAL_INTERFACE:fmt::fmt>
-            $<BUILD_LOCAL_INTERFACE:Taskflow::Taskflow>
-            $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>
-            $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>)
+    PRIVATE
+        $<BUILD_LOCAL_INTERFACE:Boost::thread>
+        $<BUILD_LOCAL_INTERFACE:fmt::fmt>
+        $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
+        $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
+        $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>
+        $<BUILD_LOCAL_INTERFACE:Taskflow::Taskflow>
+        $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>
+)
 
 add_subdirectory(utils)
 add_subdirectory(data)
@@ -47,23 +47,20 @@ add_subdirectory(workflow)
 
 target_sources(
     srscpp
-    PUBLIC FILE_SET
-           publicHeaders
-           FILES
-           Application.hpp
-           format.hpp
-           srs.hpp)
+    PUBLIC FILE_SET publicHeaders FILES Application.hpp format.hpp srs.hpp
+)
 
 target_link_libraries(srscpp PRIVATE $<BUILD_LOCAL_INTERFACE:srs_data>)
-target_compile_definitions(srscpp PUBLIC BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION
-                                         BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY)
+target_compile_definitions(
+    srscpp
+    PUBLIC
+        BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION
+        BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY
+)
 target_compile_options(
     srscpp
-    PRIVATE -Werror
-            -Wall
-            -Wextra
-            -Wconversion
-            -pedantic)
+    PRIVATE -Werror -Wall -Wextra -Wconversion -pedantic
+)
 
 # Set coverage
 if(ENABLE_COVERAGE)

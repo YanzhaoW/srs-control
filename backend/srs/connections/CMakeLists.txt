@@ -1,19 +1,22 @@
 target_sources(
     srscpp
-    PRIVATE ConnectionBase.cpp
-            Connections.cpp
-            FecSwitchSocket.cpp
-            SpecialSocketBase.cpp
-            DataSocket.cpp)
+    PRIVATE
+        ConnectionBase.cpp
+        Connections.cpp
+        DataSocket.cpp
+        FecSwitchSocket.cpp
+        SpecialSocketBase.cpp
+)
 
 target_sources(
     srscpp
-    PRIVATE FILE_SET
-            privateHeaders
+    PRIVATE
+        FILE_SET privateHeaders
             FILES
-            ConnectionBase.hpp
-            ConnectionTypeDef.hpp
-            Connections.hpp
-            FecSwitchSocket.hpp
-            DataSocket.hpp
-            SpecialSocketBase.hpp)
+                ConnectionBase.hpp
+                Connections.hpp
+                ConnectionTypeDef.hpp
+                DataSocket.hpp
+                FecSwitchSocket.hpp
+                SpecialSocketBase.hpp
+)
