@@ -44,55 +44,54 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ctest_start(${TEST_MODEL})
 
-# ctest_submit(PARTS Start)
+ctest_submit(PARTS Start)
 
-# set(CONFIGURE_OPTIONS "--preset ${CONFIGURE_PRESET}" "-DENABLE_COVERAGE=ON"
-#                       ${ADDITIONAL_CONFIGURE_OPTIONS})
-set(CONFIGURE_OPTIONS "--preset ${CONFIGURE_PRESET}" ${ADDITIONAL_CONFIGURE_OPTIONS})
+set(CONFIGURE_OPTIONS "--preset ${CONFIGURE_PRESET}" "-DENABLE_COVERAGE=${ENABLE_COVERAGE}"
+                      ${ADDITIONAL_CONFIGURE_OPTIONS})
 
 ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
 
-# ctest_submit(PARTS Configure)
+ctest_submit(PARTS Configure)
 
-# ctest_build()
-
-# ctest_submit(PARTS Build)
-
-# ctest_test(RETURN_VALUE _ctest_test_ret_val)
-
-# if(ENABLE_COVERAGE)
-#     ctest_coverage(QUIET)
-# endif()
-
-# if(_ctest_test_ret_val)
-#     message(FATAL_ERROR "Some tests failed!")
-# endif()
-
-# ctest_submit(PARTS Coverage)
-
-# address sanitizer
-
-set(CONFIGURE_OPTIONS "-DENABLE_ASAN=ON" "-DENABLE_TSAN=OFF" "-DENABLE_MSAN=OFF")
-set(CTEST_MEMORYCHECK_TYPE AddressSanitizer)
-ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
 ctest_build()
-ctest_memcheck()
-ctest_submit(PARTS MemCheck)
 
-set(CONFIGURE_OPTIONS "-DENABLE_ASAN=OFF" "-DENABLE_TSAN=ON" "-DENABLE_MSAN=OFF")
-set(CTEST_MEMORYCHECK_TYPE ThreadSanitizer)
-ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
-ctest_build()
-ctest_memcheck()
-ctest_submit(PARTS MemCheck)
+ctest_submit(PARTS Build)
 
-# set(CONFIGURE_OPTIONS "-DENABLE_ASAN=OFF" "-DENABLE_TSAN=OFF" "-DENABLE_MSAN=ON")
-# set(CTEST_MEMORYCHECK_TYPE MemorySanitizer)
-# ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
-# ctest_build()
-# ctest_memcheck()
-# ctest_submit(PARTS MemCheck)
+ctest_test(RETURN_VALUE _ctest_test_ret_val)
 
-# # address sanitizer
-# set(CTEST_MEMORYCHECK_TYPE ThreadSanitizer)
-# ctest_memcheck()
+if(ENABLE_COVERAGE)
+    ctest_coverage(QUIET)
+endif()
+
+if(_ctest_test_ret_val)
+    message(FATAL_ERROR "Some tests failed!")
+endif()
+
+ctest_submit(PARTS Coverage)
+
+# sanitizers
+
+if(NOT ENABLE_COVERAGE)
+    set(CONFIGURE_OPTIONS "-DENABLE_ASAN=ON" "-DENABLE_TSAN=OFF")
+    ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
+    ctest_build()
+
+    set(CTEST_MEMORYCHECK_TYPE AddressSanitizer)
+    ctest_memcheck()
+    ctest_submit(PARTS MemCheck)
+
+    set(CTEST_MEMORYCHECK_TYPE LeakSanitizer)
+    ctest_memcheck()
+    ctest_submit(PARTS MemCheck)
+
+    set(CTEST_MEMORYCHECK_TYPE UndefinedBehaviorSanitizer)
+    ctest_memcheck()
+    ctest_submit(PARTS MemCheck)
+
+    set(CONFIGURE_OPTIONS "-DENABLE_ASAN=OFF" "-DENABLE_TSAN=ON")
+    ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
+    ctest_build()
+    set(CTEST_MEMORYCHECK_TYPE ThreadSanitizer)
+    ctest_memcheck()
+    ctest_submit(PARTS MemCheck)
+endif()

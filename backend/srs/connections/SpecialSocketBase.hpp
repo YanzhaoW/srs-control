@@ -54,7 +54,7 @@ namespace srs::connection
         void register_send_action(
             this auto&& self,
             asio::awaitable<void> action,
-            std::shared_ptr<typename std::remove_cvref_t<decltype(self)>::ConnectionType> connection);
+            const std::shared_ptr<typename std::remove_cvref_t<decltype(self)>::ConnectionType>& connection);
 
         void listen(this auto& self, io_context_type& io_context);
 
@@ -136,7 +136,7 @@ namespace srs::connection
     void SpecialSocket::register_send_action(
         this auto&& self,
         asio::awaitable<void> action,
-        std::shared_ptr<typename std::remove_cvref_t<decltype(self)>::ConnectionType> connection)
+        const std::shared_ptr<typename std::remove_cvref_t<decltype(self)>::ConnectionType>& connection)
     {
         spdlog::trace("Registering send action from connection {} with remote endpoint {}.",
                       connection->get_name(),

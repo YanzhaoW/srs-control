@@ -15,7 +15,6 @@ option(ENABLE_COVERAGE "Enable coverage flags" OFF)
 # for sanitizers
 option(ENABLE_ASAN "Enable address sanitizer flags" OFF)
 option(ENABLE_TSAN "Enable thread sanitizer flags" OFF)
-option(ENABLE_MSAN "Enable memory sanitizer flags" OFF)
 
 set(SPHINX_BUILDER
     "html"

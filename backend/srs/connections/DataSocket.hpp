@@ -27,7 +27,7 @@ namespace srs::connection
         gsl::not_null<io_context_type*> io_context_;
         gsl::not_null<workflow::Handler*> workflow_handler_;
 
-        void register_send_action_imp(asio::awaitable<void> action, std::shared_ptr<ConnectionType> connection);
+        void register_send_action_imp(asio::awaitable<void> action, const std::shared_ptr<ConnectionType>& connection);
         auto get_response_msg_buffer() -> auto& { return read_msg_buffer_; }
         void response_handler(const UDPEndpoint& endpoint, std::span<char> response);
         static auto is_finished() -> bool { return false; };

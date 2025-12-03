@@ -27,7 +27,7 @@ namespace srs::connection
 
     // WARN: is it really needed?
     void DataSocket::register_send_action_imp(asio::awaitable<void> action,
-                                              std::shared_ptr<ConnectionType> /*connection*/)
+                                              const std::shared_ptr<ConnectionType>& /*connection*/)
     {
         asio::co_spawn(*io_context_, std::move(action), asio::detached);
     }

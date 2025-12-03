@@ -80,8 +80,3 @@ if(ENABLE_TSAN)
     target_compile_options(srscpp PUBLIC -fno-omit-frame-pointer -fsanitize=thread)
     target_link_options(srscpp PUBLIC -fsanitize=thread)
 endif()
-
-if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND ENABLE_MSAN)
-    target_compile_options(srscpp PUBLIC -fno-omit-frame-pointer -fsanitize=memory)
-    target_link_options(srscpp PUBLIC -fsanitize=memory)
-endif()

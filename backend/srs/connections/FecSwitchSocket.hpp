@@ -49,7 +49,7 @@ namespace srs::connection
         using ActionType = decltype(asio::co_spawn(strand_, asio::awaitable<void>(), asio::deferred));
         std::vector<ActionType> action_queue_;
 
-        void register_send_action_imp(asio::awaitable<void> action, std::shared_ptr<SmallConnection> connection);
+        void register_send_action_imp(asio::awaitable<void> action, const std::shared_ptr<SmallConnection>& connection);
         auto get_response_msg_buffer() -> auto& { return read_msg_buffer_; }
         auto is_finished() -> bool;
         void print_error() const;
