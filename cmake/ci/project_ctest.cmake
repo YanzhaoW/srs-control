@@ -1,5 +1,5 @@
 # Re-use CDash server details we already have
-include(${CTEST_SCRIPT_DIRECTORY}/../CTestConfig.cmake)
+include(${CTEST_SCRIPT_DIRECTORY}/../../CTestConfig.cmake)
 
 # Basic information every run should set, values here are just examples
 if(DEFINED SITE_NAME)
@@ -18,8 +18,6 @@ if(NOT DEFINED CTEST_BUILD_NAME)
     set(CTEST_BUILD_NAME "${CMAKE_HOST_SYSTEM_NAME} local machine from ${output_user_name}")
 endif()
 
-set(CTEST_MEMORYCHECK_SANITIZER_OPTIONS "verbosity=1:symbolize=1:abort_on_error=1:detect_leaks=1")
-
 if(NOT DEFINED CTEST_CONFIGURATION_TYPE)
     set(CTEST_CONFIGURATION_TYPE Debug)
 endif()
@@ -35,8 +33,8 @@ endif()
 set(CTEST_CUSTOM_WARNING_EXCEPTION
     ".*Warning in cling::IncrementalParser::CheckABICompatibility().*")
 
-set(CTEST_SOURCE_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/..")
-set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../build")
+set(CTEST_SOURCE_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../..")
+set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../../build")
 set(CTEST_CMAKE_GENERATOR Ninja)
 set(CTEST_COVERAGE_COMMAND "gcov")
 
@@ -61,37 +59,9 @@ ctest_test(RETURN_VALUE _ctest_test_ret_val)
 
 if(ENABLE_COVERAGE)
     ctest_coverage(QUIET)
+    ctest_submit(PARTS Coverage)
 endif()
 
 if(_ctest_test_ret_val)
     message(FATAL_ERROR "Some tests failed!")
-endif()
-
-ctest_submit(PARTS Coverage)
-
-# sanitizers
-
-if(NOT ENABLE_COVERAGE)
-    set(CONFIGURE_OPTIONS "-DENABLE_ASAN=ON" "-DENABLE_TSAN=OFF")
-    ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
-    ctest_build()
-
-    set(CTEST_MEMORYCHECK_TYPE AddressSanitizer)
-    ctest_memcheck()
-    ctest_submit(PARTS MemCheck)
-
-    set(CTEST_MEMORYCHECK_TYPE LeakSanitizer)
-    ctest_memcheck()
-    ctest_submit(PARTS MemCheck)
-
-    set(CTEST_MEMORYCHECK_TYPE UndefinedBehaviorSanitizer)
-    ctest_memcheck()
-    ctest_submit(PARTS MemCheck)
-
-    set(CONFIGURE_OPTIONS "-DENABLE_ASAN=OFF" "-DENABLE_TSAN=ON")
-    ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
-    ctest_build()
-    set(CTEST_MEMORYCHECK_TYPE ThreadSanitizer)
-    ctest_memcheck()
-    ctest_submit(PARTS MemCheck)
 endif()

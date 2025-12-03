@@ -1,0 +1,77 @@
+name: sanitizer
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  sanitizer-test:
+    runs-on: ubuntu-latest
+    container:
+      image: yanzhaowang/srs-env:fedora-42
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer-type: 
+          - thread
+          - address
+          - UB
+          - leak
+        include:
+          - sanitizer-type: thread
+            enable-asan: 'FALSE'
+            enable-tsan: 'TRUE'
+            check-type: 'ThreadSanitizer'
+          - sanitizer-type: address
+            enable-asan: 'TRUE'
+            enable-tsan: 'FALSE'
+            check-type: 'AddressSanitizer'
+          - sanitizer-type: UB
+            enable-asan: 'TRUE'
+            enable-tsan: 'FALSE'
+            check-type: 'UndefinedBehaviorSanitizer'
+          - sanitizer-type: leak
+            enable-asan: 'TRUE'
+            enable-tsan: 'FALSE'
+            check-type: 'LeakSanitizer'
+    name: ${{ matrix.sanitizer-type }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          submodules: 'true'
+
+      - name: install and env vars
+        run: |
+          dnf upgrade -y
+          dnf install -y conan nodejs hostname
+          cd $GITHUB_WORKSPACE/..
+          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
+          echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
+          echo "GTEST_COLOR=1" >> $GITHUB_ENV
+
+      - name: set env variables for cdash
+        run: |
+          export PULL_NR=${{ github.event.number }}
+          echo "TEST_NAME=\"${{ matrix.sanitizer-type }} sanitizer (pr.${PULL_NR})\"" >> $GITHUB_ENV
+
+      - name: restore cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.PARENT_DIR }}/.conan2
+          key: fedora-42-clang-Debug
+
+      - name: build-test-submit
+        run: |
+          ctest -S cmake/ci/project_sanitizer.cmake -VV\
+            -DCTEST_BUILD_NAME=${{ env.TEST_NAME }}\
+            -DCTEST_SITE="Github CI/CD"\
+            -DCTEST_MEMORYCHECK_TYPE=${{ matrix.check-type }}\
+            -DENABLE_ASAN=${{ matrix.enable-asan }}\
+            -DENABLE_TSAN=${{ matrix.enable-tsan }}\
+            --output-on-failure
