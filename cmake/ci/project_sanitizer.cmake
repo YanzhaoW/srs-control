@@ -1,5 +1,5 @@
 # Re-use CDash server details we already have
-include(${CTEST_SCRIPT_DIRECTORY}/../CTestConfig.cmake)
+include(${CTEST_SCRIPT_DIRECTORY}/../../CTestConfig.cmake)
 
 # Basic information every run should set, values here are just examples
 if(DEFINED SITE_NAME)
@@ -14,8 +14,13 @@ if(NOT DEFINED CTEST_BUILD_NAME)
     set(CTEST_BUILD_NAME "${CMAKE_HOST_SYSTEM_NAME} local machine from ${output_user_name}")
 endif()
 
+set(CTEST_SOURCE_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../..")
+set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../../build")
+set(CTEST_CMAKE_GENERATOR Ninja)
 set(CTEST_MEMORYCHECK_SANITIZER_OPTIONS "verbosity=1:symbolize=1:abort_on_error=1:detect_leaks=1")
 set(TEST_MODEL "Experimental")
+set(CTEST_CUSTOM_WARNING_EXCEPTION
+    ".*Warning in cling::IncrementalParser::CheckABICompatibility().*")
 
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
@@ -26,7 +31,11 @@ set(CONFIGURE_OPTIONS "--preset clang" "-DENABLE_ASAN=${ENABLE_ASAN}"
 
 ctest_configure(OPTIONS "${CONFIGURE_OPTIONS}")
 
+ctest_submit(PARTS Configure)
+
 ctest_build()
+
+ctest_submit(PARTS Build)
 
 ctest_memcheck()
 

@@ -57,6 +57,8 @@ ctest_submit(PARTS Build)
 
 ctest_test(RETURN_VALUE _ctest_test_ret_val)
 
+ctest_submit(PARTS Test)
+
 if(ENABLE_COVERAGE)
     ctest_coverage(QUIET)
     ctest_submit(PARTS Coverage)
