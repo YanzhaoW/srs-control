@@ -34,11 +34,11 @@
         {
             "name": "libc++",
             "displayName": "libc++ build",
-            "description": "Build with libc++",
+            "description": "Build with libc++ for testing",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_C_COMPILER": "clang",
@@ -52,11 +52,11 @@
         {
             "name": "clang",
             "displayName": "clang build",
-            "description": "Build with clang",
+            "description": "Build with clang for testing",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_C_COMPILER": "clang",
@@ -68,11 +68,11 @@
         {
             "name": "gcc",
             "displayName": "gcc build",
-            "description": "Build with gcc",
+            "description": "Build with gcc for testing",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
                 "CMAKE_CXX_COMPILER": "g++",
                 "CMAKE_C_COMPILER": "gcc",

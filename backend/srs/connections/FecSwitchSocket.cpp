@@ -66,7 +66,7 @@ namespace srs::connection
     }
 
     void FecCommandSocket::register_send_action_imp(asio::awaitable<void> action,
-                                                   std::shared_ptr<SmallConnection> connection)
+                                                    const std::shared_ptr<SmallConnection>& connection)
     {
         auto time = get_time_us();
         spdlog::debug(
@@ -78,7 +78,7 @@ namespace srs::connection
         auto lock = std::lock_guard{ mut_ };
         const auto& remote_endpoint = connection->get_remote_endpoint();
         auto& connections = all_connections_.try_emplace(remote_endpoint, SmallConnections{}).first->second;
-        connections.push_back(std::move(connection));
+        connections.push_back(connection);
     }
 
     void FecCommandSocket::launch_actions()
@@ -89,8 +89,8 @@ namespace srs::connection
     }
 
     void FecCommandSocket::deregister_connection(const UDPEndpoint& endpoint,
-                                                std::span<char> response,
-                                                SmallConnections& connections)
+                                                 std::span<char> response,
+                                                 SmallConnections& connections)
     {
         if (connections.empty())
         {

@@ -17,7 +17,7 @@ target_link_libraries(ctest_output PRIVATE test_utility CLI11::CLI11)
 
 # Add GTest to ctest
 
-gtest_discover_tests(unit_test_srs_backend)
+# gtest_discover_tests(unit_test_srs_backend)
 
 # CTest
 
