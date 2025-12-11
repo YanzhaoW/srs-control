@@ -19,6 +19,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 namespace srs::common
 {
@@ -49,19 +50,14 @@ namespace srs::common
         return std::bitset<high_size + low_size>(new_bits.to_ullong());
     }
 
-    template <std::size_t high_size, std::size_t low_size>
-    constexpr void split_bits(const std::bitset<high_size + low_size>& bits, std::bitset<high_size>& high_bits, std::bitset<low_size>& low_bits) 
+    template <std::size_t low_size, std::size_t total_size>
+        requires(total_size <= sizeof(std::uint64_t) * common::BYTE_BIT_LENGTH and total_size >= low_size)
+    constexpr auto split_bits(const std::bitset<total_size>& bits)
     {
-        constexpr auto max_size = 64; 
-        static_assert(high_size + low_size <= max_size);
-        for (auto i{0UZ}; i < low_size; i++)
-        {
-            low_bits[i] = bits[i];
-        }
-        for (auto j{low_size}; j < high_size; j++)
-        {
-            high_bits[j] = bits[low_size + j];
-        }
+        constexpr auto high_size = total_size - low_size;
+        const auto high_bits = std::bitset<high_size>{ (bits >> low_size).to_ullong() };
+        const auto low_bits = std::bitset<low_size>{ ((bits << high_size) >> high_size).to_ullong() };
+        return std::pair{ high_bits, low_bits };
     }
 
     template <std::size_t bit_size>
@@ -85,10 +81,10 @@ namespace srs::common
         return bin_val;
     }
 
-    template<typename T>
-    constexpr auto bin_to_gray(T bin_val)
+    template <typename T>
+    constexpr auto binary_to_gray(T bin_val)
     {
-      return bin_val ^ (bin_val >> 1);
+        return bin_val ^ (bin_val >> 1);
     }
 
     constexpr auto get_shared_from_this(auto&& obj)
