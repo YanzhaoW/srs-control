@@ -1,5 +1,4 @@
 #include "SRSEmulator.hpp"
-#include "srs/Application.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/Connections.hpp"
 #include "srs/converters/SerializableBuffer.hpp"
@@ -11,7 +10,6 @@
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/deferred.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
 #include <boost/asio/ip/address.hpp>
@@ -21,8 +19,6 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
-#include <boost/asio/uses_executor.hpp>
-#include <boost/thread/future.hpp>
 #include <chrono>
 #include <cstddef>
 #include <fmt/ranges.h>
@@ -123,9 +119,9 @@ namespace srs::test
     void SRSEmulator::wait_for_connection()
     {
 
-        // spdlog::trace("Server: before spawning listen coro ...");
+        // NOLINTBEGIN (clang-analyzer-core.CallAndMessage)
         asio::co_spawn(io_context_, listen_coro(), asio::detached);
-        // spdlog::trace("Server: after spawning listen coro ...");
+        // NOLINTEND (clang-analyzer-core.CallAndMessage)
         io_context_.join();
     }
 
@@ -154,7 +150,8 @@ namespace srs::test
         -> asio::awaitable<void>
     {
         auto msg = get_msg_from_receive_type(result_type);
-        const auto size = co_await udp_socket_.async_send_to(asio::buffer(msg), endpoint, asio::use_awaitable);
+        [[maybe_unused]] const auto size =
+            co_await udp_socket_.async_send_to(asio::buffer(msg), endpoint, asio::use_awaitable);
         spdlog::trace("SRS server: sent the data {:02x} to the remote point {}", fmt::join(msg, " "), endpoint);
     }
 

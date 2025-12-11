@@ -25,7 +25,7 @@ namespace srs::writer
         }
     }
 
-    UDP::~UDP()
+    UDP::~UDP() noexcept
     {
         for (auto& connection : connections_)
         {

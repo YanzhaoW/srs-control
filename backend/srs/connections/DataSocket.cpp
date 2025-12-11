@@ -10,7 +10,6 @@
 #include <cstddef>
 #include <memory>
 #include <span>
-#include <spdlog/spdlog.h>
 #include <utility>
 
 namespace srs::connection

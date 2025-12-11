@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
 #include <magic_enum/magic_enum.hpp>
 #include <map>
 #include <ranges>
@@ -56,12 +55,14 @@ namespace srs::common::internal
         {
             auto arr = std::array<std::string_view, enum_size>{};
             auto front_iter = output_arr.begin();
-            // TODO: use zip_view
-            for (auto idx = std::size_t{}; idx < enum_size; ++idx)
+
+            for (auto [enum_name, enum_name_view] : std::views::zip(enum_names, arr))
             {
-                const auto distance = enum_names[idx].size();
-                arr[idx] = std::string_view{ front_iter, front_iter + distance };
+                const auto distance = enum_name.size();
+                // NOLINTBEGIN (cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                enum_name_view = std::string_view{ front_iter, front_iter + distance };
                 front_iter += distance;
+                // NOLINTEND (cppcoreguidelines-pro-bounds-pointer-arithmetic)
             }
             return arr;
         }();

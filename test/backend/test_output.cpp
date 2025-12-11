@@ -49,6 +49,7 @@ namespace
 
 constexpr auto DEFAULT_RUN_TIME_S = 5;
 constexpr auto DEFAULT_DELAY_TIME_US = 10000;
+// NOLINTNEXTLINE (bugprone-exception-escape)
 auto main(int argc, char** argv) -> int
 {
     auto cli_args = CLI::App{ "SRS integration test" };
@@ -62,7 +63,15 @@ auto main(int argc, char** argv) -> int
         auto n_output_split = 1;
         auto run_time = DEFAULT_RUN_TIME_S;
         auto spdlog_level = spdlog::level::info;
-        const auto home_dir = std::string_view{ getenv("HOME") };
+        const auto home_dir = []() -> std::string
+        {
+            const auto* home_var = getenv("HOME");
+            if (home_var != nullptr)
+            {
+                return std::string{ home_var };
+            }
+            return {};
+        }();
         auto json_filepath = home_dir.empty() ? "" : std::format("{}/.config/srs-control/config.json", getenv("HOME"));
         argv = cli_args.ensure_utf8(argv);
         auto app_config = srs::Config{};

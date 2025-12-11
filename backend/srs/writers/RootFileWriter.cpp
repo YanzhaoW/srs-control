@@ -4,7 +4,6 @@
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include <TFile.h>
-#include <TSystem.h>
 #include <TTree.h>
 #include <cstddef>
 #include <memory>

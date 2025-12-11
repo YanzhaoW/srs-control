@@ -37,8 +37,11 @@ message(STATUS "CMAKE_USE_SYSTEM_BOOST: $ENV{CMAKE_USE_SYSTEM_BOOST}")
 if(ENABLE_CLANG_TIDY)
     set(CMAKE_CXX_CLANG_TIDY
         clang-tidy
-        -header-filter=${CMAKE_SOURCE_DIR}/backend/.*\.hpp
+        --header-filter=${CMAKE_SOURCE_DIR}/backend.*
         --allow-no-checks
+        --format-style="file"
+        --warnings-as-errors=*
+        # --exclude-header-filter=.*\.conan2.*
         --use-color
         -p=${CMAKE_BINARY_DIR})
 endif()

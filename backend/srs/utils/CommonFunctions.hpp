@@ -2,7 +2,6 @@
 
 #include "EnumConvertFunctions.hpp"  // IWYU pragma: export
 #include "srs/utils/CommonAlias.hpp" // IWYU pragma: keep
-#include "srs/utils/CommonConcepts.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <bit>
 #include <bitset>
@@ -16,7 +15,6 @@
 #include <filesystem>
 #include <format>
 #include <magic_enum/magic_enum.hpp>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -54,7 +52,7 @@ namespace srs::common
     constexpr auto byte_swap(const std::bitset<bit_size>& bits)
     {
         auto val = bits.to_ullong();
-        val = val << (sizeof(uint64_t) * common::BYTE_BIT_LENGTH - bit_size);
+        val = val << ((sizeof(uint64_t) * common::BYTE_BIT_LENGTH) - bit_size);
         val = std::byteswap(val);
         return std::bitset<bit_size>(val);
     }
@@ -65,7 +63,7 @@ namespace srs::common
         auto bin_val = T{ gray_val };
         while (gray_val > 0)
         {
-            gray_val >>= 1;
+            gray_val >>= 1U;
             bin_val ^= gray_val;
         }
         return bin_val;
@@ -91,7 +89,8 @@ namespace srs::common
         return std::format("{}_{}{}", file_basename, idx, extension);
     }
 
-    auto create_coro_task(auto task, asio::any_io_executor executor)
+    // TODO: completely get rid of asio::coro
+    auto create_coro_task(auto task, const asio::any_io_executor& executor)
     {
         auto task_handle = task();
         using input_type = decltype(task_handle)::input_type;

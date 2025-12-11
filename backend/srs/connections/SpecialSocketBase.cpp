@@ -5,7 +5,6 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/ip/basic_endpoint.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/system/detail/error_code.hpp>
 #include <chrono>
 #include <future>
 #include <memory>
@@ -25,14 +24,15 @@ namespace srs::connection
 
     auto SpecialSocket::cancel_coroutine() -> asio::awaitable<void>
     {
+        // NOLINTBEGIN (clang-analyzer-core.NullDereference)
         [[maybe_unused]] auto err_code = co_await cancel_timer_.async_wait(asio::as_tuple(asio::use_awaitable));
+        // NOLINTEND (clang-analyzer-core.NullDereference)
         spdlog::trace("Coroutine for the local socket with port {} is cancelled.", port_number_);
     }
 
     void SpecialSocket::bind_socket()
     {
-        [[maybe_unused]] auto error_code =
-            socket_->bind(udp::endpoint{ udp::v4(), static_cast<asio::ip::port_type>(port_number_) }, socket_ec_);
+        socket_->bind(udp::endpoint{ udp::v4(), static_cast<asio::ip::port_type>(port_number_) }, socket_ec_);
     }
     void SpecialSocket::close_socket() { socket_->close(); }
 

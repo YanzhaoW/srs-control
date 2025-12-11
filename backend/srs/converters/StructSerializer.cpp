@@ -14,6 +14,7 @@ namespace srs::process
         output_data_.resize(n_lines);
     }
 
+    // NOLINTBEGIN
     auto StructSerializer::convert([[maybe_unused]] const StructData* input, [[maybe_unused]] std::vector<char>& output)
         -> std::expected<std::size_t, std::string_view>
     {
@@ -21,4 +22,5 @@ namespace srs::process
         output.clear();
         return std::unexpected{ "not implemented" };
     }
+    // NOLINTEND
 } // namespace srs::process
