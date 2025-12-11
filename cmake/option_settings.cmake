@@ -11,6 +11,7 @@ option(ENABLE_TEST "Enable testing framework of the project." ON)
 option(BUILD_DOC "Build the documentation for this project." OFF)
 option(BUILD_ONLY_DOC "Only build the documentation for this project." OFF)
 option(ENABLE_COVERAGE "Enable coverage flags" OFF)
+option(ENABLE_CLANG_TIDY "Enable clang-tidy checks" OFF)
 
 # for sanitizers
 option(ENABLE_ASAN "Enable address sanitizer flags" OFF)
@@ -32,3 +33,12 @@ endif()
 
 message(STATUS "CMAKE_USE_SYSTEM_PROTOBUF: $ENV{CMAKE_USE_SYSTEM_PROTOBUF}")
 message(STATUS "CMAKE_USE_SYSTEM_BOOST: $ENV{CMAKE_USE_SYSTEM_BOOST}")
+
+if(ENABLE_CLANG_TIDY)
+    set(CMAKE_CXX_CLANG_TIDY
+        clang-tidy
+        -header-filter=${CMAKE_SOURCE_DIR}/backend/.*\.hpp
+        --allow-no-checks
+        --use-color
+        -p=${CMAKE_BINARY_DIR})
+endif()
