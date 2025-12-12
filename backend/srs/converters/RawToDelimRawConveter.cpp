@@ -1,5 +1,4 @@
 #include "RawToDelimRawConveter.hpp"
-#include <spdlog/spdlog.h>
 #include <string_view>
 #include <vector>
 #include <zpp_bits.h>

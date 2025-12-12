@@ -1,6 +1,9 @@
+#include "srs/data/SRSDataStructs.hpp"
+#include <memory>
 #include <srs/converters/ProtoDeserializer.hpp>
 #include <srs/converters/ProtoToStructConverter.hpp>
 #include <srs/readers/ProtoMsgReader.hpp>
+#include <string_view>
 
 namespace srs::reader
 {
@@ -23,4 +26,4 @@ namespace srs::reader
         const auto& prot_struct = proto_deserializer_->convert(msg);
         return proto_to_struct_converter_->convert(prot_struct);
     }
-} // namespace srs
+} // namespace srs::reader

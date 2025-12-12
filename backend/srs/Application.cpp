@@ -10,16 +10,13 @@
 #include <boost/asio/error.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/strand.hpp>
-#include <boost/system/detail/errc.hpp>
 #include <boost/system/detail/error_code.hpp>
-#include <boost/thread/futures/future_error_code.hpp>
 #include <chrono>
 #include <cstddef>
 #include <exception>
 #include <expected>
 #include <fmt/base.h>
 #include <fmt/format.h>
-#include <fmt/ranges.h>
 #include <future>
 #include <memory>
 #include <spdlog/spdlog.h>
@@ -77,8 +74,9 @@ namespace srs
     App::~App() noexcept
     {
         spdlog::debug("Application: Calling the destructor ");
-        signal_set_.cancel();
-        signal_set_.clear();
+        auto err = boost::system::error_code{};
+        signal_set_.cancel(err);
+        signal_set_.clear(err);
     }
 
     void App::init()

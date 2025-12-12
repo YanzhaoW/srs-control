@@ -3,7 +3,6 @@
 #include "srs/connections/FecSwitchSocket.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include <spdlog/spdlog.h>
 #include <string_view>
 #include <vector>
 

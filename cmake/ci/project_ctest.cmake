@@ -8,7 +8,9 @@ else()
     site_name(CTEST_SITE)
 endif()
 
-if(NOT DEFINED ENABLE_COVERAGE)
+if(CONFIGURE_PRESET STREQUAL "gcc")
+    set(ENABLE_COVERAGE ON)
+else()
     set(ENABLE_COVERAGE OFF)
 endif()
 
@@ -66,4 +68,6 @@ endif()
 
 if(_ctest_test_ret_val)
     message(FATAL_ERROR "Some tests failed!")
+else()
+    message(STATUS "All tests passed!")
 endif()

@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <cstddef>
 #include <cstdint>
 #include <fmt/base.h>
 #include <gsl/gsl-lite.hpp>
@@ -32,9 +31,9 @@ namespace srs::connection
         {
         }
 
-        void send_message_from(this auto&& self, std::shared_ptr<FecCommandSocket> socket)
+        void send_message_from(this auto&& self, const std::shared_ptr<FecCommandSocket>& socket)
         {
-            self.communicate(self.get_suffix(), common::NULL_ADDRESS, std::move(socket));
+            self.communicate(self.get_suffix(), common::NULL_ADDRESS, socket);
         }
 
         [[nodiscard]] auto check_response(std::span<char> response_msg) const -> bool;
@@ -75,7 +74,7 @@ namespace srs::connection
         void communicate(this auto&& self,
                          std::span<const CommunicateEntryType> data,
                          uint16_t address,
-                         std::shared_ptr<FecCommandSocket> socket)
+                         const std::shared_ptr<FecCommandSocket>& socket)
         {
             self.encode_write_msg(self.write_msg_buffer_, self.counter_, data, address);
             auto send_action = send_message(socket, self.shared_from_this());

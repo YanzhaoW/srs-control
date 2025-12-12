@@ -45,7 +45,17 @@ namespace srs::connection
             return read_size;
         }
 
-        void close() { socket_.close(); }
+        void close()
+        {
+            auto error = boost::system::error_code{};
+            socket_.close(error);
+            if (error)
+            {
+                spdlog::warn("UDP: Failed to close the socket with endpoint: {} due to the error: {}",
+                             socket_.local_endpoint(),
+                             error.what());
+            }
+        }
 
         auto send_continuous_message() -> asio::experimental::coro<OutputType(std::optional<InputType>)>
         {
@@ -87,7 +97,7 @@ namespace srs::writer
             process::DataConvertOptions deser_mode = process::DataConvertOptions::none);
         static constexpr auto IsStructType = false;
 
-        ~UDP();
+        ~UDP() noexcept;
         UDP(const UDP&) = delete;
         UDP(UDP&&) = default;
         UDP& operator=(const UDP&) = delete;

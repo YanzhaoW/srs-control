@@ -6,23 +6,13 @@
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/UDPFormatters.hpp" // IWYU pragma: keep
 #include <algorithm>
-#include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/buffer.hpp>
 #include <boost/asio/deferred.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/experimental/cancellation_condition.hpp>
 #include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
-#include <boost/asio/ip/basic_endpoint.hpp>
-#include <boost/asio/ip/udp.hpp>
 #include <boost/asio/strand.hpp>
-#include <boost/asio/system_timer.hpp>
-#include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/thread/future.hpp>
 #include <fmt/ranges.h>
 #include <memory>
 #include <mutex>

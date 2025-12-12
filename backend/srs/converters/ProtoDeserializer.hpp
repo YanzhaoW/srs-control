@@ -1,7 +1,9 @@
 #pragma once
 
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/message_lite.h>
 #include <srs/data/message.pb.h>
+#include <string_view>
 
 namespace srs::process
 {
@@ -28,4 +30,4 @@ namespace srs::process
       private:
         proto::Data data_;
     };
-} // namespace srs
+} // namespace srs::process

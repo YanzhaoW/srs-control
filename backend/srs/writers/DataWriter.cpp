@@ -1,7 +1,6 @@
 #include "DataWriter.hpp"
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/system/detail/error_code.hpp>

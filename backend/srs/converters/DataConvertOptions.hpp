@@ -75,6 +75,7 @@ namespace srs::process
                            ConvertOptionRelation{ structure_to_proto, proto_frame } };
     }();
 
+    // NOLINTBEGIN (misc-no-recursion)
     constexpr auto convert_option_has_dependency(DataConvertOptions dependee, DataConvertOptions depender) -> bool
     {
         // fmt::println("-----------dependee: {}, depender: {}",
@@ -101,6 +102,7 @@ namespace srs::process
                                        return false;
                                    });
     }
+    // NOLINTEND (misc-no-recursion)
 
 } // namespace srs::process
 

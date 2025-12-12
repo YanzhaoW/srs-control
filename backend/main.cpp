@@ -9,12 +9,10 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <format>
-#include <magic_enum/magic_enum.hpp>
 #include <print>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -34,6 +32,7 @@ const auto print_mode_map = get_enum_dash_map<srs::common::DataPrintMode>();
 const auto spdlog_map = get_enum_dash_map<spdlog::level::level_enum>();
 const auto action_mode_map = get_enum_dash_map<srs::common::ActionMode>();
 
+// NOLINTNEXTLINE (bugprone-exception-escape)
 auto main(int argc, char** argv) -> int
 {
     auto cli_args = CLI::App{ "SRS system command line interface" };
@@ -50,7 +49,15 @@ auto main(int argc, char** argv) -> int
         auto is_root_version_print = false;
         auto is_dump_needed = false;
         auto n_output_split = 1;
-        const auto home_dir = std::string_view{ getenv("HOME") };
+        const auto home_dir = []() -> std::string
+        {
+            const auto* home_var = getenv("HOME");
+            if (home_var != nullptr)
+            {
+                return std::string{ home_var };
+            }
+            return {};
+        }();
         auto json_filepath = home_dir.empty() ? "" : std::format("{}/.config/srs-control/config.json", getenv("HOME"));
         auto action_mode_enum = srs::common::ActionMode::all;
         auto dump_config_callback = [&json_filepath, &is_dump_needed](const std::string& filename)
@@ -174,6 +181,10 @@ auto main(int argc, char** argv) -> int
     catch (std::exception& ex)
     {
         spdlog::critical("Exception occurred: {}", ex.what());
+    }
+    catch (...)
+    {
+        spdlog::critical("A unrecognized exception occurred!");
     }
 
     return 0;

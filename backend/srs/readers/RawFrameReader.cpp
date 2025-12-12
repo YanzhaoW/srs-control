@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <expected>
 #include <fmt/format.h>
-#include <fmt/ranges.h>
 #include <fstream>
 #include <ios>
 #include <spdlog/spdlog.h>

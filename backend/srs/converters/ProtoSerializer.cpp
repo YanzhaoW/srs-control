@@ -1,8 +1,10 @@
 #include "ProtoSerializer.hpp"
+#include "srs/data/message.pb.h"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <google/protobuf/io/gzip_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/util/delimited_message_util.h>
+#include <string>
 
 namespace srs::process
 {

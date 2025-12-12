@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <glaze/core/opts.hpp>
+#include <glaze/core/reflect.hpp>
 #include <glaze/glaze.hpp>
 #include <glaze/json/read.hpp>
 #include <glaze/json/write.hpp>
@@ -22,8 +23,15 @@ namespace srs::config
         }
         const auto parent_dir = std::filesystem::absolute(std::filesystem::path{ json_filename }).parent_path();
         std::filesystem::create_directories(parent_dir);
+        auto buffer = std::string{};
         auto error_code = glz::write_file_json<glz::opts{ .prettify = true, .new_lines_in_arrays = false }>(
-            app_config, json_filename, std::string{});
+            app_config, json_filename, buffer);
+        if (error_code)
+        {
+            spdlog::warn("Error occurred during writing the json file {}: {}",
+                         json_filename,
+                         glz::format_error(error_code, buffer));
+        }
     }
 
     inline void set_config_from_json(Config& app_config, std::string_view json_filename)
@@ -40,7 +48,14 @@ namespace srs::config
         }
         else
         {
-            auto error_code = glz::read_file_json(app_config, json_filename, std::string{});
+            auto buffer = std::string{};
+            auto error_code = glz::read_file_json(app_config, json_filename, buffer);
+            if (error_code)
+            {
+                spdlog::warn("Error occurred during reading the json file {}: {}",
+                             json_filename,
+                             glz::format_error(error_code, buffer));
+            }
         }
     }
 
