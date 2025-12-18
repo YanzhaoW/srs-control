@@ -44,8 +44,8 @@ namespace srs::common
     constexpr auto DEFAULT_ROOT_HTTP_SERVER_PERIOD = std::chrono::milliseconds{ 1000 };
     constexpr auto FEC_ID_BIT_LENGTH = 8;
     constexpr auto HIT_DATA_BIT_LENGTH = 48;
-    constexpr auto SRS_TIMESTAMP_HIGH_BIT_LENGTH = 32;
-    constexpr auto SRS_TIMESTAMP_LOW_BIT_LENGTH = 10;
+    constexpr auto SRS_TIMESTAMP_HIGH_BIT_LENGTH = 32U;
+    constexpr auto SRS_TIMESTAMP_LOW_BIT_LENGTH = 10U;
     constexpr auto FLAG_BIT_POSITION = 15; // zero based
     constexpr auto GZIP_DEFAULT_COMPRESSION_LEVEL = 9;
     constexpr auto PROTOBUF_ENABLE_GZIP = true;

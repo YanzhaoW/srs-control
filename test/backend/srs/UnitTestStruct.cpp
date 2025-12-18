@@ -53,7 +53,7 @@ namespace
         // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)
 
         struct_data.hit_data.reserve(hit_size);
-        for ([[maybe_unused]] auto idx : std::views::iota(uint32_t{ 0 }, hit_size))
+        for (auto idx : std::views::iota(uint32_t{ 0 }, hit_size))
         {
             auto& hit = struct_data.hit_data.emplace_back();
             hit.channel_num = channel_num_gen(random_gen);
@@ -71,7 +71,7 @@ namespace
 
 TEST(data_structure, check_de_serialization)
 {
-    auto random_data = generate_random_struct_data();
+    const auto random_data = generate_random_struct_data();
 
     auto serializer_converter = process::StructSerializer();
     auto deserializer_converter = process::StructDeserializer();
@@ -81,5 +81,8 @@ TEST(data_structure, check_de_serialization)
 
     auto res = serializer_converter.run(initial_converter);
 
+    EXPECT_TRUE(res.has_value());
     auto struct_data = deserializer_converter.run(serializer_converter);
+    EXPECT_TRUE(struct_data.has_value());
+    EXPECT_TRUE(random_data == *struct_data.value());
 }
