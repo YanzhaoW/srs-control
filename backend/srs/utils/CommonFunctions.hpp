@@ -50,6 +50,7 @@ namespace srs::common
         return std::bitset<high_size + low_size>(new_bits.to_ullong());
     }
 
+    // TODO Split in two functions
     template <std::size_t low_size, std::size_t total_size>
         requires(total_size <= sizeof(std::uint64_t) * common::BYTE_BIT_LENGTH and total_size >= low_size)
     constexpr auto split_bits(const std::bitset<total_size>& bits)

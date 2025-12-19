@@ -83,6 +83,8 @@ TEST(data_structure, check_de_serialization)
 
     EXPECT_TRUE(res.has_value());
     auto struct_data = deserializer_converter.run(serializer_converter);
+    const auto& output_struct = *struct_data.value();
+    EXPECT_TRUE(random_data.header == output_struct.header);
     EXPECT_TRUE(struct_data.has_value());
     EXPECT_TRUE(random_data == *struct_data.value());
 }

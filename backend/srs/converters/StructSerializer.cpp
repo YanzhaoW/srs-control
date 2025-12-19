@@ -4,6 +4,7 @@
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <bitset>
@@ -25,7 +26,7 @@ namespace srs::process
         template <class T>
         auto check_compact_max_size(const T& value, size_t length) -> std::expected<void, std::string_view>
         {
-            if (value >= 1U << length)
+            if (value >= 1ULL << length)
             {
                 return std::unexpected("Serialization: exceeding size limit!");
             }
@@ -51,12 +52,12 @@ namespace srs::process
             auto timestamp_bits =
                 std::bitset<common::SRS_TIMESTAMP_HIGH_BIT_LENGTH + common::SRS_TIMESTAMP_LOW_BIT_LENGTH>(
                     marker_data.srs_timestamp);
-            auto [timestamp_low_bits, timestamp_high_bits] =
+            auto [timestamp_high_bits, timestamp_low_bits] = // split this into two functions
                 common::split_bits<common::SRS_TIMESTAMP_LOW_BIT_LENGTH>(timestamp_bits);
             marker_data_compact.timestamp_low_bits =
                 static_cast<decltype(marker_data_compact.timestamp_low_bits)>(timestamp_low_bits.to_ulong());
             marker_data_compact.timestamp_high_bits =
-                static_cast<decltype(marker_data_compact.timestamp_high_bits)>(timestamp_high_bits.to_ulong());
+                static_cast<decltype(marker_data_compact.timestamp_high_bits)>(timestamp_high_bits.to_ullong());
             marker_data_compact.flag = static_cast<decltype(marker_data_compact.flag)>(0);
             marker_data_compact.vmm_id = static_cast<decltype(marker_data_compact.vmm_id)>(marker_data.vmm_id);
             return {};
@@ -84,22 +85,22 @@ namespace srs::process
             hit_data_compact.is_over_threshold =
                 static_cast<decltype(hit_data_compact.is_over_threshold)>(hit_data.is_over_threshold);
             hit_data_compact.offset = static_cast<decltype(hit_data_compact.offset)>(hit_data.offset);
+            hit_data_compact.tdc = static_cast<decltype(hit_data_compact.tdc)>(hit_data.tdc);
             return {};
         }
 
         template <class T>
             requires(std::same_as<std::remove_cvref_t<T>, internal::HitDataCompact> ||
                      std::same_as<std::remove_cvref_t<T>, internal::MarkerDataCompact>)
-        auto compact_to_vector(const T& compact_data) -> std::vector<char>
+        auto compact_to_vector(const T& compact_data, std::vector<char>& output) -> void
         {
             auto compact_bitset =
                 std::bitset<sizeof(std::uint64_t) * common::BYTE_BIT_LENGTH>{ std::bit_cast<uint64_t>(compact_data) };
-            auto output = std::vector<char>{};
-            output.resize(sizeof(std::uint64_t) / common::BYTE_BIT_LENGTH);
+            output.resize(sizeof(std::uint64_t));
             auto write_to_output = zpp::bits::out{ output, zpp::bits::endian::network{}, zpp::bits::no_size{} };
             write_to_output(compact_bitset).or_throw();
-            output.resize(common::HIT_DATA_BIT_LENGTH / common::BYTE_BIT_LENGTH);
-            return output;
+            output.erase(output.begin(), output.begin() + 2);
+            std::ranges::reverse(output);
         }
     }; // namespace
 
@@ -114,23 +115,29 @@ namespace srs::process
         -> std::expected<std::size_t, std::string_view>
     {
         auto serialize_to = zpp::bits::out{ output, zpp::bits::endian::network{}, zpp::bits::no_size{} };
+        serialize_to(input->header).or_throw();
+        auto output_buffer = std::vector<char>{};
         for (auto hit : input->hit_data)
         {
+            std::ranges::fill(output_buffer, 0);
             auto hit_compact = internal::HitDataCompact{};
-            if (auto r = hit_to_compact(hit, hit_compact); !r)
+            if (auto res = hit_to_compact(hit, hit_compact); !res)
             {
-                return std::unexpected(r.error());
+                return std::unexpected(res.error());
             }
-            serialize_to(compact_to_vector(hit_compact)).or_throw();
+            compact_to_vector(hit_compact, output_buffer);
+            serialize_to(output_buffer).or_throw();
         }
         for (auto marker : input->marker_data)
         {
+            std::ranges::fill(output_buffer, 0);
             auto marker_compact = internal::MarkerDataCompact{};
-            if (auto r = marker_to_compact(marker, marker_compact); !r)
+            if (auto res = marker_to_compact(marker, marker_compact); !res)
             {
-                return std::unexpected(r.error());
+                return std::unexpected(res.error());
             }
-            serialize_to(compact_to_vector(marker_compact)).or_throw();
+            compact_to_vector(marker_compact, output_buffer);
+            serialize_to(output_buffer).or_throw();
         }
         return input->marker_data.size() + input->hit_data.size();
     }
