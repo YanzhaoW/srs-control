@@ -52,8 +52,8 @@ namespace srs::process
             auto timestamp_bits =
                 std::bitset<common::SRS_TIMESTAMP_HIGH_BIT_LENGTH + common::SRS_TIMESTAMP_LOW_BIT_LENGTH>(
                     marker_data.srs_timestamp);
-            auto [timestamp_high_bits, timestamp_low_bits] = // split this into two functions
-                common::split_bits<common::SRS_TIMESTAMP_LOW_BIT_LENGTH>(timestamp_bits);
+            auto timestamp_low_bits = common::get_low_bits<common::SRS_TIMESTAMP_LOW_BIT_LENGTH>(timestamp_bits);
+            auto timestamp_high_bits = common::get_high_bits<common::SRS_TIMESTAMP_HIGH_BIT_LENGTH>(timestamp_bits);
             marker_data_compact.timestamp_low_bits =
                 static_cast<decltype(marker_data_compact.timestamp_low_bits)>(timestamp_low_bits.to_ulong());
             marker_data_compact.timestamp_high_bits =
