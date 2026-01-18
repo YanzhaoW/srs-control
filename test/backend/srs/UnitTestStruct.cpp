@@ -38,7 +38,7 @@ namespace
         auto srs_timestamp_gen = std::uniform_int_distribution<uint64_t>{ 0, (uint64_t{ 1 } << 42U) - 1 };
 
         struct_data.marker_data.reserve(marker_size);
-        for (auto idx : std::views::iota(uint32_t{ 0 }, marker_size))
+        for ([[maybe_unused]] auto idx : std::views::iota(uint32_t{ 0 }, marker_size))
         {
             auto& marker = struct_data.marker_data.emplace_back();
             marker.vmm_id = vmm_id_gen(random_gen);
@@ -53,10 +53,9 @@ namespace
         // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)
 
         struct_data.hit_data.reserve(hit_size);
-        for (auto idx : std::views::iota(uint32_t{ 0 }, hit_size))
+        for ([[maybe_unused]] auto idx : std::views::iota(uint32_t{ 0 }, hit_size))
         {
             auto& hit = struct_data.hit_data.emplace_back();
-            hit.channel_num = channel_num_gen(random_gen);
             hit.channel_num = channel_num_gen(random_gen);
             hit.tdc = tdc_gen(random_gen);
             hit.offset = offset_gen(random_gen);

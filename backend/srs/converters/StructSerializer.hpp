@@ -32,5 +32,6 @@ namespace srs::process
 
       private:
         std::vector<std::vector<char>> output_data_;
+        std::vector<char> compact_data_buffer_;
     };
 } // namespace srs::process

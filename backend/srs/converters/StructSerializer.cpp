@@ -5,7 +5,6 @@
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include <algorithm>
-#include <array>
 #include <bit>
 #include <bitset>
 #include <boost/asio/any_io_executor.hpp>
@@ -114,30 +113,30 @@ namespace srs::process
     auto StructSerializer::convert([[maybe_unused]] const StructData* input, [[maybe_unused]] std::vector<char>& output)
         -> std::expected<std::size_t, std::string_view>
     {
+        compact_data_buffer_.resize(0, 0);
         auto serialize_to = zpp::bits::out{ output, zpp::bits::endian::network{}, zpp::bits::no_size{} };
         serialize_to(input->header).or_throw();
-        auto output_buffer = std::vector<char>{};
         for (auto hit : input->hit_data)
         {
-            std::ranges::fill(output_buffer, 0);
+            std::ranges::fill(compact_data_buffer_, 0);
             auto hit_compact = internal::HitDataCompact{};
             if (auto res = hit_to_compact(hit, hit_compact); !res)
             {
                 return std::unexpected(res.error());
             }
-            compact_to_vector(hit_compact, output_buffer);
-            serialize_to(output_buffer).or_throw();
+            compact_to_vector(hit_compact, compact_data_buffer_);
+            serialize_to(compact_data_buffer_).or_throw();
         }
         for (auto marker : input->marker_data)
         {
-            std::ranges::fill(output_buffer, 0);
+            std::ranges::fill(compact_data_buffer_, 0);
             auto marker_compact = internal::MarkerDataCompact{};
             if (auto res = marker_to_compact(marker, marker_compact); !res)
             {
                 return std::unexpected(res.error());
             }
-            compact_to_vector(marker_compact, output_buffer);
-            serialize_to(output_buffer).or_throw();
+            compact_to_vector(marker_compact, compact_data_buffer_);
+            serialize_to(compact_data_buffer_).or_throw();
         }
         return input->marker_data.size() + input->hit_data.size();
     }
