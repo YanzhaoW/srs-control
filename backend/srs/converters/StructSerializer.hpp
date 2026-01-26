@@ -16,12 +16,13 @@ namespace srs::process
       public:
         explicit StructSerializer(size_t n_lines = 1);
 
-        auto convert(const StructData* input, std::vector<char>& output)
+        auto convert(const StructData* input, std::vector<char>& output, std::vector<char>& compact_data_buffer)
             -> std::expected<std::size_t, std::string_view>;
 
         auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
-            auto res = convert(prev_data_converter(line_number), output_data_[line_number]);
+            auto res =
+                convert(prev_data_converter(line_number), output_data_[line_number], compact_data_buffer_[line_number]);
             return res.transform([this, line_number](auto) { return this->operator()(line_number); });
         }
 
@@ -32,6 +33,6 @@ namespace srs::process
 
       private:
         std::vector<std::vector<char>> output_data_;
-        std::vector<char> compact_data_buffer_;
+        std::vector<std::vector<char>> compact_data_buffer_;
     };
 } // namespace srs::process

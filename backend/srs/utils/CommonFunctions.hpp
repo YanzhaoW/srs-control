@@ -92,7 +92,7 @@ namespace srs::common
     template <typename T>
     constexpr auto binary_to_gray(T bin_val)
     {
-        return bin_val ^ (bin_val >> 1);
+        return bin_val ^ (bin_val >> 1U);
     }
 
     constexpr auto get_shared_from_this(auto&& obj)

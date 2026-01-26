@@ -7,12 +7,10 @@
 #include <algorithm>
 #include <bit>
 #include <bitset>
-#include <boost/asio/any_io_executor.hpp>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <spdlog/spdlog.h>
 #include <string_view>
 #include <type_traits>
 #include <vector>
@@ -107,36 +105,39 @@ namespace srs::process
         : ConverterTask{ "Struct deserializer", none, n_lines }
     {
         output_data_.resize(n_lines);
+        compact_data_buffer_.resize(n_lines);
     }
 
     // NOLINTBEGIN
-    auto StructSerializer::convert([[maybe_unused]] const StructData* input, [[maybe_unused]] std::vector<char>& output)
+    auto StructSerializer::convert([[maybe_unused]] const StructData* input,
+                                   [[maybe_unused]] std::vector<char>& output,
+                                   std::vector<char>& compact_data_buffer)
         -> std::expected<std::size_t, std::string_view>
     {
-        compact_data_buffer_.resize(0, 0);
+        compact_data_buffer.resize(0, 0);
         auto serialize_to = zpp::bits::out{ output, zpp::bits::endian::network{}, zpp::bits::no_size{} };
         serialize_to(input->header).or_throw();
         for (auto hit : input->hit_data)
         {
-            std::ranges::fill(compact_data_buffer_, 0);
+            std::ranges::fill(compact_data_buffer, 0);
             auto hit_compact = internal::HitDataCompact{};
             if (auto res = hit_to_compact(hit, hit_compact); !res)
             {
                 return std::unexpected(res.error());
             }
-            compact_to_vector(hit_compact, compact_data_buffer_);
+            compact_to_vector(hit_compact, compact_data_buffer);
             serialize_to(compact_data_buffer_).or_throw();
         }
         for (auto marker : input->marker_data)
         {
-            std::ranges::fill(compact_data_buffer_, 0);
+            std::ranges::fill(compact_data_buffer, 0);
             auto marker_compact = internal::MarkerDataCompact{};
             if (auto res = marker_to_compact(marker, marker_compact); !res)
             {
                 return std::unexpected(res.error());
             }
-            compact_to_vector(marker_compact, compact_data_buffer_);
-            serialize_to(compact_data_buffer_).or_throw();
+            compact_to_vector(marker_compact, compact_data_buffer);
+            serialize_to(compact_data_buffer).or_throw();
         }
         return input->marker_data.size() + input->hit_data.size();
     }
