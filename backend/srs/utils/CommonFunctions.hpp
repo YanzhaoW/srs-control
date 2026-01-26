@@ -14,10 +14,12 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <iterator>
 #include <magic_enum/magic_enum.hpp>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 namespace srs::common
 {
@@ -48,6 +50,24 @@ namespace srs::common
         return std::bitset<high_size + low_size>(new_bits.to_ullong());
     }
 
+    template <std::size_t low_size, std::size_t total_size>
+        requires(total_size <= sizeof(std::uint64_t) * common::BYTE_BIT_LENGTH and total_size >= low_size)
+    constexpr auto get_low_bits(const std::bitset<total_size>& bits) -> std::bitset<low_size>
+    {
+        constexpr auto high_size = total_size - low_size;
+        const auto low_bits = std::bitset<low_size>{ ((bits << high_size) >> high_size).to_ullong() };
+        return low_bits;
+    }
+
+    template <std::size_t high_size, std::size_t total_size>
+        requires(total_size <= sizeof(std::uint64_t) * common::BYTE_BIT_LENGTH and total_size >= high_size)
+    constexpr auto get_high_bits(const std::bitset<total_size>& bits) -> std::bitset<high_size>
+    {
+        constexpr auto low_size = total_size - high_size;
+        const auto high_bits = std::bitset<high_size>{ (bits >> low_size).to_ullong() };
+        return high_bits;
+    }
+
     template <std::size_t bit_size>
     constexpr auto byte_swap(const std::bitset<bit_size>& bits)
     {
@@ -67,6 +87,12 @@ namespace srs::common
             bin_val ^= gray_val;
         }
         return bin_val;
+    }
+
+    template <typename T>
+    constexpr auto binary_to_gray(T bin_val)
+    {
+        return bin_val ^ (bin_val >> 1U);
     }
 
     constexpr auto get_shared_from_this(auto&& obj)

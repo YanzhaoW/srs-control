@@ -21,6 +21,7 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(ReceiveDataHeader, 1);
 #endif
+        auto operator==(const ReceiveDataHeader&) const -> bool = default;
     };
 
     struct MarkerData
@@ -30,11 +31,12 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(MarkerData, 1);
 #endif
+        auto operator==(const MarkerData&) const -> bool = default;
     };
 
     struct HitData
     {
-        bool is_over_threshold = false; //!< whether the hit data is over the threshould
+        bool is_over_threshold = false; //!< whether the hit data is over the threshold
         uint8_t channel_num{};          //!< Channel number
         uint8_t tdc{};                  //!< TDC value
         uint8_t offset{};               //!< Offset value
@@ -44,6 +46,7 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(HitData, 1);
 #endif
+        auto operator==(const HitData&) const -> bool = default;
     };
 
     struct StructData
@@ -54,6 +57,7 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(StructData, 1);
 #endif
+        auto operator==(const StructData&) const -> bool = default;
     };
 
     inline void reset_struct_data(StructData& struct_data)
@@ -62,5 +66,4 @@ namespace srs
         struct_data.marker_data.clear();
         struct_data.hit_data.clear();
     }
-
 } // namespace srs

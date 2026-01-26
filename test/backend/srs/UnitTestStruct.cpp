@@ -38,7 +38,7 @@ namespace
         auto srs_timestamp_gen = std::uniform_int_distribution<uint64_t>{ 0, (uint64_t{ 1 } << 42U) - 1 };
 
         struct_data.marker_data.reserve(marker_size);
-        for (auto idx : std::views::iota(uint32_t{ 0 }, marker_size))
+        for ([[maybe_unused]] auto idx : std::views::iota(uint32_t{ 0 }, marker_size))
         {
             auto& marker = struct_data.marker_data.emplace_back();
             marker.vmm_id = vmm_id_gen(random_gen);
@@ -57,7 +57,6 @@ namespace
         {
             auto& hit = struct_data.hit_data.emplace_back();
             hit.channel_num = channel_num_gen(random_gen);
-            hit.channel_num = channel_num_gen(random_gen);
             hit.tdc = tdc_gen(random_gen);
             hit.offset = offset_gen(random_gen);
             hit.adc = adc_gen(random_gen);
@@ -71,7 +70,7 @@ namespace
 
 TEST(data_structure, check_de_serialization)
 {
-    auto random_data = generate_random_struct_data();
+    const auto random_data = generate_random_struct_data();
 
     auto serializer_converter = process::StructSerializer();
     auto deserializer_converter = process::StructDeserializer();
@@ -81,7 +80,10 @@ TEST(data_structure, check_de_serialization)
 
     auto res = serializer_converter.run(initial_converter);
 
-    EXPECT_FALSE(res.has_value());
+    EXPECT_TRUE(res.has_value());
     auto struct_data = deserializer_converter.run(serializer_converter);
-    EXPECT_FALSE(struct_data.has_value());
+    const auto& output_struct = *struct_data.value();
+    EXPECT_TRUE(random_data.header == output_struct.header);
+    EXPECT_TRUE(struct_data.has_value());
+    EXPECT_TRUE(random_data == *struct_data.value());
 }
