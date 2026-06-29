@@ -1,3 +1,4 @@
+#include "srs/Application.hpp"
 #include "srs/ConfigHandler.hpp"
 #include "srs/SRSWorld.hpp"
 #include "srs/devices/Configuration.hpp"
@@ -16,6 +17,7 @@
 #include <format>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -99,14 +101,19 @@ auto main(int argc, char** argv) -> int
 
         cli_args.parse(argc, argv);
 
+        auto app = srs::App{};
         spdlog::set_level(spdlog_level);
-        auto world = srs::test::World{ "test_data.bin" };
+
+        auto world = srs::test::World{ app, "test_data.bin" };
         world.set_continue_output(is_continuous_output);
         world.set_delay_time_us(delay_time);
 
-        auto& app = world.get_app();
+        auto is_ok = srs::config::set_config_from_json(app_config, json_filepath);
 
-        srs::config::set_config_from_json(app_config, json_filepath);
+        if (not is_ok)
+        {
+            throw std::runtime_error("Error occurred when reading configuration files.");
+        }
         app.set_options(std::move(app_config));
         app.get_config_ref().remote_fec_ips = std::vector{ std::string{ "127.0.0.1" } };
         // auto output_file = std::vector<std::string>{ "test_output.bin" };
@@ -115,24 +122,34 @@ auto main(int argc, char** argv) -> int
         world.launch_server();
 
         app.start_workflow();
-        app.read_data();
-        app.switch_on();
 
-        auto switch_off_thread = std::jthread(
-            [&app, &world, is_continuous_output, &run_time]()
-            {
-                if (is_continuous_output)
+        auto switch_off_thread = std::jthread{};
+        if (app.read_data())
+        {
+            app.switch_on();
+            switch_off_thread = std::jthread(
+                [&app, &world, is_continuous_output, &run_time]()
                 {
-                    std::this_thread::sleep_for(std::chrono::seconds{ run_time });
-                }
-                else
-                {
-                    world.get_server()->wait_for_data_sender();
-                }
-                app.exit_and_switch_off();
-            });
+                    if (is_continuous_output)
+                    {
+                        std::this_thread::sleep_for(std::chrono::seconds{ run_time });
+                    }
+                    else
+                    {
+                        world.for_each_server([](auto& server) { server->wait_for_data_sender(); });
+                    }
+                    app.exit_and_switch_off();
+                });
+        }
+        else
+        {
+            switch_off_thread = std::jthread([&app]() { app.exit_and_switch_off(); });
+        }
 
         app.wait_for_workflow();
+        spdlog::info("Waiting for srs server to stop.");
+        world.join();
+        spdlog::info("Reaching the end of the main block.");
     }
     catch (const CLI::ParseError& e)
     {
@@ -142,6 +159,7 @@ auto main(int argc, char** argv) -> int
     catch (const exception& ex)
     {
         spdlog::critical("exception occurred: {}", ex.what());
+        return EXIT_FAILURE;
     }
     auto wrong_file_size = not is_continuous_output and
                            not std::ranges::all_of(output_filenames,

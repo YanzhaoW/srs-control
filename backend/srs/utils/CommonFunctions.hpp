@@ -12,6 +12,7 @@
 #include <boost/thread/future.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <iterator>
@@ -124,4 +125,12 @@ namespace srs::common
         return task_handle;
     }
 
+    inline auto get_default_log_path() -> std::filesystem::path
+    {
+        using path = std::filesystem::path;
+        const auto* xdg_state_home = std::getenv("XDG_STATE_HOME");
+        const auto state_dir =
+            xdg_state_home == nullptr ? path{ std::getenv("HOME") } / path{ ".local/state" } : path{ xdg_state_home };
+        return state_dir / path{ "srs_control/srs_control.log" };
+    }
 } // namespace srs::common

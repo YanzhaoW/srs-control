@@ -9,10 +9,12 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
+#include <mutex>
 #include <span>
 #include <spdlog/logger.h>
 #include <string>
@@ -50,6 +52,7 @@ namespace srs::workflow
 
       private:
         bool is_shown_ = true;
+        std::atomic<bool> is_cancelled_ = false;
         gsl::not_null<Handler*> processor_;
         gsl::not_null<io_context_type*> io_context_;
         std::shared_ptr<spdlog::logger> console_;
@@ -129,6 +132,10 @@ namespace srs::workflow
         gsl::not_null<App*> app_;
         writer::Manager writers_{ this };
         DataMonitor monitor_;
+
+        // mutex and cv make sure the stop always wait for start
+        std::mutex cv_mutex_;
+        std::condition_variable cv_;
 
         // Data buffer
         tbb::concurrent_bounded_queue<process::SerializableMsgBuffer> data_queue_;

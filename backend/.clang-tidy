@@ -46,6 +46,7 @@ CheckOptions:
     value: 40
   - key: readability-function-cognitive-complexity.IgnoreMacros
     value: 'true'
+  - readability-identifier-length.IgnoredExceptionVariableNames: '^(e|_)$'
 
 FormatStyle: 'file'
 HeaderFilterRegex: '.*'

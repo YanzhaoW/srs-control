@@ -1,8 +1,8 @@
 #pragma once
 
-#include "srs/Application.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/readers/RawFrameReader.hpp"
+#include "srs/utils/CommonAlias.hpp" // IWYU pragma: keep
 #include <atomic>
 #include <boost/asio.hpp>
 #include <boost/asio/any_io_executor.hpp>

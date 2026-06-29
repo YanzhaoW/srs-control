@@ -144,8 +144,9 @@ namespace srs
          * is read.
          *
          * @param is_non_stop Flag to set non-stop mode.
+         * @return False if error occurred.
          */
-        void read_data(bool is_non_stop = true);
+        auto read_data(bool is_non_stop = true) -> bool;
 
         /**
          * @brief Start data analysis workflow, triggering data conversions.
@@ -156,20 +157,23 @@ namespace srs
         void start_workflow();
 
         /**
-         * @brief Manually wait for the working thread to finish.
-         *
-         * This method is called automatically in the destructor and shouldn't be called if not necessary. It blocks the
-         * program until the working thread exits.
+         * @brief Wait for the workflow process to finish
          */
-        void wait_for_finish();
-
         void wait_for_workflow() { workflow_thread_.join(); }
 
         // setters:
         /**
-         * @brief Set the local listen port number for the communications to FEC devices
+         * @brief Set the local listen port numbers for the communications to FEC devices
          */
-        void set_fec_data_receiv_port(int port_num) { config_.fec_data_receive_port = port_num; }
+        void set_fec_data_receiv_ports(const std::vector<int>& port_nums)
+        {
+            config_.fec_data_receive_ports = port_nums;
+        }
+
+        /**
+         * @brief Add a local listen port number for the communications to FEC devices
+         */
+        void add_fec_data_receiv_port(int port_num) { config_.fec_data_receive_ports.push_back(port_num); }
 
         /**
          * @brief Set the print mode.
@@ -258,8 +262,9 @@ namespace srs
          */
         // std::shared_ptr<connection::DataReader> data_reader_;
 
-        std::shared_ptr<connection::DataSocket> data_socket_;
+        std::vector<std::shared_ptr<connection::DataSocket>> data_sockets_;
 
+        void init_spdlog();
         void wait_for_reading_finish();
         void set_remote_fec_endpoints();
         void add_remote_fec_endpoint(std::string_view remote_ip, int port_number);
@@ -267,6 +272,8 @@ namespace srs
 
         template <typename T>
         auto switch_FECs(std::string_view connection_name) -> SwitchFutureType;
+
+        auto check_port_number_validity() -> bool;
     };
 
 } // namespace srs

@@ -23,4 +23,17 @@ target_compile_definitions(
     PUBLIC SRS_PROJECT_VERSION="v${CMAKE_PROJECT_VERSION}"
 )
 
+add_executable(srs_check_log check_log.cpp)
+
+target_link_libraries(
+    srs_check_log
+    PRIVATE
+        CLI11::CLI11
+        magic_enum::magic_enum
+        spdlog::spdlog
+        Boost::headers
+        srscpp
+        re2::re2
+)
+
 include(${CMAKE_SOURCE_DIR}/cmake/install_targets.cmake)
