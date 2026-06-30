@@ -52,8 +52,12 @@ target_sources(
 
 target_link_libraries(srscpp PRIVATE $<BUILD_LOCAL_INTERFACE:srs_data>)
 target_compile_definitions(
-    srscpp PUBLIC BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION BOOST_ASIO_NO_DEPRECATED
-                  BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY)
+    srscpp
+    PUBLIC
+        BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION
+        BOOST_ASIO_NO_DEPRECATED
+        BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY
+)
 target_compile_options(
     srscpp
     PRIVATE -Werror -Wall -Wextra -Wconversion -pedantic
@@ -66,11 +70,17 @@ if(ENABLE_COVERAGE)
 endif()
 
 if(ENABLE_ASAN)
-    target_compile_options(srscpp PUBLIC -fno-omit-frame-pointer -fsanitize=address,undefined,leak)
+    target_compile_options(
+        srscpp
+        PUBLIC -fno-omit-frame-pointer -fsanitize=address,undefined,leak
+    )
     target_link_options(srscpp PUBLIC -fsanitize=address,undefined,leak)
 endif()
 
 if(ENABLE_TSAN)
-    target_compile_options(srscpp PUBLIC -fno-omit-frame-pointer -fsanitize=thread)
+    target_compile_options(
+        srscpp
+        PUBLIC -fno-omit-frame-pointer -fsanitize=thread
+    )
     target_link_options(srscpp PUBLIC -fsanitize=thread)
 endif()

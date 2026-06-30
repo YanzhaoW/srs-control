@@ -1,0 +1,5 @@
+{
+   "fec_data_receive_ports": [6006, 6005, 6004],
+   "data_buffer_size": 800000,
+   "buffer_queue_capacity": 200
+}

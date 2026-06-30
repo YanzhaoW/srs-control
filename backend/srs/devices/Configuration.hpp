@@ -26,7 +26,7 @@ namespace srs
         /**
          * @brief The port number of the local network that is used for reading the data stream from FECs.
          */
-        int fec_data_receive_port = common::FEC_DAQ_RECEIVE_PORT;
+        std::vector<int> fec_data_receive_ports = common::FEC_DAQ_RECEIVE_PORT;
 
         /**
          * @brief The size of data buffer to store the incoming UDP frames.
@@ -37,5 +37,20 @@ namespace srs
          * @brief Remote IP addresses of FECs.
          */
         std::vector<std::string> remote_fec_ips{ std::string{ common::DEFAULT_SRS_IP } };
+
+        /**
+         * @brief Capacity of the buffer queue.
+         */
+        std::size_t buffer_queue_capacity = common::DEFAULT_DATA_QUEUE_SIZE;
+
+        /**
+         * @brief Output file names.
+         */
+        std::vector<std::string> output_filenames;
+
+        /**
+         * @brief Number of splits from the input data to multiple outputs.
+         */
+        std::size_t output_split = 1;
     };
 } // namespace srs

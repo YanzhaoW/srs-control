@@ -27,8 +27,11 @@
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
-                "CONAN_INSTALL_ARGS": "--build=missing;-scompiler.cppstd=gnu23",
-                "BUILD_STATIC": "ON"
+                "CONAN_INSTALL_ARGS": "--build=missing;--build=b2/*;-scompiler.cppstd=gnu23",
+                "BUILD_STATIC": "ON",
+                "USE_SYSTEM_LIBRARIES": "OFF",
+                "USE_SYSTEM_BOOST": "OFF",
+                "USE_SYSTEM_PROTOBUF": "OFF"
             }
         },
         {

@@ -2,8 +2,8 @@
 
 #include <chrono>
 #include <cstdint>
-#include <expected>
 #include <string_view>
+#include <vector>
 
 namespace srs::common
 {
@@ -32,7 +32,7 @@ namespace srs::common
 
     // port numbers:
     constexpr auto DEFAULT_SRS_CONTROL_PORT = 6600;
-    constexpr auto FEC_DAQ_RECEIVE_PORT = 6006;
+    const auto FEC_DAQ_RECEIVE_PORT = std::vector<int>{ 6006 };
 
     /**
      * @brief Default value of the listening port number used for the FEC communications
@@ -50,6 +50,14 @@ namespace srs::common
     constexpr auto GZIP_DEFAULT_COMPRESSION_LEVEL = 9;
     constexpr auto PROTOBUF_ENABLE_GZIP = true;
     constexpr auto DEFAULT_DATA_QUEUE_SIZE = 100;
+
+    // Log parameters
+    constexpr auto rotating_file_nums = 10;
+    const auto file_max_size = 1048576 * 5; //!< file size limited to 5 MB.
+    const auto exit_logger_begin = std::string_view{ "------->>" };
+    const auto exit_logger_end = std::string_view{ "<<-------" };
+    const auto file_logger_new_instance_str =
+        std::string_view{ "----------------------new log instance----------------------" };
 
     /**
      * @enum DataPrintMode

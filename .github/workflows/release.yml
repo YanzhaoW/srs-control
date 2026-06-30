@@ -10,12 +10,14 @@
 
 name: release
 on:
+  pull_request:
+    branches:
+      - master
   push:
     tags:
       - v[0-9]+.[0-9]+.[0-9]+
     branches:
       - master
-      # - dev
   workflow_dispatch:
 
 permissions: write-all
@@ -111,7 +113,7 @@ jobs:
           tar czf "srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz" "./srs-download"
 
       - name: cpack
-        if: ${{ matrix.pack }}
+        if: matrix.pack && github.event_name != 'pull_request'
         id: packaging
         run: |
           apt install -y file
@@ -122,13 +124,14 @@ jobs:
           echo "package_filename=${package_filename}" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
-        if: ${{ matrix.pack }}
+        if: matrix.pack && github.event_name != 'pull_request'
         with:
           name: package-${{ matrix.os}}-${{ matrix.root }}
           path: build/package/${{ steps.packaging.outputs.package_filename }}
           retention-days: 1
 
       - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
         with:
           name: download-${{ matrix.os}}-${{ env.TAG_NAME }}-${{ matrix.root }}
           path: srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz
@@ -184,6 +187,7 @@ jobs:
 
   publish-release:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     env:
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ secrets.SRS_GH_TOKEN }}

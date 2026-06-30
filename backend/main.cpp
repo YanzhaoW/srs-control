@@ -12,6 +12,7 @@
 #include <print>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -128,11 +129,17 @@ auto main(int argc, char** argv) -> int
             return 0;
         }
 
-        spdlog::set_level(spdlog_level);
-
         auto app = srs::App{};
 
-        srs::config::set_config_from_json(app_config, json_filepath);
+        spdlog::default_logger()->set_level(spdlog_level);
+
+        auto is_ok = srs::config::set_config_from_json(app_config, json_filepath);
+
+        if (not is_ok)
+        {
+            throw std::runtime_error("Error occurred when reading configuration files.");
+        }
+
         app.set_options(std::move(app_config));
         app.set_print_mode(print_mode);
         app.set_output_filenames(output_filenames, n_output_split);

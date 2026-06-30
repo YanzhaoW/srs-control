@@ -1,3 +1,4 @@
+#include "srs/Application.hpp"
 #include "srs/ConfigHandler.hpp"
 #include "srs/SRSWorld.hpp"
 #include "srs/devices/Configuration.hpp"
@@ -16,6 +17,7 @@
 #include <format>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -57,6 +59,10 @@ auto main(int argc, char** argv) -> int
     auto is_continuous_output = false;
     const auto input_filename = std::string{ "test_data.bin" };
     auto output_filenames = std::vector<std::string>{ "" };
+
+    auto sent_n_frames = 0;
+    auto received_n_frames = 0;
+    auto n_data_ports = 1;
     try
     {
         auto delay_time = DEFAULT_DELAY_TIME_US;
@@ -99,27 +105,35 @@ auto main(int argc, char** argv) -> int
 
         cli_args.parse(argc, argv);
 
+        auto app = srs::App{};
         spdlog::set_level(spdlog_level);
-        auto world = srs::test::World{ "test_data.bin" };
+
+        auto world = srs::test::World{ app, "test_data.bin" };
         world.set_continue_output(is_continuous_output);
         world.set_delay_time_us(delay_time);
 
-        auto& app = world.get_app();
+        auto is_ok = srs::config::set_config_from_json(app_config, json_filepath);
 
-        srs::config::set_config_from_json(app_config, json_filepath);
+        if (not is_ok)
+        {
+            throw std::runtime_error("Error occurred when reading configuration files.");
+        }
+        n_data_ports = app_config.fec_data_receive_ports.size();
+
         app.set_options(std::move(app_config));
-        app.get_config_ref().remote_fec_ips = std::vector{ std::string{ "127.0.0.1" } };
         // auto output_file = std::vector<std::string>{ "test_output.bin" };
         app.set_output_filenames(output_filenames, n_output_split);
         world.init();
-        world.launch_server();
 
         app.start_workflow();
-        app.read_data();
-        app.switch_on();
 
-        auto switch_off_thread = std::jthread(
-            [&app, &world, is_continuous_output, &run_time]()
+        auto switch_off_thread = std::jthread{};
+        app.read_data();
+
+        world.launch_server();
+        app.switch_on();
+        switch_off_thread = std::jthread(
+            [&app, &world, is_continuous_output, &run_time, &sent_n_frames, &received_n_frames]()
             {
                 if (is_continuous_output)
                 {
@@ -127,12 +141,17 @@ auto main(int argc, char** argv) -> int
                 }
                 else
                 {
-                    world.get_server()->wait_for_data_sender();
+                    world.for_each_server([](auto& server) { server->wait_for_data_sender(); });
                 }
                 app.exit_and_switch_off();
+                sent_n_frames += world.get_n_frames_sent();
+                received_n_frames += app.get_workflow_handler().get_frame_counts();
             });
 
         app.wait_for_workflow();
+        spdlog::info("Waiting for srs server to stop.");
+        world.join();
+        spdlog::info("Reaching the end of the main block.");
     }
     catch (const CLI::ParseError& e)
     {
@@ -142,28 +161,36 @@ auto main(int argc, char** argv) -> int
     catch (const exception& ex)
     {
         spdlog::critical("exception occurred: {}", ex.what());
+        return EXIT_FAILURE;
     }
-    auto wrong_file_size = not is_continuous_output and
-                           not std::ranges::all_of(output_filenames,
-                                                   [&input_filename](std::string_view name) -> bool
-                                                   {
-                                                       using enum srs::DataWriterOption;
-                                                       auto file_type =
-                                                           std::get<0>(srs::get_filetype_from_filename(name));
-                                                       if (file_type == no_output or file_type == udp)
-                                                       {
-                                                           return true;
-                                                       }
-                                                       if (name.ends_with(".bin"))
-                                                       {
-                                                           return get_file_size(name) == get_file_size(input_filename);
-                                                       }
-                                                       return get_file_size(name) != 0;
-                                                   });
+
+    if (sent_n_frames != received_n_frames)
+    {
+        spdlog::error("{} frames sent but {} frames received!", sent_n_frames, received_n_frames);
+        return EXIT_FAILURE;
+    }
+
+    auto wrong_file_size =
+        not is_continuous_output and
+        not std::ranges::all_of(output_filenames,
+                                [&input_filename, n_data_ports](std::string_view name) -> bool
+                                {
+                                    using enum srs::DataWriterOption;
+                                    auto file_type = std::get<0>(srs::get_filetype_from_filename(name));
+                                    if (file_type == no_output or file_type == udp)
+                                    {
+                                        return true;
+                                    }
+                                    if (name.ends_with(".bin"))
+                                    {
+                                        return get_file_size(name) == n_data_ports * get_file_size(input_filename);
+                                    }
+                                    return get_file_size(name) != 0;
+                                });
     if (wrong_file_size)
     {
         spdlog::error("Output files don't have correct sizes!");
-        return 1;
+        return EXIT_FAILURE;
     }
     spdlog::info("All output files have correct sizes!");
 

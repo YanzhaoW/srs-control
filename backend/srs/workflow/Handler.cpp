@@ -3,15 +3,20 @@
 #include "srs/data/DataStructsFormat.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
+#include "srs/utils/ExitLogger.hpp"
 #include "srs/workflow/TaskDiagram.hpp"
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
+#include <boost/asio/redirect_error.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/system/detail/error_code.hpp>
 #include <chrono>
 #include <cstddef>
 #include <fmt/color.h>
 #include <memory>
+#include <mutex>
 #include <span>
 #include <spdlog/common.h>
 #include <spdlog/pattern_formatter.h>
@@ -38,6 +43,7 @@ namespace srs::workflow
 
     auto DataMonitor::print_cycle() -> asio::awaitable<void>
     {
+        auto _ = ExitLogger{};
         clock_.expires_after(period_);
         console_ = spdlog::stdout_color_st("Data Monitor");
         auto console_format = std::make_unique<spdlog::pattern_formatter>(
@@ -47,9 +53,14 @@ namespace srs::workflow
         console_->set_level(spdlog::level::info);
         const auto buffer_size = processor_->get_app().get_config().data_buffer_size;
         const auto& task_workflow = processor_->get_data_workflow();
-        while (true)
+        auto error_code = boost::system::error_code{};
+        while (not is_cancelled_.load())
         {
-            co_await clock_.async_wait(asio::use_awaitable);
+            co_await clock_.async_wait(asio::redirect_error(asio::use_awaitable, error_code));
+            if (error_code == boost::asio::error::operation_aborted)
+            {
+                break;
+            }
             clock_.expires_after(period_);
 
             auto read_total_bytes_count = processor_->get_read_data_bytes();
@@ -114,7 +125,9 @@ namespace srs::workflow
 
     void DataMonitor::stop()
     {
+        auto _ = ExitLogger{};
         clock_.cancel();
+        is_cancelled_.store(true);
         spdlog::debug("DataMonitor: rate polling clock is killed.");
     }
 
@@ -123,19 +136,23 @@ namespace srs::workflow
         , app_{ control }
         , monitor_{ this, &(control->get_io_context()) }
     {
-        data_queue_.set_capacity(common::DEFAULT_DATA_QUEUE_SIZE);
+        spdlog::debug("Handler: Setting the capacity of the buffer queue to {}",
+                      control->get_config().buffer_queue_capacity);
+        data_queue_.set_capacity(static_cast<long>(control->get_config().buffer_queue_capacity));
     }
 
     void Handler::start()
     {
+        auto _ = ExitLogger{};
         is_stopped_.store(false);
-        spdlog::debug("------->> Analysis workflow: main loop starts.");
         task_diagram_ = std::make_unique<TaskDiagram>(this, n_lines_);
 
         if (print_mode_ == print_speed)
         {
             monitor_.start();
         }
+
+        cv_.notify_all();
         try
         {
             spdlog::trace("Analysis workflow: entering workflow loop");
@@ -147,7 +164,6 @@ namespace srs::workflow
         {
             spdlog::trace("Analysis workflow: {}", ex.what());
         }
-        spdlog::debug("<<------- Analysis workflow: main loop is done.");
     }
 
     Handler::~Handler()
@@ -160,13 +176,19 @@ namespace srs::workflow
 
     void Handler::stop()
     {
+        auto _ = ExitLogger{};
+        // stop may be called before start, where the task_diagram_ is constructed. To prevent task_diagram_ to be
+        // nullptr, wait for a condition variable, notified by the start function.
+        auto lock = std::unique_lock{ cv_mutex_ };
+        cv_.wait(lock, [this]() { return task_diagram_ != nullptr; });
+
         // CAS operation to guarantee the thread safety
         auto expected = false;
         spdlog::trace("Analysis workflow: trying to stop ... ");
         spdlog::trace("Analysis workflow: current is_stopped status: {}", is_stopped_.load());
         if (is_stopped_.compare_exchange_strong(expected, true))
         {
-            spdlog::trace("------->> Analysis workflow shutdown: Try to monitor and tasks.");
+            const auto _ = ExitLogger{ "scope" };
             monitor_.stop();
 
             while (not task_diagram_->is_taskflow_abort_ready())
@@ -174,10 +196,9 @@ namespace srs::workflow
                 // spdlog::trace("waiting for task diagram to be abort ready");
             }
             data_queue_.abort();
-
-            spdlog::trace("<<------- Analysis workflow shutdown: monitor and tasks successfully stopped.");
         }
     }
+
     auto Handler::get_data_workflow() const -> const TaskDiagram&
     {
         if (task_diagram_ == nullptr)
@@ -196,7 +217,9 @@ namespace srs::workflow
         if (not is_success)
         {
             total_drop_data_bytes_ += data_size;
-            spdlog::trace("Analysis workflow: Data queue is full and message is lost. Try to increase its capacity!");
+            spdlog::warn("Data drop as the buffer queue is full: Current size/capacity: {}/{}.",
+                         data_queue_.size(),
+                         data_queue_.capacity());
         }
     }
 } // namespace srs::workflow

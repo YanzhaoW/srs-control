@@ -28,17 +28,17 @@ namespace srs::config
             app_config, json_filename, buffer);
         if (error_code)
         {
-            spdlog::warn("Error occurred during writing the json file {}: {}",
-                         json_filename,
-                         glz::format_error(error_code, buffer));
+            spdlog::critical("Error occurred during writing the json file {}: {}",
+                             json_filename,
+                             glz::format_error(error_code, buffer));
         }
     }
 
-    inline void set_config_from_json(Config& app_config, std::string_view json_filename)
+    inline auto set_config_from_json(Config& app_config, std::string_view json_filename) -> bool
     {
         if (json_filename.empty())
         {
-            return;
+            return false;
         }
         if (not std::filesystem::exists(json_filename))
         {
@@ -52,11 +52,13 @@ namespace srs::config
             auto error_code = glz::read_file_json(app_config, json_filename, buffer);
             if (error_code)
             {
-                spdlog::warn("Error occurred during reading the json file {}: {}",
-                             json_filename,
-                             glz::format_error(error_code, buffer));
+                spdlog::critical("Error occurred during reading the json file {}: {}",
+                                 json_filename,
+                                 glz::format_error(error_code, buffer));
+                return false;
             }
         }
+        return true;
     }
 
 } // namespace srs::config
