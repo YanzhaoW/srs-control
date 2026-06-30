@@ -91,7 +91,7 @@ namespace srs::workflow
                           tf::Pipe{ tf::PipeType::PARALLEL,
                                     [this, &data_queue, &is_stopped]([[maybe_unused]] tf::Pipeflow& pipeflow)
                                     {
-                                        if (is_stopped.load())
+                                        if (is_stopped.load() and data_queue.size() == 0)
                                         {
                                             pipeflow.stop();
                                         }

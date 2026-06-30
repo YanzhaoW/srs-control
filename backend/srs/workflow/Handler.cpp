@@ -136,7 +136,9 @@ namespace srs::workflow
         , app_{ control }
         , monitor_{ this, &(control->get_io_context()) }
     {
-        data_queue_.set_capacity(common::DEFAULT_DATA_QUEUE_SIZE);
+        spdlog::debug("Handler: Setting the capacity of the buffer queue to {}",
+                      control->get_config().buffer_queue_capacity);
+        data_queue_.set_capacity(static_cast<long>(control->get_config().buffer_queue_capacity));
     }
 
     void Handler::start()
@@ -215,7 +217,9 @@ namespace srs::workflow
         if (not is_success)
         {
             total_drop_data_bytes_ += data_size;
-            spdlog::trace("Analysis workflow: Data queue is full and message is lost. Try to increase its capacity!");
+            spdlog::warn("Data drop as the buffer queue is full: Current size/capacity: {}/{}.",
+                         data_queue_.size(),
+                         data_queue_.capacity());
         }
     }
 } // namespace srs::workflow

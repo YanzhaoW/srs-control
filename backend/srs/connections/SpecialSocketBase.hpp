@@ -114,9 +114,9 @@ namespace srs::connection
     template <SpecialSocketDerived SocketType>
     auto SpecialSocket::listen_all_connections(std::shared_ptr<SocketType> socket) -> asio::awaitable<void>
     {
-        spdlog::debug("Local socket with port {} starts to listen ...", socket->get_port());
         socket->bind_socket();
         auto remote_endpoint = udp::endpoint{};
+        spdlog::info("Local socket with port {} starts to listen ...", socket->get_port());
         while (true)
         {
             const auto [err_code, receive_size] = co_await socket->get_socket().async_receive_from(

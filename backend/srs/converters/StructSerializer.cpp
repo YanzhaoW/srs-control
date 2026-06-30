@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <bit>
 #include <bitset>
+#include <cassert>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -46,6 +47,8 @@ namespace srs::process
             {
                 return std::unexpected(is_correct_sizes.error());
             }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
             auto timestamp_bits =
                 std::bitset<common::SRS_TIMESTAMP_HIGH_BIT_LENGTH + common::SRS_TIMESTAMP_LOW_BIT_LENGTH>(
                     marker_data.srs_timestamp);
@@ -58,6 +61,7 @@ namespace srs::process
             marker_data_compact.flag = static_cast<decltype(marker_data_compact.flag)>(0);
             marker_data_compact.vmm_id = static_cast<decltype(marker_data_compact.vmm_id)>(marker_data.vmm_id);
             return {};
+#pragma GCC diagnostic pop
         }
 
         auto hit_to_compact(const HitData& hit_data, internal::HitDataCompact& hit_data_compact)
@@ -73,6 +77,8 @@ namespace srs::process
             {
                 return std::unexpected(is_correct_sizes.error());
             }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
             hit_data_compact.vmm_id = static_cast<decltype(hit_data_compact.vmm_id)>(hit_data.vmm_id);
             hit_data_compact.flag = static_cast<decltype(hit_data_compact.flag)>(1);
             hit_data_compact.adc = static_cast<decltype(hit_data_compact.adc)>(hit_data.adc);
@@ -83,6 +89,7 @@ namespace srs::process
                 static_cast<decltype(hit_data_compact.is_over_threshold)>(hit_data.is_over_threshold);
             hit_data_compact.offset = static_cast<decltype(hit_data_compact.offset)>(hit_data.offset);
             hit_data_compact.tdc = static_cast<decltype(hit_data_compact.tdc)>(hit_data.tdc);
+#pragma GCC diagnostic pop
             return {};
         }
 

@@ -21,7 +21,7 @@ namespace srs::process
             option.compression_level = common::GZIP_DEFAULT_COMPRESSION_LEVEL;
             auto gzip_output = io::GzipOutputStream{ &output_stream, option };
             protobuf::util::SerializeDelimitedToZeroCopyStream(proto_data, &gzip_output);
-            gzip_output.Flush();
+            [[maybe_unused]] auto res = gzip_output.Flush();
         }
         else
         {
@@ -35,7 +35,7 @@ namespace srs::process
         namespace protobuf = google::protobuf;
         namespace io = protobuf::io;
         auto output_stream = io::StringOutputStream{ &output_data };
-        proto_data.SerializeToZeroCopyStream(&output_stream);
+        [[maybe_unused]] auto res = proto_data.SerializeToZeroCopyStream(&output_stream);
         return 0;
     };
 } // namespace srs::process

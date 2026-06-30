@@ -152,10 +152,8 @@ auto main(int argc, char** argv) -> int
             case all:
             {
                 app.start_workflow();
-                if (app.read_data())
-                {
-                    app.switch_on();
-                }
+                app.read_data();
+                app.switch_on();
                 app.wait_for_workflow();
                 break;
             }

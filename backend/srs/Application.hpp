@@ -144,9 +144,8 @@ namespace srs
          * is read.
          *
          * @param is_non_stop Flag to set non-stop mode.
-         * @return False if error occurred.
          */
-        auto read_data(bool is_non_stop = true) -> bool;
+        void read_data(bool is_non_stop = true);
 
         /**
          * @brief Start data analysis workflow, triggering data conversions.

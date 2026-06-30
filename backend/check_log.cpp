@@ -73,6 +73,14 @@ namespace srs
             }
         }
 
+        void print_last_log()
+        {
+            for (const auto& line_str : content_ | std::views::take(line_counter_))
+            {
+                std::println("{}", line_str);
+            }
+        }
+
         void analysis()
         {
             auto key_str = std::string{};
@@ -127,15 +135,27 @@ auto main(int argc, char** argv) -> int
 
     auto default_log_filename = srs::common::get_default_log_path().string();
 
+    auto is_show_last_log = false;
+
     try
     {
         cli_args.add_option("-f, --file", default_log_filename, "Set the path to the log file")
             ->capture_default_str()
             ->expected(0, 1);
+        cli_args.add_flag("-l, --show-last-log", is_show_last_log, "Show last log content");
+
         cli_args.parse(argc, argv);
 
         auto log_file = srs::LogFile(default_log_filename);
+
         log_file.read();
+
+        if (is_show_last_log)
+        {
+            log_file.print_last_log();
+            return EXIT_SUCCESS;
+        }
+
         log_file.analysis();
         log_file.print();
     }

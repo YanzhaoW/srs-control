@@ -56,7 +56,8 @@ namespace srs::common
     const auto file_max_size = 1048576 * 5; //!< file size limited to 5 MB.
     const auto exit_logger_begin = std::string_view{ "------->>" };
     const auto exit_logger_end = std::string_view{ "<<-------" };
-    const auto file_logger_new_instance_str = std::string_view{ "----------------------new log instance----------------------" };
+    const auto file_logger_new_instance_str =
+        std::string_view{ "----------------------new log instance----------------------" };
 
     /**
      * @enum DataPrintMode

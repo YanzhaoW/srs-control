@@ -37,5 +37,20 @@ namespace srs
          * @brief Remote IP addresses of FECs.
          */
         std::vector<std::string> remote_fec_ips{ std::string{ common::DEFAULT_SRS_IP } };
+
+        /**
+         * @brief Capacity of the buffer queue.
+         */
+        std::size_t buffer_queue_capacity = common::DEFAULT_DATA_QUEUE_SIZE;
+
+        /**
+         * @brief Output file names.
+         */
+        std::vector<std::string> output_filenames;
+
+        /**
+         * @brief Number of splits from the input data to multiple outputs.
+         */
+        std::size_t output_split = 1;
     };
 } // namespace srs

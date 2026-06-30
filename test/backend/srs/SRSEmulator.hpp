@@ -20,6 +20,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -30,12 +31,14 @@ namespace srs::test
     class SRSEmulator
     {
       public:
+        using IOContextType = asio::thread_pool;
         struct Config
         {
             int data_port = 0;
             int listen_port = 0;
             int write_port = 0;
             std::string_view filename;
+            std::string ip;
         };
         enum class ReceiveType : uint8_t
         {
@@ -45,25 +48,29 @@ namespace srs::test
         };
 
         void set_delay_time(std::size_t time) { delay_time_ = std::chrono::microseconds{ time }; }
-        explicit SRSEmulator(const Config& config);
+        explicit SRSEmulator(const Config& config, IOContextType& io_context);
         void set_continue_output(bool is_continue) { is_continue_.store(is_continue); }
         void wait_for_connection();
         void wait_for_data_sender();
 
-      private:
-        using IOContextType = asio::thread_pool;
+        auto get_config() const -> const auto& { return config_; }
 
-        std::chrono::microseconds delay_time_{ 1 };
+        auto get_n_frames_sent() const -> const auto& { return n_frames_sent_; }
+
+      private:
+        std::chrono::microseconds delay_time_{ 3 };
         std::atomic<bool> is_continue_ = false;
         std::atomic<bool> is_idle_ = true;
         std::atomic<bool> is_shutdown_ = false;
-        IOContextType io_context_{ 4 };
+        gsl::not_null<IOContextType*> io_context_;
         std::string source_filename_;
+        std::size_t n_frames_sent_ = 0;
         Config config_;
         reader::RawFrame frame_reader_;
         asio::ip::udp::socket udp_socket_;
-        std::shared_ptr<asio::system_timer> data_sender_status_ = std::make_shared<asio::system_timer>(io_context_);
-        asio::steady_timer data_sending_control_{ io_context_ };
+        std::shared_ptr<asio::system_timer> data_sender_wait_timer_ =
+            std::make_shared<asio::system_timer>(*io_context_);
+        asio::steady_timer data_sending_control_{ *io_context_ };
 
         auto start_send_data() -> asio::awaitable<void>;
 

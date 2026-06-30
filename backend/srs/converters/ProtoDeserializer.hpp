@@ -18,7 +18,7 @@ namespace srs::process
             namespace protobuf = google::protobuf;
             namespace io = protobuf::io;
             auto input_stream = io::ArrayInputStream{ data.data(), static_cast<int>(data.size()) };
-            proto.ParseFromZeroCopyStream(&input_stream);
+            [[maybe_unused]] auto res = proto.ParseFromZeroCopyStream(&input_stream);
         }
 
         auto convert(std::string_view str_data) -> const proto::Data&

@@ -34,11 +34,14 @@ namespace srs::workflow
 
         using InputType = bool;
         using OutputType = std::size_t;
+
+        /**
+         * @brief Run the taskflow and block the current thread until finished.
+         */
         void construct_taskflow_and_run(tbb::concurrent_bounded_queue<process::SerializableMsgBuffer>& data_queue,
                                         const std::atomic<bool>& is_stopped);
         void run_task(tbb::concurrent_bounded_queue<process::SerializableMsgBuffer>& data_queue,
                       std::size_t line_number);
-        void run();
         auto is_taskflow_abort_ready() const -> bool;
         [[nodiscard]] auto operator()(std::size_t line_number) const -> std::string_view
         {

@@ -22,15 +22,16 @@
 #include <fmt/base.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <format>
 #include <future>
 #include <initializer_list>
 #include <memory>
-#include <print>
 #include <source_location>
 #include <spdlog/common.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -72,7 +73,6 @@ namespace srs
         , fec_strand_{ asio::make_strand(io_context_.get_executor()) }
     {
         init_spdlog();
-        workflow_handler_ = std::make_unique<workflow::Handler>(this);
     }
 
     void App::action_after_destructor()
@@ -117,8 +117,13 @@ namespace srs
 
     void App::init()
     {
-        auto _ = ExitLogger{};
+        const auto _ = ExitLogger{};
+        workflow_handler_ = std::make_unique<workflow::Handler>(this);
+        workflow_handler_->set_n_pipelines(config_.output_split);
+        workflow_handler_->set_output_filenames(config_.output_filenames);
+
         set_remote_fec_endpoints();
+        check_port_number_validity();
         signal_set_.async_wait(
             [this](const boost::system::error_code& error, auto)
             {
@@ -134,7 +139,7 @@ namespace srs
         {
             try
             {
-                auto _ = ExitLogger{ "monitoring_action", current_loc };
+                auto _ = ExitLogger{ "io_context join", current_loc };
                 io_context_.join();
             }
             catch (const std::exception& ex)
@@ -201,8 +206,8 @@ namespace srs
     void App::set_print_mode(common::DataPrintMode mode) { workflow_handler_->set_print_mode(mode); }
     void App::set_output_filenames(const std::vector<std::string>& filenames, std::size_t n_lines)
     {
-        workflow_handler_->set_n_pipelines(n_lines);
-        workflow_handler_->set_output_filenames(filenames);
+        config_.output_filenames = filenames;
+        config_.output_split = n_lines;
     }
 
     void App::add_remote_fec_endpoint(std::string_view remote_ip, int port_number)
@@ -257,22 +262,18 @@ namespace srs
 
         if (auto port = std::ranges::find(data_ports, config_.fec_control_local_port); port != data_ports.end())
         {
-            spdlog::critical("Application: port number {} used for input data stream is allowed to be the same as the "
-                             "port number used for local control port {}",
-                             *port,
-                             config_.fec_control_local_port);
-            return false;
+            throw std::runtime_error(
+                std::format("Application: port number {} used for input data stream is not allowed to be the same "
+                            "port number used for the local control port {}.",
+                            *port,
+                            config_.fec_control_local_port));
         }
         return true;
     }
 
-    auto App::read_data(bool /*is_non_stop*/) -> bool
+    void App::read_data(bool /*is_non_stop*/)
     {
-        if (not check_port_number_validity())
-        {
-            return false;
-        }
-        spdlog::info("Application: Starting input data stream from local port number: [{}]...",
+        spdlog::info("Application: Starting input data stream from local port number(s): [{}]...",
                      fmt::join(config_.fec_data_receive_ports, ", "));
         for (const auto port_num : config_.fec_data_receive_ports)
         {
@@ -295,7 +296,6 @@ namespace srs
                                  port_num);
             }
         }
-        return true;
     }
 
     void App::start_workflow()
