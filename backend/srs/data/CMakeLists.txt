@@ -3,7 +3,7 @@ add_library(srs_data SHARED)
 target_link_libraries(
     srs_data
     PUBLIC
-        $<BUILD_LOCAL_INTERFACE:fmt::fmt>
+        $<BUILD_LOCAL_INTERFACE:fmt::fmt-header-only>
         $<BUILD_LOCAL_INTERFACE:protobuf::libprotobuf>
     PRIVATE $<BUILD_LOCAL_INTERFACE:Boost::thread>
 )
@@ -20,7 +20,11 @@ target_sources(
                 ${CMAKE_CURRENT_BINARY_DIR}/message.pb.h
 )
 
-target_sources(srscpp PUBLIC FILE_SET publicHeaders FILES SRSDataStructs.hpp)
+target_sources(
+    srscpp
+    PRIVATE BufferQueue.cpp
+    PUBLIC FILE_SET publicHeaders FILES LargeBuffer.hpp BufferQueue.hpp
+)
 
 protobuf_generate(
     TARGET srs_data

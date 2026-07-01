@@ -37,6 +37,8 @@ namespace srs::test
             int data_port = 0;
             int listen_port = 0;
             int write_port = 0;
+            int server_idx = 0;
+            std::size_t n_servers = 1;
             std::string_view filename;
             std::string ip;
         };
@@ -47,7 +49,7 @@ namespace srs::test
             acq_off,
         };
 
-        void set_delay_time(std::size_t time) { delay_time_ = std::chrono::microseconds{ time }; }
+        void set_delay_time(std::size_t time) { delay_time_ = std::chrono::nanoseconds{ time }; }
         explicit SRSEmulator(const Config& config, IOContextType& io_context);
         void set_continue_output(bool is_continue) { is_continue_.store(is_continue); }
         void wait_for_connection();
@@ -58,7 +60,7 @@ namespace srs::test
         auto get_n_frames_sent() const -> const auto& { return n_frames_sent_; }
 
       private:
-        std::chrono::microseconds delay_time_{ 3 };
+        std::chrono::nanoseconds delay_time_{ 3 };
         std::atomic<bool> is_continue_ = false;
         std::atomic<bool> is_idle_ = true;
         std::atomic<bool> is_shutdown_ = false;

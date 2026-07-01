@@ -9,6 +9,7 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/system_timer.hpp>
 #include <chrono>
+#include <cstddef>
 #include <fmt/ranges.h>
 #include <map>
 #include <memory>
@@ -49,10 +50,10 @@ namespace srs::connection
         std::vector<ActionType> action_queue_;
 
         void register_send_action_imp(asio::awaitable<void> action, const std::shared_ptr<SmallConnection>& connection);
-        auto get_response_msg_buffer() -> auto& { return read_msg_buffer_; }
+        auto get_response_msg_buffer() -> std::span<char> { return std::span{ read_msg_buffer_ }; }
         auto is_finished() -> bool;
         void print_error() const;
-        void response_handler(const UDPEndpoint& endpoint, std::span<char> response);
+        void response_handler(const UDPEndpoint& endpoint, std::size_t read_size);
 
         explicit FecCommandSocket(int port_number, io_context_type& io_context);
         void deregister_connection(const UDPEndpoint& endpoint,

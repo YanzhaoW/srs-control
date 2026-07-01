@@ -11,7 +11,7 @@ jobs:
   sanitizer-test:
     runs-on: ubuntu-latest
     container:
-      image: yanzhaowang/srs-env:fedora-42
+      image: ghcr.io/yanzhaow/srs_env:fedora
     strategy:
       fail-fast: false
       matrix:
@@ -50,8 +50,12 @@ jobs:
           dnf install -y conan nodejs hostname
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
-          echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
           echo "GTEST_COLOR=1" >> $GITHUB_ENV
+
+          export CONAN_HOME=$PWD/.conan2
+          echo "CONAN_HOME=$CONAN_HOME" >> $GITHUB_ENV
+          conan config clean
+          cat $GITHUB_WORKSPACE/utils/settings/conan/settings_user.yml >> $CONAN_HOME/settings.yml
 
       - name: set env variables for cdash
         run: |
@@ -64,7 +68,7 @@ jobs:
         with:
           path: |
             ${{ env.PARENT_DIR }}/.conan2
-          key: fedora-42-clang-Debug
+          key: fedora-clang-Debug
 
       - name: build-test-submit
         run: |

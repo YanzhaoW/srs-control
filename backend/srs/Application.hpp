@@ -263,6 +263,7 @@ namespace srs
 
         std::vector<std::shared_ptr<connection::DataSocket>> data_sockets_;
 
+        void print_statistics() const;
         void init_spdlog();
         void wait_for_reading_finish();
         void set_remote_fec_endpoints();

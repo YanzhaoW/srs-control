@@ -53,6 +53,8 @@ install(
 
 install(TARGETS srs_control)
 
+install(TARGETS srs_check)
+
 install(
     PROGRAMS
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/srs_check_udp

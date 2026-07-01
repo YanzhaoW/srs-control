@@ -113,12 +113,42 @@ namespace srs
         auto err = boost::system::error_code{};
         signal_set_.cancel(err);
         signal_set_.clear(err);
+
+        print_statistics();
+    }
+
+    void App::print_statistics() const
+    {
+
+        for (const auto& socket : data_sockets_)
+        {
+            if (socket == nullptr)
+            {
+                continue;
+            }
+            const auto records = socket->get_n_records();
+            const auto total_time = socket->get_total_time_ns();
+            const auto bytes = socket->get_n_bytes();
+            const auto avg_time = static_cast<double>(total_time) / static_cast<double>(records);
+            const auto byte_per_frame = static_cast<double>(bytes) / static_cast<double>(records);
+            spdlog::trace(
+                "statistics from data socket with port number: {} \n\t Average time per frame: {:.2f} ns\n\t Average "
+                "bytes per frame: {:.0f}",
+                socket->get_port(),
+                avg_time,
+                byte_per_frame);
+        }
+        if (workflow_handler_ != nullptr)
+        {
+            workflow_handler_->print_statistics();
+        }
     }
 
     void App::init()
     {
         const auto _ = ExitLogger{};
         workflow_handler_ = std::make_unique<workflow::Handler>(this);
+        workflow_handler_->set_print_mode(config_.data_print_mode);
         workflow_handler_->set_n_pipelines(config_.output_split);
         workflow_handler_->set_output_filenames(config_.output_filenames);
 
@@ -152,6 +182,7 @@ namespace srs
 
     void App::wait_for_reading_finish()
     {
+        const auto _ = ExitLogger{};
         // sequentially waiting
         for (auto& socket : data_sockets_)
         {
@@ -176,11 +207,6 @@ namespace srs
         spdlog::default_logger()->flush();
         spdlog::flush_every(std::chrono::seconds{ 1 });
         auto _ = ExitLogger{};
-        wait_for_reading_finish();
-        workflow_handler_->stop();
-
-        // Turn off SRS data acquisition
-        wait_for_reading_finish();
 
         if (auto switch_on_status = wait_for_switch_action(switch_on_future_);
             switch_on_status == std::future_status::ready)
@@ -201,9 +227,16 @@ namespace srs
         {
             spdlog::info("Application: FECs were not switched on. Skipping switching off process.");
         }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds{ config_.time_wait_after_acq_off_ms });
+
+        // Turn off SRS data acquisition
+        wait_for_reading_finish();
+
+        workflow_handler_->stop();
     }
 
-    void App::set_print_mode(common::DataPrintMode mode) { workflow_handler_->set_print_mode(mode); }
+    void App::set_print_mode(common::DataPrintMode mode) { config_.data_print_mode = mode; }
     void App::set_output_filenames(const std::vector<std::string>& filenames, std::size_t n_lines)
     {
         config_.output_filenames = filenames;
@@ -279,12 +312,11 @@ namespace srs
         {
             auto status =
                 connection::SpecialSocket::create<connection::DataSocket>(
-                    port_num, io_context_, workflow_handler_.get())
+                    port_num, io_context_, config_.data_buffer_size, workflow_handler_.get())
                     .transform(
                         [this](auto socket)
                         {
                             spdlog::debug("data stream is using the buffer size: {}", config_.data_buffer_size);
-                            socket->set_buffer_size(config_.data_buffer_size);
                             data_sockets_.push_back(std::move(socket));
                         });
 

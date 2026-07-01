@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <exception>
+#include <fmt/base.h>
 #include <format>
 #include <fstream>
 #include <ios>
@@ -84,8 +85,8 @@ namespace srs
         void analysis()
         {
             auto key_str = std::string{};
-            auto begin_re = RE2{ std::format("\\[.*\\]\\[\\w+\\]\\[\\d+\\] {} (.*)", srs::common::exit_logger_begin) };
-            auto end_re = RE2{ std::format("\\[.*\\]\\[\\w+\\]\\[\\d+\\] {} (.*)", srs::common::exit_logger_end) };
+            auto begin_re = RE2{ std::format("\\[.*\\]\\[.+\\]\\[\\d+\\] {} (.*)", srs::common::exit_logger_begin) };
+            auto end_re = RE2{ std::format("\\[.*\\]\\[.+\\]\\[\\d+\\] {} (.*)", srs::common::exit_logger_end) };
             for (const auto& line_str : content_ | std::views::take(line_counter_))
             {
                 if (RE2::FullMatch(line_str, begin_re, &key_str))

@@ -73,9 +73,9 @@ namespace srs::connection
 
     void FecCommandSocket::launch_actions()
     {
-        asio::experimental::make_parallel_group(std::move(action_queue_))
-            .async_wait(asio::experimental::wait_for_all(), asio::use_future)
-            .get();
+        [[maybe_unused]] auto res = asio::experimental::make_parallel_group(std::move(action_queue_))
+                                        .async_wait(asio::experimental::wait_for_all(), asio::use_future)
+                                        .get();
     }
 
     void FecCommandSocket::deregister_connection(const UDPEndpoint& endpoint,
@@ -137,9 +137,10 @@ namespace srs::connection
                 "\n\t"));
     }
 
-    void FecCommandSocket::response_handler(const UDPEndpoint& endpoint, std::span<char> response)
+    void FecCommandSocket::response_handler(const UDPEndpoint& endpoint, std::size_t read_size)
     {
         auto lock = std::lock_guard{ mut_ };
+        auto response = std::span{ read_msg_buffer_.data(), read_size };
         spdlog::trace("Local port {} received a response from a remote endpoint {}: \n\t{:02x}",
                       get_port(),
                       endpoint,

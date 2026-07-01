@@ -4,6 +4,7 @@
 #include "srs/devices/Configuration.hpp"
 #include "srs/workflow/Handler.hpp"
 #include <algorithm>
+#include <boost/asio/thread_pool.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
@@ -24,15 +25,13 @@ namespace srs::test
         {
             bool is_continue = false;
             std::size_t delay_time = 1;
+            std::size_t n_instances = 1;
+            std::string_view input_filename;
         };
 
-        explicit World(App& app, std::string_view input_filename);
+        explicit World(App& app, const Config& config);
 
         auto launch_server() -> std::optional<std::string>;
-
-        auto set_continue_output(bool is_continue) { config_.is_continue = is_continue; }
-
-        auto set_delay_time_us(std::size_t time) { config_.delay_time = time; }
 
         void for_each_server(auto fnt) { std::ranges::for_each(srs_servers_, fnt); }
 
@@ -56,7 +55,6 @@ namespace srs::test
         IOContextType io_context_{ 4 };
         gsl::not_null<App*> app_;
         Config config_;
-        std::string_view input_filename_;
         std::vector<std::unique_ptr<SRSEmulator>> srs_servers_;
         std::string error_msg_;
         uint64_t event_nums_ = 0;

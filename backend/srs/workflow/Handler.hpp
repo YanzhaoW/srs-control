@@ -1,6 +1,7 @@
 #pragma once
 
-#include "srs/converters/SerializableBuffer.hpp"
+#include "srs/data/BufferQueue.hpp"
+#include "srs/data/LargeBuffer.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/workflow/TaskDiagram.hpp"
@@ -15,8 +16,8 @@
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <mutex>
-#include <span>
 #include <spdlog/logger.h>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 
@@ -89,9 +90,9 @@ namespace srs::workflow
         ~Handler();
 
         // From socket interface. Need to be fast return
-        void read_data_once(std::span<BufferElementType> read_data);
+        void read_data_once(LargeBuffer& read_data);
 
-        void abort() { data_queue_.abort(); }
+        void abort() { buffer_queue_.abort(); }
 
         void start();
 
@@ -105,6 +106,27 @@ namespace srs::workflow
         [[nodiscard]] auto get_app() -> auto& { return *app_; }
         [[nodiscard]] auto get_n_lines() const -> auto { return n_lines_; }
         auto get_writer() -> auto* { return &writers_; }
+        auto get_buffer_queue() const -> const auto& { return buffer_queue_; }
+        auto get_average_ns_time_on_push() -> double
+        {
+            return static_cast<double>(total_time_ns_) / static_cast<double>(total_frame_counts_);
+        }
+        auto get_average_byte_per_frame() -> double
+        {
+            return static_cast<double>(total_read_data_bytes_) / static_cast<double>(total_frame_counts_);
+        }
+
+        void print_statistics()
+        {
+            spdlog::trace("statistics from the handler \n\t Average time per frame: {:.2f} ns\n\t Average bytes per "
+                          "frame: {:.0f}",
+                          get_average_ns_time_on_push(),
+                          get_average_byte_per_frame());
+            spdlog::trace("statistics from the buffer queue \n\tAttempt failed due to empty trash: {}\n\tAttempt "
+                          "failed due to full trash:: {}",
+                          buffer_queue_.get_n_trash_recycle_failures_empty(),
+                          buffer_queue_.get_n_trash_recycle_failures_full());
+        }
 
         // setters:
         void set_n_pipelines(std::size_t n_lines) { n_lines_ = n_lines; }
@@ -121,6 +143,7 @@ namespace srs::workflow
       private:
         using enum common::DataPrintMode;
 
+        bool is_data_drop_warn_ = false;
         std::size_t n_lines_ = 1;
         std::atomic<bool> is_stopped_{ true };
         std::size_t received_data_size_{};
@@ -138,8 +161,12 @@ namespace srs::workflow
         std::condition_variable cv_;
 
         // Data buffer
-        tbb::concurrent_bounded_queue<process::SerializableMsgBuffer> data_queue_;
+        BufferQueue buffer_queue_;
         std::unique_ptr<TaskDiagram> task_diagram_ = nullptr;
+
+        std::chrono::steady_clock clock_;
+        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> time_point_;
+        std::uint64_t total_time_ns_ = 0;
 
         void clear_data_buffer();
     };

@@ -42,6 +42,7 @@ jobs:
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
           echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV
           echo "GTEST_COLOR=1" >> $GITHUB_ENV
+          brew list
 
       - name: set env variables for cdash
         run: |
@@ -68,6 +69,9 @@ jobs:
       - name: build-test-submit
         run: |
           export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          brew unlink abseil || true
+          brew unlink protobuf || true
+          brew unlink fmt || true
           ctest -S cmake/ci/project_ctest.cmake -VV\
             -DTEST_MODEL=${TEST_MODEL}\
             -DCTEST_CONFIGURATION_TYPE=Debug\
@@ -85,12 +89,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        base-image: [fedora-42]
+        base-image: [fedora]
         build-type: [Debug]
         compiler: [gcc, clang, libc++]
     name: ${{ matrix.base-image }}-${{ matrix.compiler }}
     container:
-      image: yanzhaowang/srs-env:${{ matrix.base-image }}
+      image: ghcr.io/yanzhaow/srs_env:${{ matrix.base-image }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -99,11 +103,14 @@ jobs:
       - name: install and env vars
         run: |
           dnf upgrade -y
-          dnf install -y conan nodejs hostname
+          dnf install -y conan nodejs hostname pipx
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
-          echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
           echo "GTEST_COLOR=1" >> $GITHUB_ENV
+          export CONAN_HOME=$PWD/.conan2
+          echo "CONAN_HOME=$CONAN_HOME" >> $GITHUB_ENV
+          conan config clean
+          cat $GITHUB_WORKSPACE/utils/settings/conan/settings_user.yml >> $CONAN_HOME/settings.yml
 
       - name: set env variables for cdash
         run: |

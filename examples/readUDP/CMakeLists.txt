@@ -8,4 +8,4 @@ find_package(Boost REQUIRED)
 find_package(srs REQUIRED)
 find_package(fmt REQUIRED)
 
-target_link_libraries(main PRIVATE Boost::boost srs::srs fmt::fmt)
+target_link_libraries(main PRIVATE Boost::boost srs::srs fmt::fmt-header-only)

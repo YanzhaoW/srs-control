@@ -1,7 +1,8 @@
 #include "srs/workflow/TaskDiagram.hpp"
 #include "srs/Application.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/SerializableBuffer.hpp"
+#include "srs/data/BufferQueue.hpp"
+#include "srs/data/LargeBuffer.hpp"
 #include "srs/workflow/Handler.hpp"
 #include <algorithm>
 #include <atomic>
@@ -10,6 +11,7 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <optional>
+#include <print>
 #include <ranges>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -21,12 +23,6 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-
-#ifdef USE_ONEAPI_TBB
-#include <oneapi/tbb/concurrent_queue.h>
-#else
-#include <tbb/concurrent_queue.h>
-#endif
 
 namespace srs::workflow
 {
@@ -44,20 +40,19 @@ namespace srs::workflow
         {
             is_pipe_stopped.store(true);
         }
-        raw_data_.resize(n_lines);
+        const auto buffer_size = data_processor->get_buffer_queue().get_config().buffer_size;
+        raw_data_.resize(n_lines, LargeBuffer{ buffer_size });
     }
 
-    void TaskDiagram::run_task(tbb::concurrent_bounded_queue<process::SerializableMsgBuffer>& data_queue,
-                               std::size_t line_number)
+    // blocking here with pop
+    void TaskDiagram::run_task(BufferQueue& buffer_queue, std::size_t line_number)
     {
-        raw_data_[line_number].clear();
-        data_queue.pop(raw_data_[line_number]);
-        total_read_data_bytes_ += raw_data_[line_number].data().size();
+        // raw_data_[line_number].clear();
+        buffer_queue.pop(raw_data_[line_number]);
+        total_read_data_bytes_ += raw_data_[line_number].get_size();
     }
 
-    void TaskDiagram::construct_taskflow_and_run(
-        tbb::concurrent_bounded_queue<process::SerializableMsgBuffer>& data_queue,
-        const std::atomic<bool>& is_stopped)
+    void TaskDiagram::construct_taskflow_and_run(BufferQueue& buffer_queue, const std::atomic<bool>& is_stopped)
     {
         taskflow_lines_.resize(n_lines_);
         for (const auto [line_number, taskflow] : std::views::zip(std::views::iota(0), taskflow_lines_))
@@ -89,15 +84,16 @@ namespace srs::workflow
             tf::Pipeline{ n_lines_,
                           tf::Pipe{ tf::PipeType::SERIAL, []([[maybe_unused]] tf::Pipeflow& pipeflow) {} },
                           tf::Pipe{ tf::PipeType::PARALLEL,
-                                    [this, &data_queue, &is_stopped]([[maybe_unused]] tf::Pipeflow& pipeflow)
+                                    [this, &buffer_queue, &is_stopped]([[maybe_unused]] tf::Pipeflow& pipeflow)
                                     {
-                                        if (is_stopped.load() and data_queue.size() == 0)
+                                        // TODO: Calling size is unsafe for tbb
+                                        if (is_stopped.load() and buffer_queue.size() == 0)
                                         {
                                             pipeflow.stop();
                                         }
                                         else
                                         {
-                                            run_task(data_queue, pipeflow.line());
+                                            run_task(buffer_queue, pipeflow.line());
                                             is_pipeline_stopped_[pipeflow.line()].store(false);
                                             tf_executor_.corun(taskflow_lines_[pipeflow.line()]);
                                             is_pipeline_stopped_[pipeflow.line()].store(true);

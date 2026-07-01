@@ -1,28 +1,30 @@
 #include "DataSocket.hpp"
 #include "SpecialSocketBase.hpp"
+#include "srs/Application.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
-#include "srs/utils/CommonDefinitions.hpp"
+#include "srs/utils/ExitLogger.hpp"
 #include "srs/workflow/Handler.hpp"
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/impl/co_spawn.hpp>
 #include <cstddef>
 #include <memory>
-#include <span>
 #include <utility>
 
 namespace srs::connection
 {
-    DataSocket::DataSocket(int port_number, io_context_type& io_context, workflow::Handler* workflow)
+    DataSocket::DataSocket(int port_number,
+                           io_context_type& io_context,
+                           std::size_t buffer_size,
+                           workflow::Handler* workflow)
         : SpecialSocket(port_number, io_context)
+        , buffer_size_{ buffer_size }
+        , read_msg_buffer_{ buffer_size_ }
         , io_context_{ &io_context }
         , workflow_handler_{ workflow }
     {
-        read_msg_buffer_.resize(common::LARGE_READ_MSG_BUFFER_SIZE);
     }
-
-    void DataSocket::set_buffer_size(std::size_t buffer_size) { read_msg_buffer_.resize(buffer_size); }
 
     // WARN: is it really needed?
     void DataSocket::register_send_action_imp(asio::awaitable<void> action,
@@ -31,13 +33,16 @@ namespace srs::connection
         asio::co_spawn(*io_context_, std::move(action), asio::detached);
     }
 
-    void DataSocket::response_handler(const UDPEndpoint& /*endpoint*/, std::span<char> response)
+    void DataSocket::response_handler(const UDPEndpoint& /*endpoint*/, std::size_t read_size)
     {
-        workflow_handler_->read_data_once(response);
+        read_msg_buffer_.resize(read_size);
+        workflow_handler_->read_data_once(read_msg_buffer_);
+        read_msg_buffer_.resize(buffer_size_);
     }
 
     void DataSocket::cancel()
     {
+        const auto _ = ExitLogger{};
         auto& timer = get_cancel_timer();
         timer.cancel();
     }

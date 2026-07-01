@@ -4,6 +4,7 @@
 #include "srs/converters/SerializableBuffer.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
+#include "srs/utils/ExitLogger.hpp"
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -21,6 +22,7 @@ namespace srs::connection
     auto CommandBase::send_message(std::shared_ptr<FecCommandSocket> socket, std::shared_ptr<CommandBase> connection)
         -> asio::awaitable<void>
     {
+        const auto _ = ExitLogger{};
         spdlog::debug("Connection {}: Sending data using external socket at time {} us...",
                       connection->get_name(),
                       socket->get_time_us());
