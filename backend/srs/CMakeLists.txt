@@ -28,7 +28,7 @@ target_link_libraries(
     srscpp
     PRIVATE
         $<BUILD_LOCAL_INTERFACE:Boost::thread>
-        $<BUILD_LOCAL_INTERFACE:fmt::fmt>
+        $<BUILD_LOCAL_INTERFACE:fmt::fmt-header-only>
         $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
         $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
         $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>

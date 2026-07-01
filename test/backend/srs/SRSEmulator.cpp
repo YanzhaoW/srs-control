@@ -3,7 +3,6 @@
 #include "srs/connections/Connections.hpp"
 #include "srs/converters/SerializableBuffer.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include "srs/utils/CommonFunctions.hpp"
 #include "srs/utils/ExitLogger.hpp"
 #include "srs/writers/UDPWriter.hpp"
 #include <algorithm>
@@ -27,7 +26,6 @@
 #include <magic_enum/magic_enum.hpp>
 #include <map>
 #include <memory>
-#include <optional>
 #include <ranges>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -176,9 +174,10 @@ namespace srs::test
                 co_await udp_socket_.async_receive_from(asio::buffer(msg_buffer), remote_endpoint, asio::use_awaitable);
             auto msg = std::string_view{ msg_buffer.data(), msg_size };
             auto result = check_receive_msg_type(msg);
-            spdlog::trace("Emulator: Request type {:?} received with the msg: {:02x}",
+            spdlog::trace("Emulator: Request type {:?} received with the msg: {:02x} in ip: {}",
                           magic_enum::enum_name(result),
-                          fmt::join(msg, " "));
+                          fmt::join(msg, " "),
+                          config_.ip);
             asio::co_spawn(*io_context_, send_response(std::move(remote_endpoint), result), asio::detached);
 
             using enum ReceiveType;
@@ -201,17 +200,21 @@ namespace srs::test
     auto SRSEmulator::start_send_data() -> asio::awaitable<void>
     {
         const auto _ = ExitLogger{ config_.ip };
-        spdlog::info("Emulator: Starting to send data to port {} ...", config_.data_port);
-        spdlog::info("Emulator: Delay time is set to be {} us", delay_time_.count());
+        spdlog::info("Emulator: Delay time is set to be {} ns.", delay_time_.count());
         auto total_size = std::size_t{ 0 };
-        auto executor = co_await asio::this_coro::executor;
+        // auto executor = co_await asio::this_coro::executor;
         auto connection = connection::UDPWriterConnection{ *io_context_,
                                                            asio::ip::udp::endpoint{
                                                                asio::ip::make_address("127.0.0.1"),
                                                                static_cast<asio::ip::port_type>(config_.data_port) } };
-        auto send_coro =
-            common::create_coro_task([&connection]() { return connection.send_continuous_message(); }, executor);
+        // auto send_coro =
+        //     common::create_coro_task([&connection]() { return connection.send_continuous_message(); }, executor);
 
+        spdlog::info("Emulator: Starting to send data to port {} from ip {} ...", config_.data_port, config_.ip);
+        data_sending_control_.expires_after(std::chrono::seconds{ 1 });
+        co_await data_sending_control_.async_wait(asio::use_awaitable);
+        data_sending_control_.expires_after(delay_time_ * config_.server_idx / config_.n_servers);
+        co_await data_sending_control_.async_wait(asio::use_awaitable);
         while (not is_shutdown_.load())
         {
             auto read_str = frame_reader_.read_one_frame();
@@ -223,24 +226,23 @@ namespace srs::test
             // Check if reached the end of the input file. If so, restarting from beginning.
             if (read_str.value().empty())
             {
-                if (is_continue_.load())
+                if (not is_continue_.load())
                 {
-                    frame_reader_.reset();
-                    auto read_str = frame_reader_.read_one_frame();
-                }
-                else
-                {
-                    // send emtpy string to finish
-                    co_await send_coro.async_resume(std::optional<std::string_view>{}, asio::use_awaitable);
                     break;
                 }
+                frame_reader_.reset();
+                auto read_str = frame_reader_.read_one_frame();
             }
 
             data_sending_control_.expires_after(delay_time_);
             co_await data_sending_control_.async_wait(asio::use_awaitable);
 
-            auto send_size = co_await send_coro.async_resume(std::optional{ read_str.value() }, asio::use_awaitable);
-            total_size += send_size.value_or(0);
+            if (read_str.value().empty())
+            {
+                continue;
+            }
+            auto send_size = connection.send_sync_message(read_str.value());
+            total_size += send_size;
             ++n_frames_sent_;
         }
         spdlog::info(

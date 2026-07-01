@@ -5,6 +5,7 @@
 #include "srs/utils/CommonFunctions.hpp"
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/system_timer.hpp>
 #include <boost/asio/this_coro.hpp>
@@ -13,12 +14,13 @@
 #include <boost/system/detail/error_code.hpp>
 #include <chrono>
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <fmt/ranges.h>
 #include <future>
 #include <memory>
 #include <optional>
-#include <span>
 #include <spdlog/spdlog.h>
 #include <type_traits>
 #include <utility>
@@ -34,11 +36,11 @@ namespace srs::connection
             requires std::derived_from<SocketType, SpecialSocket>;
             requires not std::is_same_v<SocketType, SpecialSocket>;
 
-            asio::buffer(socket.get_response_msg_buffer());
+            asio::mutable_buffer{ socket.get_response_msg_buffer() };
 
             requires IsConnectionType<typename SocketType::ConnectionType>::value;
 
-            { socket.response_handler(UDPEndpoint{}, std::span<char>{}) } -> std::same_as<void>;
+            { socket.response_handler(UDPEndpoint{}, std::size_t{}) } -> std::same_as<void>;
             { socket.is_finished() } -> std::same_as<bool>;
             { socket.print_error() } -> std::same_as<void>;
             { socket.register_send_action_imp(asio::awaitable<void>{}, connection) } -> std::same_as<void>;
@@ -72,6 +74,10 @@ namespace srs::connection
         [[nodiscard]] auto get_socket_error_code() const -> auto { return socket_ec_; }
         auto get_future() -> auto& { return listen_future_; }
 
+        auto get_n_records() const -> auto { return n_records_; }
+        auto get_n_bytes() const -> auto { return n_bytes; }
+        auto get_total_time_ns() const -> auto { return total_time_ns_; }
+
       protected:
         explicit SpecialSocket(int port_number, io_context_type& io_context);
         auto get_cancel_timer() -> auto& { return cancel_timer_; };
@@ -84,13 +90,20 @@ namespace srs::connection
         boost::system::error_code socket_ec_;
         asio::system_timer cancel_timer_; //!< Used for cancel the unfinished coroutine
 
+        // for the time measurement
+        [[maybe_unused]] std::chrono::steady_clock clock_;
+        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> time_point_;
+        std::size_t n_records_ = 0;
+        std::size_t n_bytes = 0;
+        std::uint64_t total_time_ns_ = 0;
+
         auto cancel_coroutine() -> asio::awaitable<void>;
         void bind_socket();
         void close_socket();
 
         // NOTE: Coroutine should always be static to avoid lifetime issue.
         template <SpecialSocketDerived SocketType>
-        static auto listen_all_connections(std::shared_ptr<SocketType> socket) -> asio::awaitable<void>;
+        static auto async_listen_all_connections(std::shared_ptr<SocketType> socket) -> asio::awaitable<void>;
     };
 
     template <SpecialSocketDerived SocketType, typename... Args>
@@ -112,7 +125,7 @@ namespace srs::connection
     }
 
     template <SpecialSocketDerived SocketType>
-    auto SpecialSocket::listen_all_connections(std::shared_ptr<SocketType> socket) -> asio::awaitable<void>
+    auto SpecialSocket::async_listen_all_connections(std::shared_ptr<SocketType> socket) -> asio::awaitable<void>
     {
         socket->bind_socket();
         auto remote_endpoint = udp::endpoint{};
@@ -120,13 +133,20 @@ namespace srs::connection
         while (true)
         {
             const auto [err_code, receive_size] = co_await socket->get_socket().async_receive_from(
-                asio::buffer(socket->get_response_msg_buffer()), remote_endpoint, asio::as_tuple(asio ::use_awaitable));
+                asio::mutable_buffer{ socket->get_response_msg_buffer() },
+                remote_endpoint,
+                asio::as_tuple(asio::use_awaitable));
+
+            socket->time_point_ = socket->clock_.now();
+
             if (not err_code)
             {
-                auto read_msg = std::span{ socket->get_response_msg_buffer().data(), receive_size };
-                [[maybe_unused]] auto remote_ec = boost::system::error_code{};
-                socket->response_handler(remote_endpoint, read_msg);
+                socket->response_handler(remote_endpoint, receive_size);
             }
+
+            ++socket->n_records_;
+            socket->n_bytes += receive_size;
+            socket->total_time_ns_ += static_cast<uint64_t>((socket->clock_.now() - socket->time_point_).count());
         }
         // TODO: close the socket here
         spdlog::trace("Coroutine for the local socket with port {} has existed.", socket->get_port());
@@ -152,7 +172,7 @@ namespace srs::connection
         using boost::asio::experimental::awaitable_operators::operator||;
         self.listen_future_ =
             asio::co_spawn(io_context,
-                           listen_all_connections(common::get_shared_from_this(self)) || self.cancel_coroutine(),
+                           async_listen_all_connections(common::get_shared_from_this(self)) || self.cancel_coroutine(),
                            asio::use_future)
                 .share();
     }

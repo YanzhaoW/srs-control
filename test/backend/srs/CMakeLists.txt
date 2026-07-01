@@ -12,7 +12,7 @@ target_link_libraries(
     PUBLIC srscpp
            srs_data
            Boost::headers
-           fmt::fmt
+           fmt::fmt-header-only
            zpp_bits::zpp_bits
            magic_enum::magic_enum
            protobuf::libprotobuf

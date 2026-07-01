@@ -1,8 +1,9 @@
 #include "srs/workflow/Handler.hpp"
 #include "srs/Application.hpp"
+#include "srs/data/BufferQueue.hpp"
 #include "srs/data/DataStructsFormat.hpp"
+#include "srs/data/LargeBuffer.hpp"
 #include "srs/utils/CommonAlias.hpp"
-#include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/ExitLogger.hpp"
 #include "srs/workflow/TaskDiagram.hpp"
 #include <boost/asio/awaitable.hpp>
@@ -14,10 +15,12 @@
 #include <boost/system/detail/error_code.hpp>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
+#include <fmt/base.h>
 #include <fmt/color.h>
 #include <memory>
 #include <mutex>
-#include <span>
+#include <print>
 #include <spdlog/common.h>
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -95,7 +98,7 @@ namespace srs::workflow
                                                                    static_cast<double>(buffer_size) * 100.;
 
             set_speed_string();
-            console_->info("read|write|drop rate: {} ({:>2.0f}%) | {} | {} {}. Press \"Ctrl-C\" to stop the program \r",
+            console_->info("read (buf)|write|drop rate: {} ({:>2.0f}%) | {} | {} {}. Press \"Ctrl-C\" to stop \r",
                            read_speed_string_,
                            frame_rate,
                            write_speed_string_,
@@ -132,13 +135,16 @@ namespace srs::workflow
     }
 
     Handler::Handler(App* control, std::size_t n_lines)
-        : n_lines_{ n_lines }
+        : is_data_drop_warn_{ control->get_config().warn_if_data_drop }
+        , n_lines_{ n_lines }
         , app_{ control }
         , monitor_{ this, &(control->get_io_context()) }
+        , buffer_queue_{ BufferQueue{ { .buffer_size = app_->get_config().data_buffer_size,
+                                        .reserve_size = control->get_config().buffer_queue_capacity / 2,
+                                        .queue_capacity = control->get_config().buffer_queue_capacity } } }
     {
         spdlog::debug("Handler: Setting the capacity of the buffer queue to {}",
                       control->get_config().buffer_queue_capacity);
-        data_queue_.set_capacity(static_cast<long>(control->get_config().buffer_queue_capacity));
     }
 
     void Handler::start()
@@ -158,7 +164,7 @@ namespace srs::workflow
             spdlog::trace("Analysis workflow: entering workflow loop");
             // TODO: Use direct binary data
 
-            task_diagram_->construct_taskflow_and_run(data_queue_, is_stopped_);
+            task_diagram_->construct_taskflow_and_run(buffer_queue_, is_stopped_);
         }
         catch (tbb::user_abort& ex)
         {
@@ -195,7 +201,7 @@ namespace srs::workflow
             {
                 // spdlog::trace("waiting for task diagram to be abort ready");
             }
-            data_queue_.abort();
+            buffer_queue_.abort();
         }
     }
 
@@ -208,18 +214,25 @@ namespace srs::workflow
         return *task_diagram_;
     }
 
-    void Handler::read_data_once(std::span<BufferElementType> read_data)
+    void Handler::read_data_once(LargeBuffer& read_data)
     {
-        const auto data_size = read_data.size();
+        const auto data_size = read_data.get_size();
         total_read_data_bytes_ += data_size;
         ++total_frame_counts_;
-        auto is_success = data_queue_.try_emplace(read_data);
+
+        time_point_ = clock_.now();
+        auto is_success = buffer_queue_.try_emplace(read_data);
+        total_time_ns_ += static_cast<uint64_t>((clock_.now() - time_point_).count());
+
         if (not is_success)
         {
             total_drop_data_bytes_ += data_size;
-            spdlog::warn("Data drop as the buffer queue is full: Current size/capacity: {}/{}.",
-                         data_queue_.size(),
-                         data_queue_.capacity());
+            if (is_data_drop_warn_)
+            {
+                spdlog::warn("Data drop as the buffer queue is full: Current size/capacity: {}/{}.",
+                             buffer_queue_.size(),
+                             buffer_queue_.capacity());
+            }
         }
     }
 } // namespace srs::workflow

@@ -18,7 +18,7 @@ namespace srs::common
     constexpr auto COMMAND_LENGTH_BITS = uint16_t{ 0xffff };
     constexpr auto ZERO_UINT16_PADDING = uint16_t{};
     constexpr auto SMALL_READ_MSG_BUFFER_SIZE = 96;
-    constexpr auto LARGE_READ_MSG_BUFFER_SIZE = 80'000'000; //!< size of the data array for reading a UDP package
+    constexpr auto LARGE_READ_MSG_BUFFER_SIZE = 80'000; //!< size of the data array for reading a UDP package
 
     constexpr auto DEFAULT_CMD_LENGTH = uint16_t{ 0xffff };
     constexpr auto CMD_TYPE = uint8_t{ 0xaa };
@@ -52,8 +52,8 @@ namespace srs::common
     constexpr auto DEFAULT_DATA_QUEUE_SIZE = 100;
 
     // Log parameters
-    constexpr auto rotating_file_nums = 10;
-    const auto file_max_size = 1048576 * 5; //!< file size limited to 5 MB.
+    constexpr auto rotating_file_nums = 5;
+    const auto file_max_size = 1048576 * 10; //!< file size limited to 5 MB.
     const auto exit_logger_begin = std::string_view{ "------->>" };
     const auto exit_logger_end = std::string_view{ "<<-------" };
     const auto file_logger_new_instance_str =

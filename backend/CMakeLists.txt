@@ -10,12 +10,12 @@ add_executable(srs_control main.cpp)
 target_link_libraries(
     srs_control
     PRIVATE
+        srs_data
         Boost::thread
         CLI11::CLI11
         glaze::glaze
         magic_enum::magic_enum
         spdlog::spdlog
-        srs_data
         srscpp
 )
 target_compile_definitions(
@@ -23,10 +23,10 @@ target_compile_definitions(
     PUBLIC SRS_PROJECT_VERSION="v${CMAKE_PROJECT_VERSION}"
 )
 
-add_executable(srs_check_log check_log.cpp)
+add_executable(srs_check check_log.cpp)
 
 target_link_libraries(
-    srs_check_log
+    srs_check
     PRIVATE
         CLI11::CLI11
         magic_enum::magic_enum

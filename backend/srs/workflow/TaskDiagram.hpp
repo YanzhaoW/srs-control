@@ -3,9 +3,10 @@
 #include "srs/Application.hpp"
 #include "srs/converters/ProtoSerializer.hpp"
 #include "srs/converters/RawToDelimRawConveter.hpp"
-#include "srs/converters/SerializableBuffer.hpp"
 #include "srs/converters/StructDeserializer.hpp"
 #include "srs/converters/StructToProtoConverter.hpp"
+#include "srs/data/BufferQueue.hpp"
+#include "srs/data/LargeBuffer.hpp"
 #include "srs/writers/DataWriter.hpp"
 #include <algorithm>
 #include <atomic>
@@ -18,12 +19,6 @@
 #include <taskflow/core/task.hpp>
 #include <taskflow/core/taskflow.hpp>
 #include <vector>
-
-#ifdef USE_ONEAPI_TBB
-#include <oneapi/tbb/concurrent_queue.h>
-#else
-#include <tbb/concurrent_queue.h>
-#endif
 
 namespace srs::workflow
 {
@@ -38,10 +33,8 @@ namespace srs::workflow
         /**
          * @brief Run the taskflow and block the current thread until finished.
          */
-        void construct_taskflow_and_run(tbb::concurrent_bounded_queue<process::SerializableMsgBuffer>& data_queue,
-                                        const std::atomic<bool>& is_stopped);
-        void run_task(tbb::concurrent_bounded_queue<process::SerializableMsgBuffer>& data_queue,
-                      std::size_t line_number);
+        void construct_taskflow_and_run(BufferQueue& data_queue, const std::atomic<bool>& is_stopped);
+        void run_task(BufferQueue& data_queue, std::size_t line_number);
         auto is_taskflow_abort_ready() const -> bool;
         [[nodiscard]] auto operator()(std::size_t line_number) const -> std::string_view
         {
@@ -52,7 +45,6 @@ namespace srs::workflow
         [[nodiscard]] auto get_n_lines() const -> std::size_t { return n_lines_; }
 
         auto get_struct_data() -> const auto* { return struct_deserializer_converter_(0); }
-        // auto generate_coro() -> asio::experimental::coro<std::size_t(bool)>;
 
       private:
         std::size_t n_lines_ = 1;
@@ -60,8 +52,7 @@ namespace srs::workflow
         tf::Taskflow main_taskflow_;
         std::vector<tf::Taskflow> taskflow_lines_;
         std::vector<std::atomic<bool>> is_pipeline_stopped_;
-        std::vector<process::SerializableMsgBuffer> raw_data_;
-        process::SerializableMsgBuffer binary_data_;
+        std::vector<LargeBuffer> raw_data_;
 
         process::Raw2DelimRawConverter raw_to_delim_raw_converter_;
         process::StructDeserializer struct_deserializer_converter_;

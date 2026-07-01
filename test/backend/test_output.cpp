@@ -50,7 +50,7 @@ namespace
 } // namespace
 
 constexpr auto DEFAULT_RUN_TIME_S = 5;
-constexpr auto DEFAULT_DELAY_TIME_US = 10000;
+constexpr auto DEFAULT_DELAY_TIME_NS = 10000000;
 // NOLINTNEXTLINE (bugprone-exception-escape)
 auto main(int argc, char** argv) -> int
 {
@@ -65,8 +65,9 @@ auto main(int argc, char** argv) -> int
     auto n_data_ports = 1;
     try
     {
-        auto delay_time = DEFAULT_DELAY_TIME_US;
+        auto delay_time = std::size_t{ DEFAULT_DELAY_TIME_NS };
         auto n_output_split = 1;
+        auto n_instances = std::size_t{ 1 };
         auto run_time = DEFAULT_RUN_TIME_S;
         auto spdlog_level = spdlog::level::info;
         const auto home_dir = []() -> std::string
@@ -96,9 +97,11 @@ auto main(int argc, char** argv) -> int
             ->capture_default_str();
         cli_args
             .add_option(
-                "-d, --delay-time", delay_time, "Set the delay time (us) when sending the data from the server.")
+                "-d, --delay-time", delay_time, "Set the delay time (ns) when sending the data from the server.")
             ->capture_default_str();
-        cli_args.add_option("-r, --run-time", run_time, "Set the run time when --cont is enabled.")
+        cli_args.add_option("-r, --run-time", run_time, "Set the run time (seconds) when --cont is enabled.")
+            ->capture_default_str();
+        cli_args.add_option("-n, --instances", n_instances, "Set the duplicated instances to send to the same port.")
             ->capture_default_str();
         cli_args.add_option("-c, --config-file", json_filepath, "Set the path of the JSON config file")
             ->capture_default_str();
@@ -108,9 +111,11 @@ auto main(int argc, char** argv) -> int
         auto app = srs::App{};
         spdlog::set_level(spdlog_level);
 
-        auto world = srs::test::World{ app, "test_data.bin" };
-        world.set_continue_output(is_continuous_output);
-        world.set_delay_time_us(delay_time);
+        auto world = srs::test::World{ app,
+                                       { .is_continue = is_continuous_output,
+                                         .delay_time = delay_time,
+                                         .n_instances = n_instances,
+                                         .input_filename = "test_data.bin" } };
 
         auto is_ok = srs::config::set_config_from_json(app_config, json_filepath);
 
@@ -166,30 +171,48 @@ auto main(int argc, char** argv) -> int
 
     if (sent_n_frames != received_n_frames)
     {
-        spdlog::error("{} frames sent but {} frames received!", sent_n_frames, received_n_frames);
+        spdlog::error("{} frames sent but {} frames received! Drop rate: {}",
+                      sent_n_frames,
+                      received_n_frames,
+                      1. - static_cast<double>(received_n_frames) / static_cast<double>(sent_n_frames));
         return EXIT_FAILURE;
     }
+    spdlog::info("{} frames are correctly received!", sent_n_frames);
 
     auto wrong_file_size =
         not is_continuous_output and
-        not std::ranges::all_of(output_filenames,
-                                [&input_filename, n_data_ports](std::string_view name) -> bool
-                                {
-                                    using enum srs::DataWriterOption;
-                                    auto file_type = std::get<0>(srs::get_filetype_from_filename(name));
-                                    if (file_type == no_output or file_type == udp)
-                                    {
-                                        return true;
-                                    }
-                                    if (name.ends_with(".bin"))
-                                    {
-                                        return get_file_size(name) == n_data_ports * get_file_size(input_filename);
-                                    }
-                                    return get_file_size(name) != 0;
-                                });
+        not std::ranges::all_of(
+            output_filenames,
+            [&input_filename, n_data_ports](std::string_view name) -> bool
+            {
+                using enum srs::DataWriterOption;
+                auto file_type = std::get<0>(srs::get_filetype_from_filename(name));
+                if (file_type == no_output or file_type == udp)
+                {
+                    return true;
+                }
+                if (name.ends_with(".bin"))
+                {
+                    const auto output_size = get_file_size(name);
+                    const auto input_size = n_data_ports * get_file_size(input_filename);
+                    if (output_size == input_size)
+                    {
+                        return true;
+                    }
+                    spdlog::error("Output binary files don't have correct sizes! Expected size: {}B, but got {}B.",
+                                  input_size,
+                                  output_size);
+                    return false;
+                }
+                if (get_file_size(name) != 0)
+                {
+                    return true;
+                }
+                spdlog::error("Output files are empty!");
+                return false;
+            });
     if (wrong_file_size)
     {
-        spdlog::error("Output files don't have correct sizes!");
         return EXIT_FAILURE;
     }
     spdlog::info("All output files have correct sizes!");

@@ -21,7 +21,9 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(ReceiveDataHeader, 1);
 #endif
+#ifndef __CLING__
         auto operator==(const ReceiveDataHeader&) const -> bool = default;
+#endif
     };
 
     struct MarkerData
@@ -31,7 +33,9 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(MarkerData, 1);
 #endif
+#ifndef __CLING__
         auto operator==(const MarkerData&) const -> bool = default;
+#endif
     };
 
     struct HitData
@@ -46,7 +50,9 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(HitData, 1);
 #endif
+#ifndef __CLING__
         auto operator==(const HitData&) const -> bool = default;
+#endif
     };
 
     struct StructData
@@ -57,7 +63,9 @@ namespace srs
 #ifdef HAS_ROOT
         ClassDefNV(StructData, 1);
 #endif
+#ifndef __CLING__
         auto operator==(const StructData&) const -> bool = default;
+#endif
     };
 
     inline void reset_struct_data(StructData& struct_data)

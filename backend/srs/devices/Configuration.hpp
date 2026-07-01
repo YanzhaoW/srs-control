@@ -52,5 +52,20 @@ namespace srs
          * @brief Number of splits from the input data to multiple outputs.
          */
         std::size_t output_split = 1;
+
+        /**
+         * @brief time (milliseconds) to wait after turning off the srs and before stopping data reading
+         */
+        std::size_t time_wait_after_acq_off_ms = 1000;
+
+        /**
+         * @brief Enable warnings when possible data drop occurs.
+         */
+        bool warn_if_data_drop = false;
+
+        /**
+         * @brief Set print mode.
+         */
+        common::DataPrintMode data_print_mode = srs::common::DataPrintMode::print_speed;
     };
 } // namespace srs
