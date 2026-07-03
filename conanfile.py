@@ -83,7 +83,12 @@ class CompressorRecipe(ConanFile):
         self.requires("magic_enum/0.9.7")  # type: ignore
         self.requires("taskflow/3.10.0")  # type: ignore
         self.requires("glaze/6.0.1")  # type: ignore
-        self.requires("re2/20251105")  # type: ignore
+
+        if os.environ["CMAKE_USE_SYSTEM_RE2"] == "OFF":
+            print("---- Conan: compiling RE2 from the conan package manager.")
+            self.requires("re2/20251105")  # type: ignore
+        else:
+            print("---- Conan: using RE2 from the local system.")
 
         if os.environ["CMAKE_USE_SYSTEM_BOOST"] == "OFF":
             print(

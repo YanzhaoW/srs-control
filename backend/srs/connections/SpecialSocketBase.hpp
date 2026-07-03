@@ -46,6 +46,9 @@ namespace srs::connection
             { socket.register_send_action_imp(asio::awaitable<void>{}, connection) } -> std::same_as<void>;
         };
 
+    /**
+     * @brief Base socket class for sending and listening messages.
+     */
     class SpecialSocket : public std::enable_shared_from_this<SpecialSocket>
     {
       public:
@@ -53,37 +56,110 @@ namespace srs::connection
         static auto create(int port_number, io_context_type& io_context, Args... args)
             -> std::expected<std::shared_ptr<SocketType>, boost::system::error_code>;
 
+        /**
+         * @brief Registering the send action.
+         *
+         * Invoke an action corresponding the type of connection specified in the socket class. The connection type
+         * should all derive from srs::connection::ConnectionBase class.
+         * @param self Deduce this self reference
+         * @param action An asio::awaitable action object.
+         * @param connection A connection shared pointer.
+         */
         void register_send_action(
             this auto&& self,
             asio::awaitable<void> action,
             const std::shared_ptr<typename std::remove_cvref_t<decltype(self)>::ConnectionType>& connection);
 
+        /**
+         * @brief Listen to any UDP data
+         *
+         * @param self Deduce this self reference
+         * @param io_context Reference to the io_context
+         */
         void listen(this auto& self, io_context_type& io_context);
 
-        auto is_valid() const -> bool { return is_valid_; }
-
+        /**
+         * @brief Cancelling the listening action after a certain time
+         *
+         * @param self Deduce this self reference
+         * @param io_context Reference to the io_context
+         * @param waiting_time Time until the listen action is cancelled.
+         * @return a future object to check whether the listen action is cancelled.
+         */
         auto cancel_listen_after(this auto&& self,
                                  io_context_type& io_context,
                                  std::chrono::seconds waiting_time = std::chrono::seconds(2)) -> std::future<void>;
 
+        /**
+         * @brief Blocking the current thread by waiting the listen action to finish until a certain time duration.
+         *
+         * @param time Time to wait for the listen action to finish.
+         * @return The result of waiting.
+         */
         auto wait_for_listen_finish(std::chrono::seconds time) -> std::optional<std::future_status>;
 
         // getters:
-        [[nodiscard]] auto get_socket() const -> auto& { return *socket_; }
-        [[nodiscard]] auto get_port() const { return port_number_; }
-        [[nodiscard]] auto get_socket_error_code() const -> auto { return socket_ec_; }
+
+        /**
+         * @brief Getter for the asio udp socket object.
+         *
+         * @return shared pointer to the udp socket.
+         */
+        [[nodiscard]] auto get_socket() const -> udp::socket& { return *socket_; }
+
+        /**
+         * @brief Getter for the port number.
+         *
+         * @return Port number.
+         */
+        [[nodiscard]] auto get_port() const -> int { return port_number_; }
+
+        /**
+         * @brief Getter the possible error during the socket binding.
+         *
+         * @return Error code from the binding.
+         */
+        [[nodiscard]] auto get_socket_error_code() const -> boost::system::error_code { return socket_ec_; }
+
+        /**
+         * @brief Getter for the status of the listen action.
+         *
+         * @return The future status of the listen action coroutine.
+         */
         auto get_future() -> auto& { return listen_future_; }
 
-        auto get_n_records() const -> auto { return n_records_; }
-        auto get_n_bytes() const -> auto { return n_bytes; }
-        auto get_total_time_ns() const -> auto { return total_time_ns_; }
+        /**
+         * @brief Getter for the number of frames read.
+         *
+         * @return Number of frames read.
+         */
+        auto get_n_records() const -> std::size_t { return n_records_; }
+
+        /**
+         * @brief Getter for the number of bytes read.
+         *
+         * @return Number of bytes read.
+         */
+        auto get_n_bytes() const -> std::size_t { return n_bytes; }
+
+        /**
+         * @brief Getter for the total listening time in nano seconds.
+         *
+         * @return Total listening time.
+         */
+        auto get_total_time_ns() const -> std::uint64_t { return total_time_ns_; }
 
       protected:
+        /**
+         * @brief Projected constructor, which can only be called from the derived classes.
+         *
+         * @param port_numer Port number binding to the socket for the listening action.
+         * @param io_context asio io context.
+         */
         explicit SpecialSocket(int port_number, io_context_type& io_context);
         auto get_cancel_timer() -> auto& { return cancel_timer_; };
 
       private:
-        bool is_valid_ = false;
         int port_number_ = 0;
         std::unique_ptr<udp::socket> socket_;
         std::shared_future<std::variant<std::monostate, std::monostate>> listen_future_;

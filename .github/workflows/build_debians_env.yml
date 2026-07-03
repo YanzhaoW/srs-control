@@ -1,0 +1,48 @@
+name: build-debian-env
+
+on:
+  workflow_dispatch:
+
+jobs:
+  docker-build:
+    # environment: docker_deploy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [bullseye, jammy]
+        include:
+          - version: bullseye
+            distro: debian
+          - version: jammy
+            distro: ubuntu
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        id: push
+        with:
+          push: true
+          context: utils/container_env/debians
+          tags: ghcr.io/yanzhaow/srs_env:${{ matrix.version }}
+          build-args: |
+            RELEASE=${{ matrix.version }}
+            DISTRO=${{ matrix.distro }}

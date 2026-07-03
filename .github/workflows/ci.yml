@@ -69,8 +69,8 @@ jobs:
       - name: build-test-submit
         run: |
           export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-          brew unlink abseil || true
-          brew unlink protobuf || true
+          # brew unlink abseil || true
+          # brew unlink protobuf || true
           brew unlink fmt || true
           ctest -S cmake/ci/project_ctest.cmake -VV\
             -DTEST_MODEL=${TEST_MODEL}\

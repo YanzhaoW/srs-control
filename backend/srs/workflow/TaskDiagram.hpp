@@ -22,9 +22,19 @@
 
 namespace srs::workflow
 {
+    /**
+     * @brief Class for analysis taskflow
+     *
+     */
     class TaskDiagram
     {
       public:
+        /**
+         * @brief Constructor with number of pipelines
+         *
+         * @param data_processor Pointer to srs::workflow::Handler
+         * @param n_lines Number of pipelines
+         */
         explicit TaskDiagram(Handler* data_processor, std::size_t n_lines = 1);
 
         using InputType = bool;

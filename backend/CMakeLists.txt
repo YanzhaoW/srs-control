@@ -1,7 +1,12 @@
 # some operating systems don't have static libstdc++.a library
 if(BUILD_STATIC)
-    set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++")
-    set(CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++ -static-libgcc")
+        set(CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++ -static-libgcc")
+    else()
+        set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++")
+        set(CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++")
+    endif()
 endif()
 
 add_subdirectory(srs)

@@ -10,6 +10,7 @@ dependencies:
   - sphinx
   - breathe
   - sphinx-rtd-theme
+  - sphinx_copybutton
   - esbonio
   - cmake-language-server
   - cmakelang

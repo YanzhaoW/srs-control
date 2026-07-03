@@ -20,6 +20,7 @@
 #include <exception>
 #include <expected>
 #include <fmt/base.h>
+#include <fmt/color.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <format>
@@ -82,7 +83,7 @@ namespace srs
         if (auto switch_off_status = wait_for_switch_action(switch_off_future_);
             switch_off_status == std::future_status::ready)
         {
-            spdlog::info("Application: FECs has been switched off successfully.");
+            spdlog::info("FECs has been switched off successfully.");
         }
         else if (switch_off_status == std::future_status::timeout)
         {
@@ -157,7 +158,7 @@ namespace srs
         signal_set_.async_wait(
             [this](const boost::system::error_code& error, auto)
             {
-                spdlog::info("Application: Calling SIGINT from monitoring thread");
+                spdlog::info("Calling SIGINT from monitoring thread");
                 if (error == asio::error::operation_aborted)
                 {
                     return;
@@ -225,7 +226,7 @@ namespace srs
         }
         else
         {
-            spdlog::info("Application: FECs were not switched on. Skipping switching off process.");
+            spdlog::info("FECs were not switched on. Skipping switching off process.");
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds{ config_.time_wait_after_acq_off_ms });
@@ -246,7 +247,7 @@ namespace srs
     void App::add_remote_fec_endpoint(std::string_view remote_ip, int port_number)
     {
         auto resolver = udp::resolver{ io_context_ };
-        spdlog::info("Application: Add the remote FEC with ip: {} and port: {}", remote_ip, port_number);
+        spdlog::info("Add the remote FEC with ip: {} and port: {}", remote_ip, port_number);
         auto udp_endpoints = resolver.resolve(udp::v4(), remote_ip, fmt::format("{}", port_number));
 
         if (udp_endpoints.begin() == udp_endpoints.end())
@@ -279,13 +280,13 @@ namespace srs
 
     void App::switch_on()
     {
-        spdlog::info("Application: Switching on FEC devices ...");
+        spdlog::info("Switching on FEC devices ...");
         switch_on_future_ = switch_FECs<connection::Starter>("Starter");
     }
 
     void App::switch_off()
     {
-        spdlog::info("Application: Switching off FEC devices ...");
+        spdlog::info(fmt::format(fmt::emphasis::bold, "Please wait until FEC devices are switched off ..."));
         switch_off_future_ = switch_FECs<connection::Stopper>("Stopper");
     }
 
@@ -306,7 +307,7 @@ namespace srs
 
     void App::read_data(bool /*is_non_stop*/)
     {
-        spdlog::info("Application: Starting input data stream from local port number(s): [{}]...",
+        spdlog::info("Starting input data stream from local port number(s): [{}]...",
                      fmt::join(config_.fec_data_receive_ports, ", "));
         for (const auto port_num : config_.fec_data_receive_ports)
         {
@@ -335,7 +336,7 @@ namespace srs
         workflow_thread_ = std::jthread(
             [this]()
             {
-                spdlog::info("Application: Starting input data analysis workflow ...");
+                spdlog::info("Starting input data analysis workflow ...");
                 workflow_handler_->start();
             });
     }

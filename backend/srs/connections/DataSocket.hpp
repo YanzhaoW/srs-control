@@ -15,10 +15,17 @@
 
 namespace srs::connection
 {
+    /**
+     * @brief Socket class for reading main data stream.
+     */
     class DataSocket : public SpecialSocket
     {
       public:
         using ConnectionType = CommandBase;
+
+        /**
+         * @brief Cancel reading the data from the UDP socket.
+         */
         void cancel();
 
       private:

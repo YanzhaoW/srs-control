@@ -1,0 +1,21 @@
+name: conan configuration
+description: 'install and configure conan'
+
+runs:
+  using: composite
+  steps:
+    - name: install conan
+      run: |
+          python3 -m pip install --user --upgrade conan cmake
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      shell: bash
+
+    - name: configure
+      run: |
+          cd $GITHUB_WORKSPACE/..
+          export CONAN_HOME=$PWD/.conan2
+          echo "CONAN_HOME=$CONAN_HOME" >> $GITHUB_ENV
+          conan config clean
+          cat $GITHUB_WORKSPACE/utils/settings/conan/settings_user.yml >> $CONAN_HOME/settings.yml
+          conan profile detect --force
+      shell: bash

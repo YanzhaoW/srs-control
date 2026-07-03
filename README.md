@@ -8,11 +8,21 @@
 
 SRS-control is a program containing a command line tool `srs_control` and additional library APIs that can be used to communicate with SRS system and interpret the received data in your own program.
 
-Please check the full documentation of this project: [srs-contorl documentation](<https://yanzhaow.github.io/srs-control/>).
+Please check the full documentation of this project: [srs-contorl documentation](https://yanzhaow.github.io/srs-control/).
 
 Reference of the internal code implementation can be checked from this [Doxygen documentation](https://web-docs.gsi.de/~yanwang/srs).
 
-## `srs_control` preview
+## Installation
+
+`srs-control` can be installed via system package managers in the following Linux distros:
+
+- Debian: `bullseye`
+- Ubuntu: `jammy`
+- Fedora: `44`
+
+Please go to [this website](https://yanzhaow.github.io/srs-control/download_step.html) for the detailed information.
+
+## `srs-control` preview
 
 ![Imgur](doc/media/srs_control_preview_v1.gif)
 

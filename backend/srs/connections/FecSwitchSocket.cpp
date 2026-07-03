@@ -13,6 +13,8 @@
 #include <boost/asio/impl/co_spawn.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/use_future.hpp>
+#include <cstddef>
+#include <fmt/base.h>
 #include <fmt/ranges.h>
 #include <memory>
 #include <mutex>
@@ -125,16 +127,20 @@ namespace srs::connection
 
     void FecCommandSocket::print_error() const
     {
-        spdlog::error(
-            "TIMEOUT during local port {} waiting for the responses from the following ip/port:\n\t{}",
-            get_port(),
-            fmt::join(
-                all_connections_ |
-                    std::views::filter([](const auto& key_value) -> bool { return not key_value.second.empty(); }) |
-                    std::views::transform(
-                        [](const auto& key_value)
-                        { return fmt::format("{}: {}", key_value.first, print_connections(key_value.second)); }),
-                "\n\t"));
+        fmt::println("");
+        spdlog::error("TIMEOUT from local port {} waiting for the response(s):\n\t{}",
+                      get_port(),
+                      fmt::join(all_connections_ |
+                                    std::views::filter([](const auto& key_value) -> bool
+                                                       { return not key_value.second.empty(); }) |
+                                    std::views::transform(
+                                        [](const auto& key_value)
+                                        {
+                                            return fmt::format("Remote socket: {}\n\tMessage: {}",
+                                                               key_value.first,
+                                                               print_connections(key_value.second));
+                                        }),
+                                "\n\t"));
     }
 
     void FecCommandSocket::response_handler(const UDPEndpoint& endpoint, std::size_t read_size)
