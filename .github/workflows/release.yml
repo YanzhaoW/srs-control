@@ -26,7 +26,6 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      build_type: ${{ steps.build.outputs.build_type }}
       tag_name: ${{ steps.build.outputs.tag_name }}
 
     steps:
@@ -35,7 +34,7 @@ jobs:
       - if: github.event_name == 'push'
         run: |
           if [ "${{ github.ref_name }}" == "master" ]; then
-            echo "TAG_NAME=unstable" >> $GITHUB_ENV
+            echo "TAG_NAME=${GITHUB_SHA::7}" >> $GITHUB_ENV
           else
             echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
           fi
@@ -43,7 +42,6 @@ jobs:
         id: build
         run: |
           echo "tag name: ${TAG_NAME}"
-          echo "build_type=${CMAKE_BUILD_TYPE}" >> $GITHUB_OUTPUT
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
 
   build-artifacts:
@@ -57,28 +55,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian-bullseye, fedora-42]
+        os: [bullseye, jammy, fedora]
+        # os: [ jammy]
         root: ['with-root', 'no-root']
+        # root: ['no-root']
         include:
-          - os: debian-bullseye
+          - os: fedora
+            preset: release
+          - os: jammy
             preset: static
-            pack: true
-          - os: fedora-42
-            preset: default
-            pack: false
+          - os: bullseye
+            preset: static
     name: ${{ matrix.os }}-${{ matrix.root }}
     env:
       CMAKE_GENERATOR: Ninja
     container:
-      image: yanzhaowang/srs-env:${{ matrix.os }}
+      image: ghcr.io/yanzhaow/srs_env:${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          submodules: 'true'
+          submodules: 'recursive'
       - name: recover envs
         run: |
-          echo "CMAKE_BUILD_TYPE=${{ needs.setup.outputs.build_type }}" >> $GITHUB_ENV
           echo "TAG_NAME=${{ needs.setup.outputs.tag_name }}" >> $GITHUB_ENV
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
@@ -92,31 +91,32 @@ jobs:
           fi
           echo "ROOT_TAG=${ROOT_TAG}" >> $GITHUB_ENV
           echo "DISABLE_ROOT=${DISABLE_ROOT}" >> $GITHUB_ENV
-      - name: install miniconda
+
+      - name: set cc and cxx
+        if: matrix.os != 'fedora'
         run: |
-          mkdir -p ${PARENT_DIR}/miniconda3
-          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ${PARENT_DIR}/miniconda3/miniconda.sh
-          bash ${PARENT_DIR}/miniconda3/miniconda.sh -b -u -p ${PARENT_DIR}/miniconda3
-          rm -f ${PARENT_DIR}/miniconda3/miniconda.sh
-          source $PARENT_DIR/miniconda3/bin/activate
-          conda env create -f $GITHUB_WORKSPACE/environment.yml
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "CXX=g++" >> $GITHUB_ENV
+
+      - uses: './.github/actions/configure_conan'
+
       - name: build
         run: |
-          source $PARENT_DIR/miniconda3/bin/activate
-          conda activate srs
-          mkdir srs-download
-          conan remote update conancenter --url https://center2.conan.io
-          conan config install utils/settings/conan/settings_user.yml
+          mkdir -p srs-install
+          # conan list
           export LD_LIBRARY_PATH="/usr/local/lib64:${LD_LIBRARY_PATH}"
-          cmake --preset ${{ matrix.preset}} -DCMAKE_INSTALL_PREFIX="./srs-download" -DNO_ROOT=$DISABLE_ROOT
+          if [[ "${{ matrix.os }}" == "fedora" ]]; then
+            cmake --preset ${{ matrix.preset}} -DCMAKE_INSTALL_PREFIX="./srs-install" -DNO_ROOT=$DISABLE_ROOT -DUSE_SYSTEM_LIBRARIES=ON
+          else
+            cmake --preset ${{ matrix.preset}} -DCMAKE_INSTALL_PREFIX="./srs-install" -DNO_ROOT=$DISABLE_ROOT
+          fi
           cmake --build ./build --target install -- -j2
-          tar czf "srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz" "./srs-download"
+          tar czf "srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz" "./srs-install"
 
       - name: cpack
-        if: matrix.pack && github.event_name != 'pull_request'
+        if: startsWith(github.ref, 'refs/tags/') && matrix.root == "with_root"
         id: packaging
         run: |
-          apt install -y file
           cd build
           cpack
           cd package
@@ -124,7 +124,7 @@ jobs:
           echo "package_filename=${package_filename}" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
-        if: matrix.pack && github.event_name != 'pull_request'
+        if: startsWith(github.ref, 'refs/tags/') && matrix.root == "with_root"
         with:
           name: package-${{ matrix.os}}-${{ matrix.root }}
           path: build/package/${{ steps.packaging.outputs.package_filename }}
@@ -137,53 +137,145 @@ jobs:
           path: srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz
           retention-days: 1
 
-  # publish-deb-package:
-  #   runs-on: ubuntu-24.04
-  #   needs: [setup, build-artifacts]
-  #   strategy:
-  #     matrix:
-  #       os: [debian-bullseye]
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   steps:
-  #     - uses: actions/download-artifact@v4
-  #       id: artifacts-download
-  #       with:
-  #         pattern: package-${{ matrix.os}}-*
-  #         path: ${{ github.workspace }}/package
-  #         merge-multiple: true
+  publish-rpm-package:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [setup, build-artifacts]
+    container:
+      image: ghcr.io/yanzhaow/srs_env:fedora
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - run: |
+          dnf install -y nodejs
+      - uses: actions/download-artifact@v4
+        id: artifacts-download
+        with:
+          pattern: package-fedora-*
+          path: ${{ github.workspace }}/package
+          merge-multiple: true
 
-  #     - name: install aptly
-  #       run: |
-  #         sudo apt update -y
-  #         sudo apt install -y wget tree
-  #         sudo wget -O /etc/apt/keyrings/aptly.asc https://www.aptly.info/pubkey.txt
-  #         echo "deb [signed-by=/etc/apt/keyrings/aptly.asc] http://repo.aptly.info/release noble main" | sudo tee -a /etc/apt/sources.list.d/aptly.list
-  #         sudo apt update -y
-  #         sudo apt install -y aptly
+      - name: set envs
+        run: |
+          dnf install -y createrepo_c rpm-sign
+          wget -O public-key.asc https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
+          echo "${{ secrets.SIGN_KEY_SECRET }}" > private-key.asc
+          gpg --allow-secret-key-import --import private-key.asc
+          gpg --no-default-keyring --keyring trustedkeys.gpg --import public-key.asc
 
-  #     - name: import keys
-  #       run: |
-  #         wget -O public_key.txt https://apps.ikp.uni-koeln.de/~ywang/repos/public_key.txt
-  #         echo "${{ secrets.SIGN_KEY_SECRET }}" > private_key.txt
+          rpm --import public-key.asc
+          echo "%_openpgp_sign_id $(gpg --list-secret-keys --with-colons --keyid-format LONG | awk -F: '/^sec:/ {print $5; exit}')" >> ${HOME}/.rpmmacros
 
-  #     - name: create package
-  #       run: |
-  #         ls
-  #         tree
-  #         gpg --allow-secret-key-import --import private_key.txt
-  #         gpg --no-default-keyring --keyring trustedkeys.gpg --import public_key.txt
-  #         aptly mirror create srs-control https://apps.ikp.uni-koeln.de/~ywang/repos/srs_control/debian bullseye
-  #         aptly mirror update srs-control
-  #         aptly repo create srs-control
-  #         aptly repo import srs-control srs-control srs-control
-  #         aptly repo add -force-replace srs-control package/srs-control_0.1.4_amd64.deb
-  #         aptly publish repo -skip-contents -distribution="bullseye" srs-control
-  #         cd ~/.aptly
-  #         ls
-  #         scp -r -o ProxyJump=ywang@hermes1.ikp.uni-koeln.de srs_control ywang@apps.ikp.uni-koeln.de:/home/ywang/public_html/repos
+          export REPO_NAME=srs-control
+          echo "REPO_NAME=${REPO_NAME}" >> $GITHUB_ENV
+          echo "SUITE=44" >> $GITHUB_ENV
+          echo "ARCHS=x86_64" >> $GITHUB_ENV
+          echo "RPM_DIR=package" >> $GITHUB_ENV
 
+      - name: create repo
+        run: |
+          rpm --addsign ${RPM_DIR}/*
+          mkdir -p repo/fedora/${SUITE}/${ARCHS}
+          cp ${RPM_DIR}/* repo/fedora/${SUITE}/${ARCHS}
+          createrepo_c repo/fedora/${SUITE}/${ARCHS}
+
+      - name: copy repo
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          source: 'repo/fedora/*'
+          host: ${{ secrets.DOXY_HOST}}
+          username: ${{ secrets.DOXY_USERNAME }}
+          password: ${{ secrets.DOXY_HOST_PASSWORD }}
+          target: '/WWW/yanwang/repos/srs-control/rpm/fedora'
+          proxy_host: ${{ secrets.DOXY_PROXY_SERVER }}
+          proxy_username: ${{ secrets.DOXY_USERNAME }}
+          proxy_password: ${{ secrets.DOXY_HOST_PASSWORD }}
+          tar_tmp_path: tmp
+          overwrite: true
+          strip_components: 2
+          rm: true
+          debug: true
+
+  publish-deb-package:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [setup, build-artifacts]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [bullseye, jammy]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/download-artifact@v4
+        id: artifacts-download
+        with:
+          pattern: package-${{ matrix.os }}-*
+          path: ${{ github.workspace }}/package
+          merge-multiple: true
+
+      - name: install aptly
+        run: |
+          sudo wget -O /etc/apt/keyrings/aptly.asc https://www.aptly.info/pubkey.txt
+          echo "deb [signed-by=/etc/apt/keyrings/aptly.asc] http://repo.aptly.info/release ${{ matrix.os }} main" | sudo tee -a /etc/apt/sources.list.d/aptly.list
+          sudo apt update -y
+          sudo apt install -y wget tree aptly
+          echo "TAG_NAME=${{ needs.setup.outputs.tag_name }}" >> $GITHUB_ENV
+
+      - name: import keys
+        run: |
+          wget -O public-key.asc https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
+          echo "${{ secrets.SIGN_KEY_SECRET }}" > private-key.asc
+
+      - name: set envs
+        run: |
+          gpg --allow-secret-key-import --import private-key.asc
+          gpg --no-default-keyring --keyring trustedkeys.gpg --import public-key.asc
+          export REPO_NAME=srs-control
+          echo "REPO_NAME=${REPO_NAME}" >> $GITHUB_ENV
+          echo "SUITE=${{ matrix.os }}" >> $GITHUB_ENV
+          echo "COMPONENT=main" >> $GITHUB_ENV
+          echo "ARCHS=amd64" >> $GITHUB_ENV
+          echo "DEB_DIR=package" >> $GITHUB_ENV
+          echo "SNAPSHOT=${REPO_NAME}-${{ env.TAG_NAME }}" >> $GITHUB_ENV
+
+      # - name: pull from remote
+      #   id: pull_from_remote
+      #   continue-on-error: true
+      #   run: |
+      #     aptly -architectures="$ARCHS" mirror create ${REPO_NAME}-remote https://web-docs.gsi.de/~yanwang/repos/srs-control/apt ${SUITE} ${COMPONENT}
+      #     aptly mirror update ${REPO_NAME}-remote
+
+      - name: create package
+        run: |
+          aptly repo create -distribution="$SUITE" -component="$COMPONENT" "$REPO_NAME"
+
+          # if [[ "${{ steps.pull_from_remote.outcome }}" == "success" ]]; then
+          #   aptly -architectures="$ARCHS" repo import "srs-control-remote" "srs-control" "Name"
+          #   echo "Note: Remote apt repo alreay exists, trying to update it."
+          # else
+          #   echo "Note: Remote apt repo doesn't exist."
+          # fi
+
+          aptly repo add "$REPO_NAME" "$DEB_DIR"
+          aptly snapshot create ${SNAPSHOT} from repo "$REPO_NAME"
+          aptly publish snapshot -batch -architectures="$ARCHS" -distribution="$SUITE" -component="$COMPONENT" "$SNAPSHOT"
+          mv ~/.aptly/public/ ${{ matrix.os }}/
+
+      - name: copy repo
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          source: ${{ matrix.os }}/*
+          host: ${{ secrets.DOXY_HOST}}
+          username: ${{ secrets.DOXY_USERNAME }}
+          password: ${{ secrets.DOXY_HOST_PASSWORD }}
+          target: '/WWW/yanwang/repos/srs-control/apt'
+          proxy_host: ${{ secrets.DOXY_PROXY_SERVER }}
+          proxy_username: ${{ secrets.DOXY_USERNAME }}
+          proxy_password: ${{ secrets.DOXY_HOST_PASSWORD }}
+          overwrite: true
 
   publish-release:
     runs-on: ubuntu-latest

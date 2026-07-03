@@ -6,7 +6,6 @@
 #include "srs/utils/CommonConcepts.hpp"
 #include "srs/writers/DataWriterOptions.hpp"
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/experimental/coro.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/thread/future.hpp>

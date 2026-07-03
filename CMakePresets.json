@@ -19,19 +19,33 @@
             }
         },
         {
+            "name": "release",
+            "displayName": "Release config",
+            "description": "Release build",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "OFF",
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
+                "CONAN_INSTALL_ARGS": "--build=missing;-scompiler.cppstd=gnu23",
+                "ENABLE_TEST": "OFF"
+            }
+        },
+        {
             "name": "static",
-            "displayName": "static config",
-            "description": "static build",
+            "displayName": "static release config",
+            "description": "static release build",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
                 "CONAN_INSTALL_ARGS": "--build=missing;--build=b2/*;-scompiler.cppstd=gnu23",
                 "BUILD_STATIC": "ON",
                 "USE_SYSTEM_LIBRARIES": "OFF",
                 "USE_SYSTEM_BOOST": "OFF",
-                "USE_SYSTEM_PROTOBUF": "OFF"
+                "USE_SYSTEM_PROTOBUF": "OFF",
+                "ENABLE_TEST": "OFF"
             }
         },
         {

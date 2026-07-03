@@ -22,6 +22,8 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.imgmath",
     "sphinx.ext.todo",
+    'sphinx_copybutton',
+    "sphinx_rtd_dark_mode",
     "breathe",
 ]
 

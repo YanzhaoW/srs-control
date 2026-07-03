@@ -70,7 +70,7 @@ set_tests_properties(IntegrationTestProtoUDPOutput PROPERTIES TIMEOUT 10)
 
 add_test(
     NAME IntegrationTestRawDataUDPOutput
-    COMMAND ctest_output -l trace -o 127.0.0.1:?12344
+    COMMAND ctest_output -l trace -o 127.0.0.1:?11231
 )
 set_tests_properties(IntegrationTestRawDataUDPOutput PROPERTIES TIMEOUT 10)
 
