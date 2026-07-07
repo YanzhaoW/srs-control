@@ -44,7 +44,10 @@ namespace srs::writer
             auto iter = resolver.resolve(std::string{ ip_string }, std::string{ port_str }, err_code).begin();
             if (err_code)
             {
-                spdlog::critical("Cannot query the ip address {:?}. Error code: {}", ip_port, err_code.message());
+                spdlog::critical("Cannot query the ip address {:?} with port {:?}. Error code: {}",
+                                 ip_string,
+                                 port_str,
+                                 err_code.message());
                 return {};
             }
             return *iter;

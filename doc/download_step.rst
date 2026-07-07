@@ -29,6 +29,8 @@ Register rpm repository:
     gpgkey=https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
     EOF
 
+Install the package:
+
 .. code-block:: bash
 
     sudo dnf install srs-control
