@@ -25,7 +25,7 @@
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "OFF",
-                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
                 "CONAN_INSTALL_ARGS": "--build=missing;-scompiler.cppstd=gnu23",
                 "ENABLE_TEST": "OFF"
@@ -38,7 +38,7 @@
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "utils/conan/conan_provider.cmake",
                 "CONAN_INSTALL_ARGS": "--build=missing;--build=b2/*;-scompiler.cppstd=gnu23",
                 "BUILD_STATIC": "ON",
