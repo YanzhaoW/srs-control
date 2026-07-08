@@ -35,7 +35,7 @@ namespace srs::workflow
          * @param data_processor Pointer to srs::workflow::Handler
          * @param n_lines Number of pipelines
          */
-        explicit TaskDiagram(Handler* data_processor, std::size_t n_lines = 1);
+        explicit TaskDiagram(Handler& data_processor, std::size_t n_lines = 1);
 
         using InputType = bool;
         using OutputType = std::size_t;
@@ -44,8 +44,9 @@ namespace srs::workflow
          * @brief Run the taskflow and block the current thread until finished.
          */
         void construct_taskflow_and_run(BufferQueue& data_queue, const std::atomic<bool>& is_stopped);
-        void run_task(BufferQueue& data_queue, std::size_t line_number);
+        auto run_task(BufferQueue& data_queue, std::size_t line_number) -> bool;
         auto is_taskflow_abort_ready() const -> bool;
+        auto is_done() const -> bool { return is_done_.load(); }
         [[nodiscard]] auto operator()(std::size_t line_number) const -> std::string_view
         {
             return raw_data_[line_number].data();
@@ -57,10 +58,12 @@ namespace srs::workflow
         auto get_struct_data() -> const auto* { return struct_deserializer_converter_(0); }
 
       private:
+        std::atomic<bool> is_done_ = false;
         std::size_t n_lines_ = 1;
         tf::Executor tf_executor_;
         tf::Taskflow main_taskflow_;
         std::vector<tf::Taskflow> taskflow_lines_;
+        std::vector<BufferQueue::Token> consumer_tokens_;
         std::vector<std::atomic<bool>> is_pipeline_stopped_;
         std::vector<LargeBuffer> raw_data_;
 

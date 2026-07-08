@@ -2,7 +2,7 @@
 #include "srs/Application.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/data/BufferQueue.hpp"
-#include "srs/data/LargeBuffer.hpp"
+#include "srs/utils/ExitLogger.hpp"
 #include "srs/workflow/Handler.hpp"
 #include <algorithm>
 #include <atomic>
@@ -11,7 +11,6 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <optional>
-#include <print>
 #include <ranges>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -26,7 +25,7 @@
 
 namespace srs::workflow
 {
-    TaskDiagram::TaskDiagram(Handler* data_processor, std::size_t n_lines)
+    TaskDiagram::TaskDiagram(Handler& handle, std::size_t n_lines)
         : n_lines_{ n_lines }
         , is_pipeline_stopped_{ std::vector<std::atomic<bool>>(n_lines_) }
         , raw_to_delim_raw_converter_{ n_lines }
@@ -34,26 +33,38 @@ namespace srs::workflow
         , struct_to_proto_converter_{ n_lines }
         , proto_serializer_converter_{ n_lines }
         , proto_delim_serializer_converter_{ n_lines }
-        , writers_{ data_processor->get_writer() }
+        , writers_{ handle.get_writer() }
     {
+        const auto buffer_size = handle.get_buffer_queue().get_config().buffer_size;
+        consumer_tokens_.reserve(n_lines_);
+        for (auto _ : std::views::iota(std::size_t{ 0 }, n_lines_))
+        {
+            consumer_tokens_.push_back(handle.get_queue_consumer_token());
+            raw_data_.emplace_back(buffer_size);
+        }
+
         for (auto& is_pipe_stopped : is_pipeline_stopped_)
         {
             is_pipe_stopped.store(true);
         }
-        const auto buffer_size = data_processor->get_buffer_queue().get_config().buffer_size;
-        raw_data_.resize(n_lines, LargeBuffer{ buffer_size });
     }
 
     // blocking here with pop
-    void TaskDiagram::run_task(BufferQueue& buffer_queue, std::size_t line_number)
+    auto TaskDiagram::run_task(BufferQueue& buffer_queue, std::size_t line_number) -> bool
     {
         // raw_data_[line_number].clear();
-        buffer_queue.pop(raw_data_[line_number]);
-        total_read_data_bytes_ += raw_data_[line_number].get_size();
+        buffer_queue.pop(raw_data_[line_number], consumer_tokens_[line_number]);
+        if (not raw_data_[line_number].is_empty())
+        {
+            total_read_data_bytes_ += raw_data_[line_number].get_size();
+            return true;
+        }
+        return false;
     }
 
-    void TaskDiagram::construct_taskflow_and_run(BufferQueue& buffer_queue, const std::atomic<bool>& is_stopped)
+    void TaskDiagram::construct_taskflow_and_run(BufferQueue& buffer_queue, const std::atomic<bool>&)
     {
+        const auto _ = ExitLogger{};
         taskflow_lines_.resize(n_lines_);
         for (const auto [line_number, taskflow] : std::views::zip(std::views::iota(0), taskflow_lines_))
         {
@@ -84,26 +95,22 @@ namespace srs::workflow
             tf::Pipeline{ n_lines_,
                           tf::Pipe{ tf::PipeType::SERIAL, []([[maybe_unused]] tf::Pipeflow& pipeflow) {} },
                           tf::Pipe{ tf::PipeType::PARALLEL,
-                                    [this, &buffer_queue, &is_stopped]([[maybe_unused]] tf::Pipeflow& pipeflow)
+                                    [this, &buffer_queue]([[maybe_unused]] tf::Pipeflow& pipeflow)
                                     {
-                                        // TODO: Calling size is unsafe for tbb
-                                        if (is_stopped.load() and buffer_queue.size() == 0)
+                                        if (not run_task(buffer_queue, pipeflow.line()))
                                         {
                                             pipeflow.stop();
                                         }
-                                        else
-                                        {
-                                            run_task(buffer_queue, pipeflow.line());
-                                            is_pipeline_stopped_[pipeflow.line()].store(false);
-                                            tf_executor_.corun(taskflow_lines_[pipeflow.line()]);
-                                            is_pipeline_stopped_[pipeflow.line()].store(true);
-                                        }
+                                        is_pipeline_stopped_[pipeflow.line()].store(false);
+                                        tf_executor_.corun(taskflow_lines_[pipeflow.line()]);
+                                        is_pipeline_stopped_[pipeflow.line()].store(true);
                                     } },
                           tf::Pipe{ tf::PipeType::SERIAL, []([[maybe_unused]] tf::Pipeflow& pipeflow) {} } };
 
         auto pipeline_task = main_taskflow_.composed_of(main_pipeline).name("Main pipeline");
         starting_task.precede(pipeline_task);
         tf_executor_.run(main_taskflow_).wait();
+        is_done_.store(true);
     }
 
     auto TaskDiagram::is_taskflow_abort_ready() const -> bool

@@ -34,7 +34,7 @@ jobs:
       - if: github.event_name == 'push'
         run: |
           if [ "${{ github.ref_name }}" == "master" ]; then
-            echo "TAG_NAME=${GITHUB_SHA::7}" >> $GITHUB_ENV
+            echo "TAG_NAME=unstable" >> $GITHUB_ENV
           else
             echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
           fi
@@ -78,6 +78,7 @@ jobs:
           submodules: 'recursive'
       - name: recover envs
         run: |
+          echo "SHA_NAME=${GITHUB_SHA::7}" >> $GITHUB_ENV
           echo "TAG_NAME=${{ needs.setup.outputs.tag_name }}" >> $GITHUB_ENV
           cd $GITHUB_WORKSPACE/..
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
@@ -111,7 +112,7 @@ jobs:
             cmake --preset ${{ matrix.preset}} -DCMAKE_INSTALL_PREFIX="./srs-install" -DNO_ROOT=$DISABLE_ROOT
           fi
           cmake --build ./build --target install -- -j2
-          tar czf "srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz" "./srs-install"
+          tar czf "srs-${{ matrix.os}}-x86-64-${{ env.SHA_NAME }}-${{ env.ROOT_TAG }}.tar.gz" "./srs-install"
 
       - name: cpack
         if: startsWith(github.ref, 'refs/tags/') && matrix.root == 'no-root'
@@ -133,8 +134,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: github.event_name != 'pull_request'
         with:
-          name: download-${{ matrix.os}}-${{ env.TAG_NAME }}-${{ matrix.root }}
-          path: srs-${{ matrix.os}}-x86-64-${{ env.TAG_NAME }}-${{ env.ROOT_TAG }}.tar.gz
+          name: download-${{ matrix.os}}-${{ env.SHA_NAME }}-${{ matrix.root }}
+          path: srs-${{ matrix.os}}-x86-64-${{ env.SHA_NAME }}-${{ env.ROOT_TAG }}.tar.gz
           retention-days: 1
 
   publish-rpm-package:
@@ -222,7 +223,6 @@ jobs:
           echo "deb [signed-by=/etc/apt/keyrings/aptly.asc] http://repo.aptly.info/release ${{ matrix.os }} main" | sudo tee -a /etc/apt/sources.list.d/aptly.list
           sudo apt update -y
           sudo apt install -y wget tree aptly
-          echo "TAG_NAME=${{ needs.setup.outputs.tag_name }}" >> $GITHUB_ENV
 
       - name: import keys
         run: |
@@ -239,7 +239,7 @@ jobs:
           echo "COMPONENT=main" >> $GITHUB_ENV
           echo "ARCHS=amd64" >> $GITHUB_ENV
           echo "DEB_DIR=package" >> $GITHUB_ENV
-          echo "SNAPSHOT=${REPO_NAME}-${{ env.TAG_NAME }}" >> $GITHUB_ENV
+          echo "SNAPSHOT=${REPO_NAME}-${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       # - name: pull from remote
       #   id: pull_from_remote

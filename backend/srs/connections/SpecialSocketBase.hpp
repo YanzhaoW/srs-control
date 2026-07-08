@@ -3,6 +3,7 @@
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonFunctions.hpp"
+#include "srs/utils/ExitLogger.hpp"
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/buffer.hpp>
@@ -53,7 +54,7 @@ namespace srs::connection
     {
       public:
         template <SpecialSocketDerived SocketType, typename... Args>
-        static auto create(int port_number, io_context_type& io_context, Args... args)
+        static auto create(int port_number, io_context_type& io_context, Args&&... args)
             -> std::expected<std::shared_ptr<SocketType>, boost::system::error_code>;
 
         /**
@@ -183,7 +184,7 @@ namespace srs::connection
     };
 
     template <SpecialSocketDerived SocketType, typename... Args>
-    auto SpecialSocket::create(int port_number, io_context_type& io_context, Args... args)
+    auto SpecialSocket::create(int port_number, io_context_type& io_context, Args&&... args)
         -> std::expected<std::shared_ptr<SocketType>, boost::system::error_code>
     {
         auto socket =
@@ -203,6 +204,8 @@ namespace srs::connection
     template <SpecialSocketDerived SocketType>
     auto SpecialSocket::async_listen_all_connections(std::shared_ptr<SocketType> socket) -> asio::awaitable<void>
     {
+        const auto port_str = fmt::format("{}", socket->get_port());
+        const auto _ = ExitLogger{ port_str };
         socket->bind_socket();
         auto remote_endpoint = udp::endpoint{};
         spdlog::info("Local socket with port {} starts to listen ...", socket->get_port());
@@ -259,6 +262,7 @@ namespace srs::connection
     {
         auto waiting_action = [](auto socket, std::chrono::seconds waiting_time) -> asio::awaitable<void>
         {
+            const auto _ = ExitLogger{ "waiting_action" };
             spdlog::trace("Waiting local socket with port {} to finish listening ...", socket->get_port());
             if (socket->is_finished())
             {

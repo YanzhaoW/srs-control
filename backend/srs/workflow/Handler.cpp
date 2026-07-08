@@ -20,15 +20,9 @@
 #include <fmt/color.h>
 #include <memory>
 #include <mutex>
-#include <print>
 #include <spdlog/common.h>
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#ifdef USE_ONEAPI_TBB
-#include <oneapi/tbb/concurrent_queue.h>
-#else
-#include <tbb/concurrent_queue.h>
-#endif
 
 #include <spdlog/spdlog.h>
 #include <stdexcept>
@@ -151,7 +145,7 @@ namespace srs::workflow
     {
         auto _ = ExitLogger{};
         is_stopped_.store(false);
-        task_diagram_ = std::make_unique<TaskDiagram>(this, n_lines_);
+        task_diagram_ = std::make_unique<TaskDiagram>(*this, n_lines_);
 
         if (print_mode_ == print_speed)
         {
@@ -159,17 +153,9 @@ namespace srs::workflow
         }
 
         cv_.notify_all();
-        try
-        {
-            spdlog::trace("Analysis workflow: entering workflow loop");
-            // TODO: Use direct binary data
+        spdlog::trace("Analysis workflow: entering workflow loop");
 
-            task_diagram_->construct_taskflow_and_run(buffer_queue_, is_stopped_);
-        }
-        catch (tbb::user_abort& ex)
-        {
-            spdlog::trace("Analysis workflow: {}", ex.what());
-        }
+        task_diagram_->construct_taskflow_and_run(buffer_queue_, is_stopped_);
     }
 
     Handler::~Handler()
@@ -201,7 +187,8 @@ namespace srs::workflow
             {
                 // spdlog::trace("waiting for task diagram to be abort ready");
             }
-            buffer_queue_.abort();
+            spdlog::trace("Analysis workflow: taskflow is ready to abort.");
+            buffer_queue_.enqueue_empty(task_diagram_->get_n_lines());
         }
     }
 
@@ -214,14 +201,14 @@ namespace srs::workflow
         return *task_diagram_;
     }
 
-    void Handler::read_data_once(LargeBuffer& read_data)
+    void Handler::read_data_once(LargeBuffer& read_data, BufferQueue::Token& token)
     {
         const auto data_size = read_data.get_size();
         total_read_data_bytes_ += data_size;
         ++total_frame_counts_;
 
         time_point_ = clock_.now();
-        auto is_success = buffer_queue_.try_emplace(read_data);
+        auto is_success = buffer_queue_.try_emplace(read_data, token);
         total_time_ns_ += static_cast<uint64_t>((clock_.now() - time_point_).count());
 
         if (not is_success)

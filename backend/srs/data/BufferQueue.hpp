@@ -2,14 +2,11 @@
 
 #include "srs/data/LargeBuffer.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
+#include <blockingconcurrentqueue.h>
 #include <chrono>
+#include <concurrentqueue.h>
 #include <cstddef>
-
-#ifdef USE_ONEAPI_TBB
-#include <oneapi/tbb/concurrent_queue.h>
-#else
-#include <tbb/concurrent_queue.h>
-#endif
+#include <utility>
 
 namespace srs
 {
@@ -36,6 +33,13 @@ namespace srs
         };
 
         /**
+         * @brief A queue token type used for enqueue and dequeue action. The token type consists of one producer token
+         * and one consumer token.
+         *
+         */
+        using Token = std::pair<moodycamel::ProducerToken, moodycamel::ConsumerToken>;
+
+        /**
          * @brief Default constructor
          *
          * @param config Config object
@@ -47,16 +51,16 @@ namespace srs
          *
          * @see BufferQueue::pop
          */
-        void abort();
+        void enqueue_empty(std::size_t bulk_size);
 
         /**
-         * @brief Try to frst push a buffer into the valid buffer queue and then replace it with a buffer from the trash
-         * buffer queue.
+         * @brief Try to first push a buffer into the valid buffer queue and then replace it with a buffer from the
+         * trash buffer queue.
          *
          * @param element The buffer object to be pushed and replaced.
          * @return True if the pushing succeeds.
          */
-        auto try_emplace(LargeBuffer& element) -> bool;
+        auto try_emplace(LargeBuffer& element, Token& token) -> bool;
 
         // block
         /**
@@ -65,7 +69,7 @@ namespace srs
          *
          * @param element The buffer object to be pushed and replaced.
          */
-        void pop(LargeBuffer& element);
+        void pop(LargeBuffer& element, Token& token);
 
         /**
          * @brief Get the current size in the valid buffer queue.
@@ -74,8 +78,7 @@ namespace srs
          *
          * @return Size of the buffer queue.
          */
-        // TODO: this is unsafe for tbb
-        auto size() const -> auto { return valid_buffer_queue_.size(); }
+        auto size() const -> auto { return valid_buffer_queue_.size_approx(); }
 
         /**
          * @brief Get the current capacity of the buffer queue.
@@ -96,12 +99,34 @@ namespace srs
          */
         [[nodiscard]] auto get_config() const -> const auto& { return config_; }
 
+        /**
+         * @brief Get a queue token for a producer. The first value is the producer token for the #valid_buffer_queue_
+         * and the second value is the consumer token for the #trash_buffer_queue_.
+         */
+        [[nodiscard]] auto get_producer_token() -> Token
+        {
+            return std::pair{ moodycamel::ProducerToken{ valid_buffer_queue_ },
+                              moodycamel::ConsumerToken{ trash_buffer_queue_ } };
+        }
+
+        /**
+         * @brief Get a queue token for a consumer. The first value is the producer token for the #trash_buffer_queue_
+         * and the second value is the consumer token for the #valid_buffer_queue_.
+         */
+        [[nodiscard]] auto get_consumer_token() -> Token
+        {
+            return std::pair{ moodycamel::ProducerToken{ trash_buffer_queue_ },
+                              moodycamel::ConsumerToken{ valid_buffer_queue_ } };
+        }
+
       private:
         Config config_;
         std::size_t n_trash_recycle_failures_empty_ = 0;
         std::size_t n_trash_recycle_failures_full_ = 0;
-        tbb::concurrent_bounded_queue<LargeBuffer> valid_buffer_queue_;
-        tbb::concurrent_bounded_queue<LargeBuffer> trash_buffer_queue_;
+        moodycamel::BlockingConcurrentQueue<LargeBuffer> valid_buffer_queue_;
+        moodycamel::ConcurrentQueue<LargeBuffer> trash_buffer_queue_;
+        moodycamel::ProducerToken internal_valid_buffer_token_{ valid_buffer_queue_ };
+        moodycamel::ProducerToken internal_trash_buffer_token_{ trash_buffer_queue_ };
 
         std::chrono::steady_clock clock_;
         std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> time_point_;

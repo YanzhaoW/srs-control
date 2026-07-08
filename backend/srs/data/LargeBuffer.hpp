@@ -35,39 +35,44 @@ namespace srs
          *
          * @param buffer_size Number of element whose memory pre-allocated to the buffer.
          */
-        LargeBuffer(std::size_t buffer_size) { data_.resize(buffer_size); }
+        explicit LargeBuffer(std::size_t buffer_size) { data_.resize(buffer_size); }
 
-        /**
-         * @brief Non const "copy" constructor via swapping.
-         *
-         * This "copy" constructor does not do the data copy from the other, but rather perform the swap action with
-         * other object.
-         * @param other Other LargeBuffer object to be swapped.
-         */
-        explicit LargeBuffer(LargeBuffer& other)
-        {
-            data_.swap(other.data_);
-            size_ = other.size_;
-        }
         /**
          * @brief Default copy constructor. Very slow and should be avoided.
          */
-        explicit LargeBuffer(const LargeBuffer& other) = default;
+        explicit LargeBuffer(const LargeBuffer& other) = delete;
 
         /**
-         * @brief Default move constructor.
+         * @brief Move constructor via swapping.
+         *
+         * This "move" constructor does not move the data of the other, but rather perform the swap action with
+         * other object.
+         * @param other Other LargeBuffer object to be swapped.
          */
-        explicit LargeBuffer(LargeBuffer&& other) = default;
+        explicit LargeBuffer(LargeBuffer&& other) noexcept
+        {
+            data_.swap(other.data_);
+            std::swap(size_, other.size_);
+        }
 
         /**
          * @brief Default copy assignment. Very slow and should be avoided.
          */
-        auto operator=(const LargeBuffer& other) -> LargeBuffer& = default;
+        auto operator=(const LargeBuffer& other) -> LargeBuffer& = delete;
 
         /**
-         * @brief Default move assignment.
+         * @brief Move assignment via swapping.
+         *
+         * This "move" assignment does not move the data of the other, but rather perform the swap action with
+         * other object.
+         * @param other Other LargeBuffer object to be swapped.
          */
-        auto operator=(LargeBuffer&& other) -> LargeBuffer& = default;
+        auto operator=(LargeBuffer&& other) noexcept -> LargeBuffer&
+        {
+            data_.swap(other.data_);
+            std::swap(size_, other.size_);
+            return *this;
+        }
 
         /**
          * @brief Default destructor.
@@ -132,6 +137,8 @@ namespace srs
          */
         // INFO: Do not return the reference to the underlying vector, as it's not thread safe.
         auto get_all_data() -> std::span<char> { return std::span{ data_ }; }
+
+        auto is_empty() -> bool { return data_.size() == 0 and data_.capacity() == 0; }
 
       private:
         std::size_t size_ = 0;

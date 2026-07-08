@@ -111,9 +111,6 @@ namespace srs
     App::~App() noexcept
     {
         auto _ = ExitLogger{};
-        auto err = boost::system::error_code{};
-        signal_set_.cancel(err);
-        signal_set_.clear(err);
 
         print_statistics();
     }
@@ -158,6 +155,7 @@ namespace srs
         signal_set_.async_wait(
             [this](const boost::system::error_code& error, auto)
             {
+                const auto _ = ExitLogger{ "signal" };
                 spdlog::info("Calling SIGINT from monitoring thread");
                 if (error == asio::error::operation_aborted)
                 {
@@ -205,9 +203,13 @@ namespace srs
     {
         fmt::println("");
         spdlog::debug("Application: exiting ...");
+        auto _ = ExitLogger{};
         spdlog::default_logger()->flush();
         spdlog::flush_every(std::chrono::seconds{ 1 });
-        auto _ = ExitLogger{};
+
+        auto err = boost::system::error_code{};
+        signal_set_.cancel(err);
+        signal_set_.clear(err);
 
         if (auto switch_on_status = wait_for_switch_action(switch_on_future_);
             switch_on_status == std::future_status::ready)
@@ -313,7 +315,7 @@ namespace srs
         {
             auto status =
                 connection::SpecialSocket::create<connection::DataSocket>(
-                    port_num, io_context_, config_.data_buffer_size, workflow_handler_.get())
+                    port_num, io_context_, config_.data_buffer_size, *workflow_handler_)
                     .transform(
                         [this](auto socket)
                         {

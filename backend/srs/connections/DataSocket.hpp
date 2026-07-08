@@ -4,6 +4,7 @@
 #include "srs/connections/ConnectionBase.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
+#include "srs/data/BufferQueue.hpp"
 #include "srs/data/LargeBuffer.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
@@ -34,6 +35,7 @@ namespace srs::connection
         LargeBuffer read_msg_buffer_;
         gsl::not_null<io_context_type*> io_context_;
         gsl::not_null<workflow::Handler*> workflow_handler_;
+        BufferQueue::Token token_;
 
         void register_send_action_imp(asio::awaitable<void> action, const std::shared_ptr<ConnectionType>& connection);
         auto get_response_msg_buffer() -> std::span<char> { return read_msg_buffer_.get_all_data(); }
@@ -41,6 +43,6 @@ namespace srs::connection
         static auto is_finished() -> bool { return false; };
         static void print_error() {};
 
-        DataSocket(int port_number, io_context_type& io_context, std::size_t buffer_size, workflow::Handler* workflow);
+        DataSocket(int port_number, io_context_type& io_context, std::size_t buffer_size, workflow::Handler& workflow);
     };
 } // namespace srs::connection

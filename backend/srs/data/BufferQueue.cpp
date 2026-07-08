@@ -1,22 +1,27 @@
 #include "BufferQueue.hpp"
 #include "srs/data/LargeBuffer.hpp"
+#include <chrono>
 #include <cstddef>
 #include <fmt/format.h>
+#include <iterator>
 #include <ranges>
 #include <spdlog/spdlog.h>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace srs
 {
     BufferQueue::BufferQueue(const Config& config)
         : config_{ config }
+        , valid_buffer_queue_{ config.queue_capacity }
+        , trash_buffer_queue_{ config.queue_capacity }
     {
-        valid_buffer_queue_.set_capacity(static_cast<long>(config.queue_capacity));
-        trash_buffer_queue_.set_capacity(static_cast<long>(config.queue_capacity));
+
         print_memory_pre_allocation();
         for (const auto _ : std::views::iota(std::size_t{ 0 }, config_.reserve_size))
         {
-            if (not trash_buffer_queue_.try_emplace(config_.buffer_size))
+            if (not trash_buffer_queue_.try_enqueue(internal_trash_buffer_token_, LargeBuffer{ config_.buffer_size }))
             {
                 break;
             }
@@ -42,18 +47,23 @@ namespace srs
         }
         spdlog::info("Trying to pre-allocate {} memory for the buffer queue ...", print_str);
     }
-    void BufferQueue::abort()
+    void BufferQueue::enqueue_empty(std::size_t bulk_size)
     {
-        valid_buffer_queue_.abort();
-        trash_buffer_queue_.abort();
+        auto buffers = std::vector<LargeBuffer>{};
+        for (auto _ : std::views::iota(std::size_t{ 0 }, bulk_size))
+        {
+            buffers.emplace_back();
+        }
+        valid_buffer_queue_.enqueue_bulk(
+            internal_valid_buffer_token_, std::make_move_iterator(buffers.begin()), bulk_size);
     }
 
-    // NOTE: try_emplace will use non-const copy constructor, which performs swap operator
-    auto BufferQueue::try_emplace(LargeBuffer& element) -> bool
+    // NOTE: try_enqueue will use move constructor, which performs swap operator
+    auto BufferQueue::try_emplace(LargeBuffer& element, Token& token) -> bool
     {
         time_point_ = clock_.now();
-        auto is_pushed = valid_buffer_queue_.try_emplace(element);
-        if (is_pushed and not trash_buffer_queue_.try_pop(element))
+        auto is_pushed = valid_buffer_queue_.try_enqueue(token.first, std::move(element));
+        if (is_pushed and not trash_buffer_queue_.try_dequeue(token.second, element))
         {
             ++n_trash_recycle_failures_empty_;
             element.resize(config_.buffer_size);
@@ -62,12 +72,12 @@ namespace srs
     }
 
     // block
-    void BufferQueue::pop(LargeBuffer& element)
+    void BufferQueue::pop(LargeBuffer& element, Token& token)
     {
-        if (not trash_buffer_queue_.try_emplace(element))
+        if (not trash_buffer_queue_.try_enqueue(token.first, std::move(element)))
         {
             ++n_trash_recycle_failures_full_;
         }
-        valid_buffer_queue_.pop(element);
+        valid_buffer_queue_.wait_dequeue(token.second, element);
     }
 } // namespace srs

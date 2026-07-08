@@ -23,7 +23,7 @@ target_sources(
 target_sources(
     srscpp
     PRIVATE BufferQueue.cpp
-    PUBLIC FILE_SET publicHeaders FILES LargeBuffer.hpp BufferQueue.hpp
+    PRIVATE FILE_SET privateHeaders FILES LargeBuffer.hpp BufferQueue.hpp
 )
 
 protobuf_generate(

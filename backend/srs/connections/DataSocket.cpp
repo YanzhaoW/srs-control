@@ -10,33 +10,33 @@
 #include <boost/asio/impl/co_spawn.hpp>
 #include <cstddef>
 #include <memory>
-#include <utility>
 
 namespace srs::connection
 {
     DataSocket::DataSocket(int port_number,
                            io_context_type& io_context,
                            std::size_t buffer_size,
-                           workflow::Handler* workflow)
+                           workflow::Handler& workflow)
         : SpecialSocket(port_number, io_context)
         , buffer_size_{ buffer_size }
         , read_msg_buffer_{ buffer_size_ }
         , io_context_{ &io_context }
-        , workflow_handler_{ workflow }
+        , workflow_handler_{ &workflow }
+        , token_{ workflow.get_queue_producer_token() }
     {
     }
 
     // WARN: is it really needed?
-    void DataSocket::register_send_action_imp(asio::awaitable<void> action,
+    void DataSocket::register_send_action_imp(asio::awaitable<void> /* action */,
                                               const std::shared_ptr<ConnectionType>& /*connection*/)
     {
-        asio::co_spawn(*io_context_, std::move(action), asio::detached);
+        // asio::co_spawn(*io_context_, std::move(action), asio::detached);
     }
 
     void DataSocket::response_handler(const UDPEndpoint& /*endpoint*/, std::size_t read_size)
     {
         read_msg_buffer_.resize(read_size);
-        workflow_handler_->read_data_once(read_msg_buffer_);
+        workflow_handler_->read_data_once(read_msg_buffer_, token_);
         read_msg_buffer_.resize(buffer_size_);
     }
 
