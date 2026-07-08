@@ -21,7 +21,7 @@ jobs:
           submodules: 'true'
       - name: install and env vars
         run: |
-          brew install boost conan nodejs tbb tree gh
+          brew install boost conan nodejs tree gh
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
           echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV

@@ -21,12 +21,6 @@
 #include <string>
 #include <vector>
 
-#ifdef USE_ONEAPI_TBB
-#include <oneapi/tbb/concurrent_queue.h>
-#else
-#include <tbb/concurrent_queue.h>
-#endif
-
 namespace srs
 {
     class App;
@@ -90,9 +84,7 @@ namespace srs::workflow
         ~Handler();
 
         // From socket interface. Need to be fast return
-        void read_data_once(LargeBuffer& read_data);
-
-        void abort() { buffer_queue_.abort(); }
+        void read_data_once(LargeBuffer& read_data, BufferQueue::Token& token);
 
         void start();
 
@@ -107,13 +99,14 @@ namespace srs::workflow
         [[nodiscard]] auto get_n_lines() const -> auto { return n_lines_; }
         auto get_writer() -> auto* { return &writers_; }
         auto get_buffer_queue() const -> const auto& { return buffer_queue_; }
-        auto get_average_ns_time_on_push() -> double
+
+        [[nodiscard]] auto get_queue_producer_token() -> BufferQueue::Token
         {
-            return static_cast<double>(total_time_ns_) / static_cast<double>(total_frame_counts_);
+            return buffer_queue_.get_producer_token();
         }
-        auto get_average_byte_per_frame() -> double
+        [[nodiscard]] auto get_queue_consumer_token() -> BufferQueue::Token
         {
-            return static_cast<double>(total_read_data_bytes_) / static_cast<double>(total_frame_counts_);
+            return buffer_queue_.get_consumer_token();
         }
 
         void print_statistics()
@@ -169,6 +162,16 @@ namespace srs::workflow
         std::uint64_t total_time_ns_ = 0;
 
         void clear_data_buffer();
+
+        auto get_average_ns_time_on_push() -> double
+        {
+            return static_cast<double>(total_time_ns_) / static_cast<double>(total_frame_counts_);
+        }
+
+        auto get_average_byte_per_frame() -> double
+        {
+            return static_cast<double>(total_read_data_bytes_) / static_cast<double>(total_frame_counts_);
+        }
     };
 
 } // namespace srs::workflow

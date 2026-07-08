@@ -2,8 +2,6 @@
 
 echo "running installlation of dependencies"
 
-apt-get install -y libtbb-dev
-
 # mkdir
 mkdir -p abseil-build abseil-install deps-install protobuf-build boost-build 
 

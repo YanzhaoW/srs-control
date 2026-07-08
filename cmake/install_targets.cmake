@@ -40,8 +40,6 @@ install(
     FILE srsConfig-targets.cmake
 )
 
-# install(IMPORTED_RUNTIME_ARTIFACTS TBB::tbb LIBRARY)
-
 install(
     FILES
         ${CMAKE_CURRENT_BINARY_DIR}/srsConfig.cmake

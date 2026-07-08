@@ -23,10 +23,11 @@ Register rpm repository:
     sudo cat > /etc/yum.repos.d/srs-control.repo << EOF
     [srs-control]
     name=SRS-control: A data acquisition program for SRS FEC & VMM3
-    baseurl=https://web-docs.gsi.de/~yanwang/repos/srs-control/rpm/fedora/44/x86_64
+    baseurl=https://web-docs.gsi.de/~yanwang/repos/srs-control/rpm/fedora/$releasever/$basearch
     enabled=1
     gpgcheck=1
     gpgkey=https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
+    metadata_expire=10m
     EOF
 
 Install the package:

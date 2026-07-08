@@ -1,26 +1,32 @@
 target_sources(
     test_utility
     PRIVATE SRSEmulator.cpp SRSWorld.cpp
-    PUBLIC FILE_SET
-           HEADERS
-           FILES
-           SRSEmulator.hpp
-           SRSWorld.hpp)
+    PUBLIC FILE_SET HEADERS FILES SRSEmulator.hpp SRSWorld.hpp
+)
 
 target_link_libraries(
     test_utility
-    PUBLIC srscpp
-           srs_data
-           Boost::headers
-           fmt::fmt-header-only
-           zpp_bits::zpp_bits
-           magic_enum::magic_enum
-           protobuf::libprotobuf
-           glaze::glaze
-           Taskflow::Taskflow
-           gsl::gsl-lite
-           spdlog::spdlog)
+    PUBLIC
+        Boost::headers
+        Taskflow::Taskflow
+        concurrentqueue::concurrentqueue
+        fmt::fmt-header-only
+        glaze::glaze
+        gsl::gsl-lite
+        magic_enum::magic_enum
+        protobuf::libprotobuf
+        spdlog::spdlog
+        srs_data
+        srscpp
+        zpp_bits::zpp_bits
+)
 
-target_sources(unit_test_srs_backend PRIVATE UnitTestWriter.cpp UnitTestStruct.cpp)
+target_sources(
+    unit_test_srs_backend
+    PRIVATE UnitTestWriter.cpp UnitTestStruct.cpp
+)
 target_sources(unit_test_srs_backend PRIVATE UnitTestWriter.cpp)
-target_link_libraries(unit_test_srs_backend PRIVATE GTest::gtest_main test_utility)
+target_link_libraries(
+    unit_test_srs_backend
+    PRIVATE GTest::gtest_main test_utility
+)

@@ -12,7 +12,6 @@
   - clang ≥ 20
 
 - ROOT ≥ 6.32 (*optional*)
-- oneTBB
 - CMake ≥ 3.28
 - Conan ≥ 2.8.0
 - nodejs ≥ 22.9.0 (*optional*)
@@ -33,7 +32,7 @@ Use `Homebrew <https://brew.sh>`_ to install the prerequisites:
 .. code-block:: bash
 
     sudo brew update
-    sudo brew install llvm cmake conan tbb nodejs root
+    sudo brew install llvm cmake conan nodejs root
 
 Fedora 41
 =========
@@ -41,21 +40,14 @@ Fedora 41
 .. code-block:: bash
 
     sudo dnf update
-    sudo dnf install -y cmake clang tbb-devel root conan nodejs
+    sudo dnf install -y cmake clang root conan nodejs
 
 Debian-based Linux (Debian, Ubuntu, Mint, etc.)
 ===============================================
 
 Since Debian-based distros only provide outdated software, installing the prerequisites software for Debian based distros is the most complicated. Therefore, it's **highly recommended** to use the pre-built package from the :ref:`download_step:Download the project`.
 
-Except :program:`oneTBB`, most programs have to be installed either from source and some can be installed from a third-party package manager like :program:`Conda`.
-
-To install :program:`oneTBB`
-
-.. code-block:: bash
-
-    sudo apt-get update
-    auso apt-get install libtbb-dev
+All dependent programs have to be installed either from source and some can be installed from a third-party package manager like :program:`Conda`.
 
 To install :program:`Conda`, please check this instruction:
 
