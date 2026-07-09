@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Wang"
+  given-names: "Yanzhao"
+  orcid: "https://orcid.org/0000-0002-7006-7986"
+- family-names: "Leicher"
+  given-names: "Benedikt"
+title: "SRS-control"
+version: 0.1.6
+doi: 10.5281/zenodo.21284448
+date-released: 2026-07-10
+url: "https://github.com/YanzhaoW/srs-control/tree/master"
+license: "MIT"
