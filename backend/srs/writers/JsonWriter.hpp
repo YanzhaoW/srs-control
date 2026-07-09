@@ -5,10 +5,9 @@
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonConcepts.hpp"
 #include "srs/writers/DataWriterOptions.hpp"
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/thread/future.hpp>
+#include <asio/any_io_executor.hpp>
+#include <asio/thread_pool.hpp>
+#include <asio/use_awaitable.hpp>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>

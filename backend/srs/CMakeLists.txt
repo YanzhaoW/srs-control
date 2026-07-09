@@ -20,7 +20,7 @@ target_sources(
 target_link_libraries(
     srscpp
     PRIVATE
-        $<BUILD_LOCAL_INTERFACE:Boost::thread>
+        $<BUILD_LOCAL_INTERFACE:asio::asio>
         $<BUILD_LOCAL_INTERFACE:fmt::fmt-header-only>
         $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
         $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
@@ -45,13 +45,6 @@ target_sources(
 )
 
 target_link_libraries(srscpp PRIVATE $<BUILD_LOCAL_INTERFACE:srs_data>)
-target_compile_definitions(
-    srscpp
-    PUBLIC
-        BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION
-        BOOST_ASIO_NO_DEPRECATED
-        BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY
-)
 target_compile_options(
     srscpp
     PRIVATE -Werror -Wall -Wextra -Wconversion -pedantic

@@ -1,6 +1,6 @@
 include(FetchContent)
 
-find_package(Boost REQUIRED CONFIG COMPONENTS thread)
+find_package(asio REQUIRED CONFIG)
 find_package(fmt REQUIRED CONFIG)
 find_package(zpp_bits REQUIRED CONFIG)
 find_package(gsl-lite REQUIRED CONFIG)
@@ -32,7 +32,6 @@ endif()
 message(STATUS "Find Protobuf pakcage with config mode.")
 message(STATUS "Protobuf version: ${protobuf_VERSION}")
 message(STATUS "protoc: ${Protobuf_PROTOC_EXECUTABLE}")
-message(STATUS "Boost version: ${Boost_VERSION}")
 
 if(ENABLE_TEST)
     find_package(GTest CONFIG REQUIRED)

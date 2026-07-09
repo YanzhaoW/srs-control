@@ -6,13 +6,12 @@
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/ExitLogger.hpp"
 #include "srs/workflow/TaskDiagram.hpp"
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/impl/co_spawn.hpp>
-#include <boost/asio/redirect_error.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <asio/awaitable.hpp>
+#include <asio/detached.hpp>
+#include <asio/error.hpp>
+#include <asio/impl/co_spawn.hpp>
+#include <asio/redirect_error.hpp>
+#include <asio/use_awaitable.hpp>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +26,7 @@
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 
 namespace srs::workflow
@@ -50,11 +50,11 @@ namespace srs::workflow
         console_->set_level(spdlog::level::info);
         const auto buffer_size = processor_->get_app().get_config().data_buffer_size;
         const auto& task_workflow = processor_->get_data_workflow();
-        auto error_code = boost::system::error_code{};
+        auto error_code = std::error_code{};
         while (not is_cancelled_.load())
         {
             co_await clock_.async_wait(asio::redirect_error(asio::use_awaitable, error_code));
-            if (error_code == boost::asio::error::operation_aborted)
+            if (error_code == asio::error::operation_aborted)
             {
                 break;
             }

@@ -6,12 +6,9 @@
 #include "srs/writers/RootFileWriter.hpp"
 #endif
 #include "srs/writers/UDPWriter.hpp"
-#include <boost/thread/future.hpp>
 #include <concepts>
-#include <cstddef>
 #include <map>
 #include <memory>
-#include <optional>
 #include <spdlog/spdlog.h>
 
 #include <srs/converters/DataConvertOptions.hpp>
@@ -19,7 +16,6 @@
 #include <srs/writers/DataWriterOptions.hpp>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace srs::workflow
@@ -60,8 +56,6 @@ namespace srs::writer
         Manager& operator=(Manager&&) = default;
 
         void write_with(auto make_future);
-        void wait_for_finished();
-        void reset() { write_futures_.clear(); }
         void set_output_filenames(const std::vector<std::string>& filenames);
         [[nodiscard]] auto get_binary_writers() const -> const auto& { return binary_files_; }
         void do_for_each_writer(WriterVisitor auto visitor);
@@ -72,10 +66,6 @@ namespace srs::writer
         [[nodiscard]] auto generate_conversion_req_map() const -> std::map<process::DataConvertOptions, bool>;
 
       private:
-        // std::map<process::DataConvertOptions, std::size_t> convert_count_map_{
-        //     process::EMPTY_CONVERT_OPTION_COUNT_MAP.begin(),
-        //     process::EMPTY_CONVERT_OPTION_COUNT_MAP.end()
-        // };
         std::map<std::string, std::unique_ptr<BinaryFile>> binary_files_;
         std::map<std::string, std::unique_ptr<UDP>> udp_files_;
         std::map<std::string, std::unique_ptr<Json>> json_files_;
@@ -83,22 +73,11 @@ namespace srs::writer
         std::map<std::string, std::unique_ptr<RootFile>> root_files_;
 #endif
         workflow::Handler* workflow_handler_ = nullptr;
-        std::vector<boost::unique_future<std::optional<std::size_t>>> write_futures_;
 
         auto add_binary_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
         auto add_udp_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
         auto add_root_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
         auto add_json_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
-
-        template <typename WriterType>
-        void write_to_files(std::map<std::string, std::unique_ptr<WriterType>>& writers, auto make_future)
-        {
-            for (auto& [key, writer] : writers)
-            {
-                auto fut = make_future(*writer);
-                write_futures_.emplace_back(std::move(fut));
-            }
-        }
 
         template <typename WriterType>
         void for_each_file(std::map<std::string, std::unique_ptr<WriterType>>& writers, auto visitor)
@@ -135,16 +114,6 @@ namespace srs::writer
         for_each_file(json_files_, visitor);
 #ifdef HAS_ROOT
         for_each_file(root_files_, visitor);
-#endif
-    }
-
-    void Manager::write_with(auto make_future)
-    {
-        write_to_files(binary_files_, make_future);
-        write_to_files(udp_files_, make_future);
-        write_to_files(json_files_, make_future);
-#ifdef HAS_ROOT
-        write_to_files(root_files_, make_future);
 #endif
     }
 } // namespace srs::writer

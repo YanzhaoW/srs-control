@@ -43,7 +43,6 @@
                 "CONAN_INSTALL_ARGS": "--build=missing;--build=b2/*;-scompiler.cppstd=gnu23",
                 "BUILD_STATIC": "ON",
                 "USE_SYSTEM_LIBRARIES": "OFF",
-                "USE_SYSTEM_BOOST": "OFF",
                 "USE_SYSTEM_PROTOBUF": "OFF",
                 "ENABLE_TEST": "OFF"
             }

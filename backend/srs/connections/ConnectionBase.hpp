@@ -7,8 +7,8 @@
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/UDPFormatters.hpp" // IWYU pragma: keep
 #include <algorithm>
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/ip/udp.hpp>
+#include <asio/awaitable.hpp>
+#include <asio/ip/udp.hpp>
 #include <cstdint>
 #include <fmt/base.h>
 #include <gsl/gsl-lite.hpp>

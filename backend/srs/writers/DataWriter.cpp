@@ -1,10 +1,9 @@
 #include "DataWriter.hpp"
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/thread/futures/wait_for_all.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/thread_pool.hpp>
+// #include <boost/thread/futures/wait_for_all.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <map>
 #include <memory>
@@ -18,6 +17,7 @@
 #include <srs/writers/UDPWriter.hpp>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -35,11 +35,11 @@ namespace srs::writer
                 spdlog::critical("Ill format socket string {:?}. Please set it as \"ip:port\"", ip_port);
                 return {};
             }
-            auto ip_string =
-                (question_pos == std::string::npos) ? ip_port.substr(0, colon_pos) : ip_port.substr(0, question_pos);
-            auto port_str = ip_port.substr(colon_pos + 1);
+            auto ip_string = ip_port.substr(0, colon_pos);
+            auto port_str =
+                (question_pos == std::string::npos) ? ip_port.substr(colon_pos + 1) : ip_port.substr(question_pos + 1);
 
-            auto err_code = boost::system::error_code{};
+            auto err_code = std::error_code{};
             auto resolver = asio::ip::udp::resolver{ thread_pool };
             auto iter = resolver.resolve(std::string{ ip_string }, std::string{ port_str }, err_code).begin();
             if (err_code)
@@ -90,8 +90,6 @@ namespace srs::writer
                                      { return std::pair{ conversion, is_convert_required(conversion) }; }) |
                std::ranges::to<std::map<process::DataConvertOptions, bool>>();
     }
-
-    void Manager::wait_for_finished() { boost::wait_for_all(write_futures_.begin(), write_futures_.end()); }
 
     auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
     {

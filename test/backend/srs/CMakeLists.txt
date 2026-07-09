@@ -7,8 +7,8 @@ target_sources(
 target_link_libraries(
     test_utility
     PUBLIC
-        Boost::headers
         Taskflow::Taskflow
+        asio::asio
         concurrentqueue::concurrentqueue
         fmt::fmt-header-only
         glaze::glaze

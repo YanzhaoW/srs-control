@@ -3,12 +3,11 @@
 #include "srs/devices/Configuration.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <asio/executor_work_guard.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/signal_set.hpp>
+#include <asio/strand.hpp>
+#include <asio/thread_pool.hpp>
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
@@ -17,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -207,8 +207,8 @@ namespace srs
 
       private:
         using udp = asio::ip::udp;
-        using SwitchFutureType = std::expected<std::future<void>, boost::system::error_code>;
-        using SwitchFutureStatusType = std::expected<std::future_status, boost::system::error_code>;
+        using SwitchFutureType = std::expected<std::future<void>, std::error_code>;
+        using SwitchFutureStatusType = std::expected<std::future_status, std::error_code>;
 
         uint16_t channel_address_ = common::DEFAULT_CHANNEL_ADDRE;
         Config config_;

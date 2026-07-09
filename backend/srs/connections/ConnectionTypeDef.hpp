@@ -1,8 +1,8 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/asio/ip/basic_endpoint.hpp>
-#include <boost/asio/ip/udp.hpp>
+#include <asio.hpp>
+#include <asio/ip/basic_endpoint.hpp>
+#include <asio/ip/udp.hpp>
 #include <memory>
 #include <type_traits>
 
@@ -13,8 +13,8 @@ namespace srs
 
 namespace srs::connection
 {
-    using udp = boost::asio::ip::udp;
-    using UDPEndpoint = boost::asio::ip::basic_endpoint<boost::asio::ip::udp>;
+    using udp = asio::ip::udp;
+    using UDPEndpoint = asio::ip::basic_endpoint<asio::ip::udp>;
 
     class CommandBase;
 
