@@ -30,11 +30,17 @@ Register rpm repository:
     metadata_expire=10m
     EOF
 
-Install the package:
+To install the software:
 
 .. code-block:: bash
 
     sudo dnf install srs-control
+
+To upgrade the software to the latest release:
+
+.. code-block:: bash
+
+    sudo dnf upgrade srs-control
 
 Debian
 ======
@@ -46,15 +52,27 @@ Add the GPG key and repo registry (only once):
 
 .. code-block:: bash
 
-    sudo wget -O /etc/apt/keyrings/srs-control.asc https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
-    sudo echo "deb [signed-by=/etc/apt/keyrings/srs-control.asc] https://web-docs.gsi.de/~yanwang/repos/srs-control/apt/bullseye bullseye main" > /etc/apt/sources.list.d/srs-control.list
+    sudo wget -O /etc/apt/keyrings/srs-control.asc \
+    https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
+
+    sudo echo "deb [signed-by=/etc/apt/keyrings/srs-control.asc] \
+    https://web-docs.gsi.de/~yanwang/repos/srs-control/apt/bullseye bullseye main" \
+    | sudo tee /etc/apt/sources.list.d/srs-control.list
+
     sudo apt update -y
 
-Install the package:
+To install the package:
 
 .. code-block:: bash
 
-    apt install -y srs-control
+    sudo apt install srs-control
+
+To upgrade the software to the latest release:
+
+.. code-block:: bash
+
+    sudo apt update
+    sudo apt install srs-control
 
 Ubuntu
 ======
@@ -66,15 +84,27 @@ Add the GPG key and repo registry (only once):
 
 .. code-block:: bash
 
-    sudo wget -O /etc/apt/keyrings/srs-control.asc https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
-    sudo echo "deb [signed-by=/etc/apt/keyrings/srs-control.asc] https://web-docs.gsi.de/~yanwang/repos/srs-control/apt/jammy jammy main" > /etc/apt/sources.list.d/srs-control.list
+    sudo wget -O /etc/apt/keyrings/srs-control.asc \
+    https://web-docs.gsi.de/~yanwang/repos/srs-control/public-key.asc
+
+    sudo echo "deb [signed-by=/etc/apt/keyrings/srs-control.asc] \
+    https://web-docs.gsi.de/~yanwang/repos/srs-control/apt/jammy jammy main" \
+    | sudo tee /etc/apt/sources.list.d/srs-control.list
+
     sudo apt update -y
 
-Install the package:
+To install the package:
 
 .. code-block:: bash
 
-    apt install -y srs-control
+    sudo apt install srs-control
+
+To upgrade the software to the latest release:
+
+.. code-block:: bash
+
+    sudo apt update
+    sudo apt install srs-control
 
 ********************
  Pre-built binaries
