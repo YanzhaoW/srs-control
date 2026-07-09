@@ -1,11 +1,10 @@
-#include <boost/asio.hpp>
+#include <asio.hpp>
 #include <srs/format.hpp>
 #include <srs/srs.hpp>
 
 constexpr auto PORT = "11111";
 constexpr auto IP_ADDR = "localhost";
 constexpr auto INPUT_BUFFER_SIZE = 10000;
-namespace asio = boost::asio;
 using udp = asio::ip::udp;
 
 namespace

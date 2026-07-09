@@ -4,7 +4,7 @@
 #include "srs/devices/Configuration.hpp"
 #include "srs/workflow/Handler.hpp"
 #include <algorithm>
-#include <boost/asio/thread_pool.hpp>
+#include <asio/thread_pool.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>

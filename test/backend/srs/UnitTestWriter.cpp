@@ -3,13 +3,12 @@
 #include "srs/writers/JsonWriter.hpp"
 #include "srs/writers/UDPWriter.hpp"
 #include "srs/writers/WriterConcept.hpp"
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/thread_pool.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/thread_pool.hpp>
 #include <gtest/gtest.h>
 
 namespace writer = srs::writer;
 namespace process = srs::process;
-namespace asio = boost::asio;
 
 using enum process::DataConvertOptions;
 

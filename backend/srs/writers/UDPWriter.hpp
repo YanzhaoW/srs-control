@@ -4,13 +4,11 @@
 #include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonConcepts.hpp"
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/experimental/coro.hpp>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/uses_executor.hpp>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/thread/future.hpp>
+#include <asio/buffer.hpp>
+#include <asio/experimental/coro.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/use_awaitable.hpp>
+#include <asio/uses_executor.hpp>
 #include <cassert>
 #include <cstddef>
 #include <memory>
@@ -19,6 +17,7 @@
 #include <srs/connections/ConnectionBase.hpp>
 #include <srs/writers/DataWriterOptions.hpp>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -47,13 +46,13 @@ namespace srs::connection
 
         void close()
         {
-            auto error = boost::system::error_code{};
+            auto error = std::error_code{};
             socket_.close(error);
             if (error)
             {
                 spdlog::warn("UDP: Failed to close the socket with endpoint: {} due to the error: {}",
                              socket_.local_endpoint(),
-                             error.what());
+                             error.message());
             }
         }
 
@@ -79,7 +78,7 @@ namespace srs::connection
         }
 
       private:
-        boost::system::error_code err_;
+        std::error_code err_;
         io_context_type* io_context_ = nullptr;
         asio::ip::udp::endpoint remote_endpoint_;
         asio::ip::udp::socket socket_;

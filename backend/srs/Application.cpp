@@ -11,10 +11,9 @@
 
 #include "spdlog/sinks/rotating_file_sink.h"
 #include <algorithm>
-#include <boost/asio/error.hpp>
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <asio/error.hpp>
+#include <asio/executor_work_guard.hpp>
+#include <asio/strand.hpp>
 #include <chrono>
 #include <cstddef>
 #include <exception>
@@ -35,6 +34,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -153,7 +153,7 @@ namespace srs
         set_remote_fec_endpoints();
         check_port_number_validity();
         signal_set_.async_wait(
-            [this](const boost::system::error_code& error, auto)
+            [this](const std::error_code& error, auto)
             {
                 const auto _ = ExitLogger{ "signal" };
                 spdlog::info("Calling SIGINT from monitoring thread");
@@ -207,7 +207,7 @@ namespace srs
         spdlog::default_logger()->flush();
         spdlog::flush_every(std::chrono::seconds{ 1 });
 
-        auto err = boost::system::error_code{};
+        auto err = std::error_code{};
         signal_set_.cancel(err);
         signal_set_.clear(err);
 

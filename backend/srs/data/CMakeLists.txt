@@ -5,7 +5,7 @@ target_link_libraries(
     PUBLIC
         $<BUILD_LOCAL_INTERFACE:fmt::fmt-header-only>
         $<BUILD_LOCAL_INTERFACE:protobuf::libprotobuf>
-    PRIVATE $<BUILD_LOCAL_INTERFACE:Boost::thread>
+    PRIVATE $<BUILD_LOCAL_INTERFACE:asio::asio>
 )
 
 target_sources(

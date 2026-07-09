@@ -15,12 +15,12 @@ add_executable(srs_control main.cpp)
 target_link_libraries(
     srs_control
     PRIVATE
-        srs_data
-        Boost::thread
         CLI11::CLI11
+        asio::asio
         glaze::glaze
         magic_enum::magic_enum
         spdlog::spdlog
+        srs_data
         srscpp
 )
 target_compile_definitions(
@@ -34,11 +34,11 @@ target_link_libraries(
     srs_check
     PRIVATE
         CLI11::CLI11
+        asio::asio
         magic_enum::magic_enum
-        spdlog::spdlog
-        Boost::headers
-        srscpp
         re2::re2
+        spdlog::spdlog
+        srscpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/install_targets.cmake)

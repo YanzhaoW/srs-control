@@ -3,24 +3,20 @@
 #include "EnumConvertFunctions.hpp"  // IWYU pragma: export
 #include "srs/utils/CommonAlias.hpp" // IWYU pragma: keep
 #include "srs/utils/CommonDefinitions.hpp"
+#include <asio/any_io_executor.hpp>
+#include <asio/use_awaitable.hpp>
+#include <asio/use_future.hpp>
 #include <bit>
 #include <bitset>
-#include <boost/asio.hpp>
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
-#include <boost/thread/future.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
-#include <iterator>
 #include <magic_enum/magic_enum.hpp>
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <utility>
 
 namespace srs::common
 {
@@ -114,15 +110,6 @@ namespace srs::common
         auto extension = filepath.extension().string();
         auto file_basename = filepath.replace_extension().string();
         return std::format("{}_{}{}", file_basename, idx, extension);
-    }
-
-    // TODO: completely get rid of asio::coro
-    auto create_coro_task(auto task, const asio::any_io_executor& executor)
-    {
-        auto task_handle = task();
-        using input_type = decltype(task_handle)::input_type;
-        asio::co_spawn(executor, task_handle.async_resume(input_type{}, asio::use_awaitable), asio::use_future).get();
-        return task_handle;
     }
 
     inline auto get_default_log_path() -> std::filesystem::path

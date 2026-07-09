@@ -7,60 +7,6 @@ from conan.tools.cmake import CMakeToolchain
 
 # from conan.tools.cmake import cmake_layout
 
-BOOST_LIBS = (
-    "atomic",
-    "charconv",
-    "chrono",
-    "cobalt",
-    "container",
-    "context",
-    "contract",
-    "coroutine",
-    "date_time",
-    "exception",
-    "fiber",
-    "filesystem",
-    "graph",
-    "graph_parallel",
-    "iostreams",
-    "json",
-    "locale",
-    "log",
-    "math",
-    "mpi",
-    "nowide",
-    "process",
-    "program_options",
-    "python",
-    "random",
-    "regex",
-    "serialization",
-    "stacktrace",
-    "system",
-    "test",
-    "thread",
-    "timer",
-    "type_erasure",
-    "url",
-    "wave",
-)
-
-BOOST_OPTIONS = {
-    f"without_{_name}": True
-    for _name in BOOST_LIBS
-    if _name
-    not in [
-        "thread",
-        "atomic",
-        "chrono",
-        "container",
-        "date_time",
-        "exception",
-        "system",
-    ]
-}
-BOOST_OPTIONS.update({"shared": False})
-
 PROTOBUF_OPTIONS = {
     "with_zlib": True,
     "with_rtti": False,
@@ -84,20 +30,13 @@ class CompressorRecipe(ConanFile):
         self.requires("taskflow/3.10.0")  # type: ignore
         self.requires("glaze/6.0.1")  # type: ignore
         self.requires("concurrentqueue/1.0.5")  # type: ignore
+        self.requires("asio/1.38.0")  # type: ignore
 
         if os.environ["CMAKE_USE_SYSTEM_RE2"] == "OFF":
             print("---- Conan: compiling RE2 from the conan package manager.")
             self.requires("re2/20251105")  # type: ignore
         else:
             print("---- Conan: using RE2 from the local system.")
-
-        if os.environ["CMAKE_USE_SYSTEM_BOOST"] == "OFF":
-            print(
-                "---- Conan: compiling protobuf from the conan package manager."
-            )
-            self.requires("boost/1.88.0", options=BOOST_OPTIONS)  # type: ignore
-        else:
-            print("---- Conan: using Boost from the local system.")
 
         if os.environ["CMAKE_ENABLE_TEST"] == "ON":
             self.requires("gtest/1.15.0")  # type: ignore

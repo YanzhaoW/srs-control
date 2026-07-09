@@ -4,8 +4,8 @@ project(readUDP)
 set(CMAKE_CXX_STANDARD 17)
 add_executable(main main.cpp)
 
-find_package(Boost REQUIRED)
+find_package(asio REQUIRED)
 find_package(srs REQUIRED)
 find_package(fmt REQUIRED)
 
-target_link_libraries(main PRIVATE Boost::boost srs::srs fmt::fmt-header-only)
+target_link_libraries(main PRIVATE asio::asio srs::srs fmt::fmt-header-only)

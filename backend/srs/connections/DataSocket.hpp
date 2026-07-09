@@ -8,7 +8,7 @@
 #include "srs/data/LargeBuffer.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
-#include <boost/asio/awaitable.hpp>
+#include <asio/awaitable.hpp>
 #include <cstddef>
 #include <gsl/gsl-lite.hpp>
 #include <memory>

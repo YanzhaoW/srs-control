@@ -4,15 +4,14 @@
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include "srs/utils/ExitLogger.hpp"
-#include <boost/asio/as_tuple.hpp>
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/experimental/awaitable_operators.hpp>
-#include <boost/asio/system_timer.hpp>
-#include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <asio/as_tuple.hpp>
+#include <asio/awaitable.hpp>
+#include <asio/buffer.hpp>
+#include <asio/experimental/awaitable_operators.hpp>
+#include <asio/system_timer.hpp>
+#include <asio/this_coro.hpp>
+#include <asio/use_awaitable.hpp>
+#include <asio/use_future.hpp>
 #include <chrono>
 #include <concepts>
 #include <cstddef>
@@ -23,6 +22,7 @@
 #include <memory>
 #include <optional>
 #include <spdlog/spdlog.h>
+#include <system_error>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -55,7 +55,7 @@ namespace srs::connection
       public:
         template <SpecialSocketDerived SocketType, typename... Args>
         static auto create(int port_number, io_context_type& io_context, Args&&... args)
-            -> std::expected<std::shared_ptr<SocketType>, boost::system::error_code>;
+            -> std::expected<std::shared_ptr<SocketType>, std::error_code>;
 
         /**
          * @brief Registering the send action.
@@ -120,7 +120,7 @@ namespace srs::connection
          *
          * @return Error code from the binding.
          */
-        [[nodiscard]] auto get_socket_error_code() const -> boost::system::error_code { return socket_ec_; }
+        [[nodiscard]] auto get_socket_error_code() const -> std::error_code { return socket_ec_; }
 
         /**
          * @brief Getter for the status of the listen action.
@@ -164,7 +164,7 @@ namespace srs::connection
         int port_number_ = 0;
         std::unique_ptr<udp::socket> socket_;
         std::shared_future<std::variant<std::monostate, std::monostate>> listen_future_;
-        boost::system::error_code socket_ec_;
+        std::error_code socket_ec_;
         asio::system_timer cancel_timer_; //!< Used for cancel the unfinished coroutine
 
         // for the time measurement
@@ -185,7 +185,7 @@ namespace srs::connection
 
     template <SpecialSocketDerived SocketType, typename... Args>
     auto SpecialSocket::create(int port_number, io_context_type& io_context, Args&&... args)
-        -> std::expected<std::shared_ptr<SocketType>, boost::system::error_code>
+        -> std::expected<std::shared_ptr<SocketType>, std::error_code>
     {
         auto socket =
             std::shared_ptr<SocketType>(new SocketType{ port_number, io_context, std::forward<Args>(args)... });
@@ -248,7 +248,7 @@ namespace srs::connection
 
     void SpecialSocket::listen(this auto& self, io_context_type& io_context)
     {
-        using boost::asio::experimental::awaitable_operators::operator||;
+        using asio::experimental::awaitable_operators::operator||;
         self.listen_future_ =
             asio::co_spawn(io_context,
                            async_listen_all_connections(common::get_shared_from_this(self)) || self.cancel_coroutine(),
