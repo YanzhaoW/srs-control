@@ -208,7 +208,7 @@ namespace srs::connection
         const auto _ = ExitLogger{ port_str };
         socket->bind_socket();
         auto remote_endpoint = udp::endpoint{};
-        spdlog::info("Local socket with port {} starts to listen ...", socket->get_port());
+        spdlog::debug("Local socket with port {} starts to listen ...", socket->get_port());
         while (true)
         {
             const auto [err_code, receive_size] = co_await socket->get_socket().async_receive_from(

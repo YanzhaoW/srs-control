@@ -2,10 +2,10 @@
 #include "srs/converters/StructSerializer.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include <array>
+#include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <gtest/gtest.h>
 #include <random>
 #include <ranges>
 
@@ -15,7 +15,6 @@ namespace process = srs::process;
 
 namespace
 {
-
     auto generate_random_struct_data() -> StructData
     {
         static constexpr auto MAX_NUM_SIZE = 100;
@@ -68,22 +67,25 @@ namespace
 
 } // namespace
 
-TEST(data_structure, check_de_serialization)
+TEST_CASE("data_structure")
 {
-    const auto random_data = generate_random_struct_data();
+    SECTION("check_de_serialization")
+    {
+        const auto random_data = generate_random_struct_data();
 
-    auto serializer_converter = process::StructSerializer();
-    auto deserializer_converter = process::StructDeserializer();
+        auto serializer_converter = process::StructSerializer();
+        auto deserializer_converter = process::StructDeserializer();
 
-    auto initial_converter = [&random_data](std::size_t /*line_number*/ = 0) -> const StructData*
-    { return &random_data; };
+        auto initial_converter = [&random_data](std::size_t /*line_number*/ = 0) -> const StructData*
+        { return &random_data; };
 
-    auto res = serializer_converter.run(initial_converter);
+        auto res = serializer_converter.run(initial_converter);
 
-    EXPECT_TRUE(res.has_value());
-    auto struct_data = deserializer_converter.run(serializer_converter);
-    const auto& output_struct = *struct_data.value();
-    EXPECT_TRUE(random_data.header == output_struct.header);
-    EXPECT_TRUE(struct_data.has_value());
-    EXPECT_TRUE(random_data == *struct_data.value());
+        CHECK(res.has_value());
+        auto struct_data = deserializer_converter.run(serializer_converter);
+        const auto& output_struct = *struct_data.value();
+        CHECK(random_data.header == output_struct.header);
+        CHECK(struct_data.has_value());
+        CHECK(random_data == *struct_data.value());
+    }
 }

@@ -11,7 +11,7 @@ endif()
 
 add_subdirectory(srs)
 
-add_executable(srs_control main.cpp)
+add_executable(srs_control srs_control.cpp)
 target_link_libraries(
     srs_control
     PRIVATE
@@ -27,6 +27,7 @@ target_compile_definitions(
     srs_control
     PUBLIC SRS_PROJECT_VERSION="v${CMAKE_PROJECT_VERSION}"
 )
+set_target_properties(srs_control PROPERTIES OUTPUT_NAME "srs-control")
 
 add_executable(srs_check check_log.cpp)
 
@@ -40,5 +41,7 @@ target_link_libraries(
         spdlog::spdlog
         srscpp
 )
+
+set_target_properties(srs_check PROPERTIES OUTPUT_NAME "srs-check")
 
 include(${CMAKE_SOURCE_DIR}/cmake/install_targets.cmake)

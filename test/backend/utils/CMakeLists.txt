@@ -21,12 +21,3 @@ target_link_libraries(
         zpp_bits::zpp_bits
 )
 
-target_sources(
-    unit_test_srs_backend
-    PRIVATE UnitTestWriter.cpp UnitTestStruct.cpp
-)
-target_sources(unit_test_srs_backend PRIVATE UnitTestWriter.cpp)
-target_link_libraries(
-    unit_test_srs_backend
-    PRIVATE GTest::gtest_main test_utility
-)

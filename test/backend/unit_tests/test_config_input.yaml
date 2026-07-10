@@ -1,0 +1,14 @@
+fec_control_local_port: 6017
+fec_control_remote_port: 6610
+fec_data_receive_ports:
+  - 6001
+data_buffer_size: 6000
+remote_fec_ips:
+  - '10.0.0.100'
+buffer_queue_capacity: 100
+output_filenames:
+  - 'test.output'
+output_split: 2
+time_wait_after_acq_off_ms: 100
+warn_if_data_drop: true
+data_print_mode: print_raw

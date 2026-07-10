@@ -1,9 +1,9 @@
 Command line tools
 ==================
 
-.. _srs_control:
+.. _srs-control:
 
-srs_control
+srs-control
 -----------
 
 Synopsis
@@ -11,18 +11,18 @@ Synopsis
 
 .. code-block:: bash
 
-    ./srs_control [-p DATA_PRINT_OPTION] [-v LOG_LEVEL] [-h]
+    ./srs-control [-p DATA_PRINT_OPTION] [-l LOG_LEVEL] [-h]
 
 Description
 ~~~~~~~~~~~
 
-:program:`srs_control` is the main program that controls the communications with SRS
+:program:`srs-control` is the main program that controls the communications with SRS
 system, the data analysis and data writing.
 
 Options
 ~~~~~~~
 
-.. program:: srs_control
+.. program:: srs-control
 
 .. option:: -h, --help
 
@@ -69,7 +69,7 @@ Options
 Data output to multiple files
 +++++++++++++++++++++++++++++
 
-``srs_control`` can output received data into multiple files with different types at the
+``srs-control`` can output received data into multiple files with different types at the
 same time. Currently, following output types are available:
 
 - **binary**
@@ -90,14 +90,14 @@ To output the same data to multiple different output types at the same time:
 
 .. code-block:: bash
 
-    ./srs_control -o "output1.root" -o "output2.root" \
+    ./srs-control -o "output1.root" -o "output2.root" \
                   -o "output.bin" -o "output.binpb" \
                   -o "output.json" -o "localhost:9999"
 
 Configuration
 -------------
 
-Additional configuration of ``srs_control`` is setup via a JSON file. By default, it
+Additional configuration of ``srs-control`` is setup via a JSON file. By default, it
 reads the JSON file in the default location ``${HOME}/.config/srs-control/config.json``.
 The program will automatically creates the JSON file with default values if the file
 doesn't exist. Alternatively, you could also use ``--dump-config`` option to dump all
@@ -105,7 +105,7 @@ default values into a file:
 
 .. code-block:: bash
 
-    ./srs_control --dump-config "config.json"
+    ./srs-control --dump-config "config.json"
 
 If the file name is not provided, the default configuration values will be written to
 the default location.
@@ -115,7 +115,7 @@ one in the default location:
 
 .. code-block:: bash
 
-    ./srs_control -c "config.json" -o "output.root"
+    ./srs-control -c "config.json" -o "output.root"
 
 Configuration values from JSON
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

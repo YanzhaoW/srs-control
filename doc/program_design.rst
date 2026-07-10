@@ -20,7 +20,7 @@ The design philosophy of this program follows a low coupling and high coherence 
  Program Options
 *****************
 
-The ``srs_control`` program accepts user options in two different ways: JSON configuration file and command line options. Both are defined in the `main.cpp <https://github.com/YanzhaoW/srs-control/blob/master/backend/main.cpp>`_ file independently from the ``App`` class. **Options specified from the JSON file can be overwritten if a same option also exists in the command line.** Thus, it's recommended to store rarely changed options in the JSON file, such as the port number of the remote FEC devices or local data stream socket. On the other hand, command line options usually include frequently changed options, like output file names or the log level.
+The ``srs-control`` program accepts user options in two different ways: JSON configuration file and command line options. Both are defined in the `main.cpp <https://github.com/YanzhaoW/srs-control/blob/master/backend/main.cpp>`_ file independently from the ``App`` class. **Options specified from the JSON file can be overwritten if a same option also exists in the command line.** Thus, it's recommended to store rarely changed options in the JSON file, such as the port number of the remote FEC devices or local data stream socket. On the other hand, command line options usually include frequently changed options, like output file names or the log level.
 
 Command Line Options
 ====================

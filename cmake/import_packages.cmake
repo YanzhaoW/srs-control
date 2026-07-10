@@ -1,5 +1,14 @@
 include(FetchContent)
 
+FetchContent_Declare(
+    glaze
+    GIT_REPOSITORY https://github.com/stephenberry/glaze.git
+    GIT_TAG v7.9.0
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glaze)
+
 find_package(asio REQUIRED CONFIG)
 find_package(fmt REQUIRED CONFIG)
 find_package(zpp_bits REQUIRED CONFIG)
@@ -9,7 +18,8 @@ find_package(CLI11 REQUIRED CONFIG)
 find_package(concurrentqueue REQUIRED)
 find_package(magic_enum REQUIRED CONFIG)
 find_package(Taskflow REQUIRED CONFIG)
-find_package(glaze REQUIRED CONFIG)
+
+# find_package(glaze REQUIRED CONFIG)
 find_package(re2 REQUIRED CONFIG)
 if(USE_SYSTEM_PROTOBUF)
     message(STATUS "Using system protobuf.")
@@ -34,7 +44,7 @@ message(STATUS "Protobuf version: ${protobuf_VERSION}")
 message(STATUS "protoc: ${Protobuf_PROTOC_EXECUTABLE}")
 
 if(ENABLE_TEST)
-    find_package(GTest CONFIG REQUIRED)
+    find_package(Catch2 CONFIG REQUIRED)
 endif()
 
 if(NOT NO_ROOT)

@@ -7,6 +7,7 @@ target_sources(
                 CommonDefinitions.hpp
                 CommonFunctions.hpp
                 EnumConvertFunctions.hpp
+                GlazeCustom.hpp
                 UDPFormatters.hpp
                 ValidData.hpp
 )

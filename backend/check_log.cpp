@@ -132,7 +132,7 @@ namespace srs
 auto main(int argc, char** argv) -> int
 {
 
-    auto cli_args = CLI::App{ "Logger checking of srs_control program." };
+    auto cli_args = CLI::App{ "Logger checking of srs-control program." };
 
     auto default_log_filename = srs::common::get_default_log_path().string();
 

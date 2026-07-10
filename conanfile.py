@@ -28,7 +28,7 @@ class CompressorRecipe(ConanFile):
         self.requires("zpp_bits/4.4.24")  # type: ignore
         self.requires("magic_enum/0.9.7")  # type: ignore
         self.requires("taskflow/3.10.0")  # type: ignore
-        self.requires("glaze/6.0.1")  # type: ignore
+        # self.requires("glaze/7.8.4")  # type: ignore
         self.requires("concurrentqueue/1.0.5")  # type: ignore
         self.requires("asio/1.38.0")  # type: ignore
 
@@ -39,7 +39,7 @@ class CompressorRecipe(ConanFile):
             print("---- Conan: using RE2 from the local system.")
 
         if os.environ["CMAKE_ENABLE_TEST"] == "ON":
-            self.requires("gtest/1.15.0")  # type: ignore
+            self.requires("catch2/3.15.1")
 
         if os.environ["CMAKE_USE_SYSTEM_PROTOBUF"] == "OFF":
             print(
