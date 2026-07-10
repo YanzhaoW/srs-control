@@ -1,23 +1,22 @@
 #include "srs/Application.hpp"
 #include "srs/ConfigHandler.hpp"
-#include "srs/SRSWorld.hpp"
 #include "srs/devices/Configuration.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include "srs/writers/DataWriterOptions.hpp"
+#include "test/backend/utils/SRSWorld.hpp"
 #include <CLI/CLI.hpp>
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
-#include <filesystem>
+#include <expected>
 #include <fmt/base.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <format>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -32,25 +31,9 @@ using srs::common::internal::get_enum_dashed_names;
 
 constexpr auto SPDLOG_LOG_NAMES = get_enum_dashed_names<spdlog::level::level_enum>();
 const auto spdlog_map = get_enum_dash_map<spdlog::level::level_enum>();
-
-namespace
-{
-    auto get_file_size(std::string_view filename) -> std::size_t
-    {
-        namespace fs = std::filesystem;
-        auto file_path = fs::path{ filename };
-        if (fs::exists(file_path))
-        {
-            return std::filesystem::file_size(file_path);
-        }
-        spdlog::error("File with the name {:?} doesn't exist!", filename);
-        return 0;
-    }
-
-} // namespace
-
 constexpr auto DEFAULT_RUN_TIME_S = 5;
 constexpr auto DEFAULT_DELAY_TIME_NS = 10000000;
+
 // NOLINTNEXTLINE (bugprone-exception-escape)
 auto main(int argc, char** argv) -> int
 {
@@ -117,11 +100,12 @@ auto main(int argc, char** argv) -> int
                                          .n_instances = n_instances,
                                          .input_filename = "test_data.bin" } };
 
-        auto is_ok = srs::config::set_config_from_json(app_config, json_filepath);
+        auto is_not_ok = srs::config::set_config_from_file(app_config, json_filepath);
 
-        if (not is_ok)
+        if (is_not_ok)
         {
-            throw std::runtime_error("Error occurred when reading configuration files.");
+            spdlog::error(is_not_ok.value());
+            return EXIT_FAILURE;
         }
         n_data_ports = app_config.fec_data_receive_ports.size();
 
@@ -191,25 +175,53 @@ auto main(int argc, char** argv) -> int
                 {
                     return true;
                 }
+
+                auto is_ok = srs::common::get_file_size(name).and_then(
+                    [](const auto size) -> std::expected<std::size_t, std::string>
+                    {
+                        if (size == 0)
+                        {
+                            return std::unexpected{ std::string{ "Output files are empty!" } };
+                        }
+                        return size;
+                    });
+
                 if (name.ends_with(".bin"))
                 {
-                    const auto output_size = get_file_size(name);
-                    const auto input_size = n_data_ports * get_file_size(input_filename);
-                    if (output_size == input_size)
-                    {
-                        return true;
-                    }
-                    spdlog::error("Output binary files don't have correct sizes! Expected size: {}B, but got {}B.",
-                                  input_size,
-                                  output_size);
+                    is_ok =
+                        is_ok
+                            .and_then(
+                                [&input_filename, &n_data_ports](
+                                    const auto output_size) -> std::expected<std::pair<size_t, size_t>, std::string>
+                                {
+                                    const auto input_size = srs::common::get_file_size(input_filename);
+                                    if (not input_size)
+                                    {
+                                        return std::unexpected{ input_size.error() };
+                                    }
+                                    return std::pair{ n_data_ports * input_size.value(), output_size };
+                                })
+                            .and_then(
+                                [](const auto input_output_size) -> std::expected<std::size_t, std::string>
+                                {
+                                    const auto& [input_size, output_size] = input_output_size;
+                                    if (input_size != output_size)
+                                    {
+
+                                        return std::unexpected{ fmt::format("Output binary files don't have correct "
+                                                                            "sizes! Expected size: {}B, but got {}B.",
+                                                                            input_size,
+                                                                            output_size) };
+                                    }
+                                    return output_size;
+                                });
+                }
+                if (not is_ok)
+                {
+                    spdlog::error("{}", is_ok.error());
                     return false;
                 }
-                if (get_file_size(name) != 0)
-                {
-                    return true;
-                }
-                spdlog::error("Output files are empty!");
-                return false;
+                return true;
             });
     if (wrong_file_size)
     {

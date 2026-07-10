@@ -11,7 +11,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <expected>
 #include <filesystem>
+#include <fmt/format.h>
 #include <format>
 #include <magic_enum/magic_enum.hpp>
 #include <string>
@@ -118,6 +120,26 @@ namespace srs::common
         const auto* xdg_state_home = std::getenv("XDG_STATE_HOME");
         const auto state_dir =
             xdg_state_home == nullptr ? path{ std::getenv("HOME") } / path{ ".local/state" } : path{ xdg_state_home };
-        return state_dir / path{ "srs_control/srs_control.log" };
+        return state_dir / path{ DEFAULT_LOG_FILE };
+    }
+
+    inline auto get_default_config_path() -> std::filesystem::path
+    {
+        using path = std::filesystem::path;
+        const auto* xdg_state_home = std::getenv("XDG_CONFIG_HOME");
+        const auto state_dir =
+            xdg_state_home == nullptr ? path{ std::getenv("HOME") } / path{ ".config" } : path{ xdg_state_home };
+        return state_dir / path{ DEFAULT_CONFIG_FILE };
+    }
+
+    inline auto get_file_size(std::string_view filename) -> std::expected<std::size_t, std::string>
+    {
+        namespace fs = std::filesystem;
+        auto file_path = fs::path{ filename };
+        if (fs::exists(file_path))
+        {
+            return std::filesystem::file_size(file_path);
+        }
+        return std::unexpected{ fmt::format("File with the name {:?} doesn't exist!", filename) };
     }
 } // namespace srs::common

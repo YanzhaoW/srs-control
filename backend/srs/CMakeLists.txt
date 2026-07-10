@@ -52,8 +52,8 @@ target_compile_options(
 
 # Set coverage
 if(ENABLE_COVERAGE)
-    target_compile_options(srscpp PRIVATE --coverage)
-    target_link_options(srscpp PRIVATE --coverage)
+    target_compile_options(srscpp PRIVATE --coverage -fprofile-update=atomic)
+    target_link_options(srscpp PRIVATE --coverage -fprofile-update=atomic)
 endif()
 
 if(ENABLE_ASAN)

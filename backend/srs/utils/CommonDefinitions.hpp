@@ -51,6 +51,10 @@ namespace srs::common
     constexpr auto PROTOBUF_ENABLE_GZIP = true;
     constexpr auto DEFAULT_DATA_QUEUE_SIZE = 100;
 
+    // Default filenames
+    constexpr auto DEFAULT_LOG_FILE = std::string_view{ "srs-control/srs-control.log" };
+    constexpr auto DEFAULT_CONFIG_FILE = std::string_view{ "srs-control/config.yaml" };
+
     // Log parameters
     constexpr auto rotating_file_nums = 5;
     const auto file_max_size = 1048576 * 10; //!< file size limited to 5 MB.
@@ -81,4 +85,5 @@ namespace srs::common
     };
 
     using RawDelimSizeType = uint32_t;
+
 } // namespace srs::common

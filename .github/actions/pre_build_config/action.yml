@@ -1,0 +1,40 @@
+name: conan configuration
+description: 'install and configure conan'
+
+runs:
+  using: composite
+  steps:
+    - name: install and env vars
+      run: |
+        dnf upgrade -y
+        dnf install -y conan nodejs hostname pipx
+        cd $GITHUB_WORKSPACE/..
+        echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
+        export CONAN_HOME=$PWD/.conan2
+        echo "CONAN_HOME=$CONAN_HOME" >> $GITHUB_ENV
+        conan config clean
+        cat $GITHUB_WORKSPACE/utils/settings/conan/settings_user.yml >> $CONAN_HOME/settings.yml
+      shell: bash
+
+    - name: set env variables for cdash
+      run: |
+        if [[ $GITHUB_EVENT_NAME == "push" ]]; then
+          echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
+          echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
+        elif [[ $GITHUB_EVENT_NAME == "schedule" ]]; then
+          echo "TEST_MODEL=Nightly" >> $GITHUB_ENV
+          echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
+        else
+          echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
+          export PULL_NR=${{ github.event.number }}
+          echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - name: restore cache
+      id: cache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ${{ env.PARENT_DIR }}/.conan2
+        key: ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }}

@@ -136,7 +136,7 @@ namespace srs::connection
                                     std::views::transform(
                                         [](const auto& key_value)
                                         {
-                                            return fmt::format("Remote socket: {}\n\tMessage: {}",
+                                            return fmt::format("Remote endpoint:\t{}\n\tExpected Response:\t{}",
                                                                key_value.first,
                                                                print_connections(key_value.second));
                                         }),

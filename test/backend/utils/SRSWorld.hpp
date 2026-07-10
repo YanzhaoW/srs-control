@@ -1,8 +1,7 @@
 #pragma once
 
-#include "srs/SRSEmulator.hpp"
-#include "srs/devices/Configuration.hpp"
 #include "srs/workflow/Handler.hpp"
+#include "test/backend/utils/SRSEmulator.hpp"
 #include <algorithm>
 #include <asio/thread_pool.hpp>
 #include <cstddef>

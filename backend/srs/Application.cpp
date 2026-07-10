@@ -83,7 +83,8 @@ namespace srs
         if (auto switch_off_status = wait_for_switch_action(switch_off_future_);
             switch_off_status == std::future_status::ready)
         {
-            spdlog::info("FECs has been switched off successfully.");
+            spdlog::info(fmt::format(fg(fmt::color::light_green) | fmt::emphasis::bold,
+                                     "FECs have been switched off successfully! 🥳"));
         }
         else if (switch_off_status == std::future_status::timeout)
         {
@@ -270,6 +271,7 @@ namespace srs
                 {
                     for (const auto& remote_endpoint : remote_fec_endpoints_)
                     {
+                        spdlog::info("Switching {} FEC device with remote endpoint {} ...", T::tag, remote_endpoint);
                         auto fec_connection = std::make_shared<T>(connection_name);
                         fec_connection->set_remote_endpoint(remote_endpoint);
                         fec_connection->send_message_from(socket);
@@ -280,15 +282,11 @@ namespace srs
                 });
     }
 
-    void App::switch_on()
-    {
-        spdlog::info("Switching on FEC devices ...");
-        switch_on_future_ = switch_FECs<connection::Starter>("Starter");
-    }
+    void App::switch_on() { switch_on_future_ = switch_FECs<connection::Starter>("Starter"); }
 
     void App::switch_off()
     {
-        spdlog::info(fmt::format(fmt::emphasis::bold, "Please wait until FEC devices are switched off ..."));
+        spdlog::info(fmt::format(fmt::emphasis::bold, "Please wait until FEC devices are switched off ‼️"));
         switch_off_future_ = switch_FECs<connection::Stopper>("Stopper");
     }
 

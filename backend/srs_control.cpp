@@ -12,7 +12,6 @@
 #include <print>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -59,7 +58,7 @@ auto main(int argc, char** argv) -> int
             }
             return {};
         }();
-        auto json_filepath = home_dir.empty() ? "" : std::format("{}/.config/srs-control/config.json", getenv("HOME"));
+        auto json_filepath = home_dir.empty() ? "" : srs::common::get_default_config_path().string();
         auto action_mode_enum = srs::common::ActionMode::all;
         auto dump_config_callback = [&json_filepath, &is_dump_needed](const std::string& filename)
         {
@@ -115,8 +114,13 @@ auto main(int argc, char** argv) -> int
 
         if (is_dump_needed)
         {
-            srs::config::output_config_to_json(app_config, json_filepath);
-            return 0;
+            auto is_not_ok = srs::config::output_config_to_file(app_config, json_filepath);
+            if (is_not_ok)
+            {
+                spdlog::error("{}", is_not_ok.value());
+                return EXIT_FAILURE;
+            }
+            return EXIT_SUCCESS;
         }
 
         if (is_root_version_print)
@@ -126,18 +130,19 @@ auto main(int argc, char** argv) -> int
 #else
             std::println("ROOT is not built");
 #endif
-            return 0;
+            return EXIT_FAILURE;
         }
 
         auto app = srs::App{};
 
         spdlog::default_logger()->set_level(spdlog_level);
 
-        auto is_ok = srs::config::set_config_from_json(app_config, json_filepath);
+        auto is_not_ok = srs::config::set_config_from_file(app_config, json_filepath, true);
 
-        if (not is_ok)
+        if (is_not_ok)
         {
-            throw std::runtime_error("Error occurred when reading configuration files.");
+            spdlog::error("{}", is_not_ok.value());
+            return EXIT_FAILURE;
         }
 
         app.set_options(std::move(app_config));

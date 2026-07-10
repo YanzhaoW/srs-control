@@ -10,8 +10,8 @@
 name: ci
 on:
   schedule:
-  # trigger the workflow on the every 2 am UTC
-  - cron: '00 02 * * *'
+    # trigger the workflow on the every 2 am UTC
+    - cron: '00 02 * * *'
   pull_request:
     branches:
       - master
@@ -41,7 +41,6 @@ jobs:
           echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
           echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
           echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV
-          echo "GTEST_COLOR=1" >> $GITHUB_ENV
           brew list
 
       - name: set env variables for cdash
@@ -100,39 +99,9 @@ jobs:
         with:
           fetch-depth: 1
           submodules: 'true'
-      - name: install and env vars
-        run: |
-          dnf upgrade -y
-          dnf install -y conan nodejs hostname pipx
-          cd $GITHUB_WORKSPACE/..
-          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
-          echo "GTEST_COLOR=1" >> $GITHUB_ENV
-          export CONAN_HOME=$PWD/.conan2
-          echo "CONAN_HOME=$CONAN_HOME" >> $GITHUB_ENV
-          conan config clean
-          cat $GITHUB_WORKSPACE/utils/settings/conan/settings_user.yml >> $CONAN_HOME/settings.yml
 
-      - name: set env variables for cdash
-        run: |
-          if [[ $GITHUB_EVENT_NAME == "push" ]]; then
-            echo "TEST_MODEL=Continuous" >> $GITHUB_ENV
-            echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
-          elif [[ $GITHUB_EVENT_NAME == "schedule" ]]; then
-            echo "TEST_MODEL=Nightly" >> $GITHUB_ENV
-            echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (master)\"" >> $GITHUB_ENV
-          else
-            echo "TEST_MODEL=Experimental" >> $GITHUB_ENV
-            export PULL_NR=${{ github.event.number }}
-            echo "TEST_NAME=\"${{ matrix.base-image}}-${{ matrix.compiler }}-${{ matrix.build-type }} (pr.${PULL_NR})\"" >> $GITHUB_ENV
-          fi
-
-      - name: restore cache
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ${{ env.PARENT_DIR }}/.conan2
-          key: ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }}
+      - name: pre-build
+        uses: './.github/actions/pre_build_config'
 
       # Be very careful about CTEST_BUILD_NAME. It shouldn't contain additional double quotations
       - name: build-test-submit

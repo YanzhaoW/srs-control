@@ -28,6 +28,7 @@ namespace srs::connection
         {
             return std::span{ send_suffix_.cbegin(), send_suffix_.cend() };
         }
+        static constexpr auto tag = std::string_view{ "on" };
 
       private:
         static constexpr std::array<CommunicateEntryType, 3> send_suffix_ = { 0, 15, 1 };
@@ -73,6 +74,7 @@ namespace srs::connection
          */
         ~Stopper() = default;
 
+        static constexpr auto tag = std::string_view{ "off" };
         static auto get_send_suffix() -> const auto& { return send_suffix_; }
         static auto get_suffix() -> std::span<const CommunicateEntryType>
         {

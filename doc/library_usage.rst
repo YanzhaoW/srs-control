@@ -47,7 +47,7 @@ with its sub structure:
 An example of ROOT macro to extract data structure from the tree
 =================================================================
 
-To extract the data structure value, it's highly recommended to use ROOT `TTreeReader <https://root.cern/doc/master/classTTreeReader.html>`_ instead of direct ROOT ``TTree``. The tree name from the :ref:`srs_control` save a tree named "srs_data_tree" with a single branch named "srs_frame_data".
+To extract the data structure value, it's highly recommended to use ROOT `TTreeReader <https://root.cern/doc/master/classTTreeReader.html>`_ instead of direct ROOT ``TTree``. The tree name from the :ref:`srs-control` save a tree named "srs_data_tree" with a single branch named "srs_frame_data".
 
 .. attention::
    To let ROOT use the dictionary of ``srs::StructData``, the libaray path ``srs-download/lib`` has to be added to ``LD_LIBRARY_PATH`` before running the Macro file: ``export LD_LIBRARY_PATH="[.../srs-download]/lib:$LD_LIBRARY_PATH"``
