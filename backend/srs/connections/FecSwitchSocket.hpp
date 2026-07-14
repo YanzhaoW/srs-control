@@ -35,7 +35,7 @@ namespace srs::connection
             return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time_)
                 .count();
         }
-        void launch_actions();
+        void launch_send_actions();
 
       private:
         friend SpecialSocket;

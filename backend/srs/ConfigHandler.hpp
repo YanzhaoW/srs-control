@@ -82,8 +82,7 @@ namespace srs::config
         return {};
     }
 
-    inline auto set_config_from_yaml(Config& app_config, std::string_view filename, bool is_default_generated = true)
-        -> std::optional<std::string>
+    inline auto set_config_from_yaml(Config& app_config, std::string_view filename) -> std::optional<std::string>
     {
         auto error_code = glz::read_file_yaml(app_config, filename);
         if (error_code)

@@ -111,7 +111,8 @@
             "displayName": "coverage build",
             "description": "coverage build",
             "cacheVariables": {
-                "ENABLE_COVERAGE": "ON"
+                "ENABLE_COVERAGE": "ON",
+                "USE_SYSTEM_LIBRARIES": "ON"
             }
         }
     ],

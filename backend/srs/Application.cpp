@@ -277,7 +277,7 @@ namespace srs
                         fec_connection->send_message_from(socket);
                     }
                     auto res_fut = socket->cancel_listen_after(io_context_);
-                    socket->launch_actions();
+                    socket->launch_send_actions();
                     return res_fut;
                 });
     }

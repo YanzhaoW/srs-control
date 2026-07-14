@@ -22,28 +22,11 @@ jobs:
         with:
           fetch-depth: 1
           submodules: 'true'
-      - name: install and env vars
-        run: |
-          dnf upgrade -y
-          dnf install -y conan nodejs hostname
-          cd $GITHUB_WORKSPACE/..
-          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
-          export CONAN_HOME=$PWD/.conan2
-          echo "CONAN_HOME=$CONAN_HOME" >> $GITHUB_ENV
-          conan config clean
-          cat $GITHUB_WORKSPACE/utils/settings/conan/settings_user.yml >> $CONAN_HOME/settings.yml
-
-      - name: restore cache
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ${{ env.PARENT_DIR }}/.conan2
-          key: ${{ matrix.base-image }}-clang-Debug
+      - uses: './.github/actions/configure_conan'
 
       - name: build-test-submit
         run: |
-          cmake --preset clang -DENABLE_CLANG_TIDY=ON -GNinja
+          cmake --preset clang -DENABLE_CLANG_TIDY=ON -GNinja -DUSE_SYSTEM_LIBRARIES=ON
           cmake --build build -- -j4 -k0
 
   clang-format:

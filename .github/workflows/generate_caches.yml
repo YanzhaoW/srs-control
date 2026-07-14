@@ -8,53 +8,20 @@ on:
 permissions: write-all
 
 jobs:
-  macos-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-26]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-          submodules: 'true'
-      - name: install and env vars
-        run: |
-          brew install boost conan nodejs tree gh
-          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
-          echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
-          echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV
-
-      - name: build
-        run: |
-          cmake --preset default -DCMAKE_BUILD_TYPE=Debug -DUSE_SYSTEM_BOOST=ON
-
-      - name: cache-delete
-        run: |
-          gh cache delete ${{ matrix.os }}-Debug  || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: save cache
-        id: cache-save
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ${{ env.PARENT_DIR }}/.conan2
-          key: ${{ matrix.os }}-Debug
-
   build-linux-caches:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        base-image: [fedora]
-        build-type: [Debug]
-        compiler: [gcc, clang, libc++]
+        base-image: [bullseye, jammy]
+        include:
+          - os: jammy
+            preset: static
+          - os: bullseye
+            preset: static
     container:
       image: ghcr.io/yanzhaow/srs_env:${{ matrix.base-image }}
-    name: ${{ matrix.compiler }}-${{ matrix.build-type }}
+    name: ${{ matrix.base-image }}-${{ matrix.preset }}
     defaults:
       run:
         shell: bash
@@ -66,27 +33,24 @@ jobs:
           fetch-depth: 1
           submodules: 'true'
 
-      - name: install and env vars
+      - uses: './.github/actions/configure_conan'
+
+      - name: set cc and cxx
+        if: matrix.os != 'fedora'
         run: |
-          dnf upgrade -y
-          dnf install -y conan nodejs
-          cd $GITHUB_WORKSPACE/..
-          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
-          export CONAN_HOME=$PWD/.conan2
-          echo "CONAN_HOME=$CONAN_HOME" >> $GITHUB_ENV
-          conan config clean
-          cat $GITHUB_WORKSPACE/utils/settings/conan/settings_user.yml >> $CONAN_HOME/settings.yml
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "CXX=g++" >> $GITHUB_ENV
 
       - name: build
         run: |
           conan config install utils/settings/conan/settings_user.yml
-          cmake --preset ${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+          cmake --preset ${{ matrix.preset }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: cache-delete
         run: |
-          gh cache delete ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }} || true
+          gh cache delete ${{ matrix.base-image }}-${{ matrix.preset }} || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -95,5 +59,5 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            ${{ env.PARENT_DIR }}/.conan2
-          key: ${{ matrix.base-image }}-${{ matrix.compiler }}-${{ matrix.build-type }}
+            ${{ env.CONAN_HOME }}
+          key: ${{ matrix.base-image }}-${{ matrix.preset }}
