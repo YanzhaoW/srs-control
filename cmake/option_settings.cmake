@@ -1,21 +1,6 @@
 option(USE_ROOT "Force to use ROOT dependency." OFF)
 option(NO_ROOT "Disable the usage of ROOT dependency." OFF)
 option(BUILD_STATIC "Enable static linking of libstdc++." OFF)
-option(
-    USE_SYSTEM_PROTOBUF
-    "Use system provided protobuf instead of the one from the package manager."
-    OFF
-)
-option(
-    USE_SYSTEM_BOOST
-    "Use system provided boost instead of the one from the package manager."
-    OFF
-)
-option(
-    USE_SYSTEM_LIBRARIES
-    "Use system provided libraries instead of ones from the package manager."
-    OFF
-)
 option(ENABLE_TEST "Enable testing framework of the project." ON)
 option(BUILD_DOC "Build the documentation for this project." OFF)
 option(BUILD_ONLY_DOC "Only build the documentation for this project." OFF)
@@ -32,11 +17,9 @@ set(ENV{CMAKE_ENABLE_TEST} ${ENABLE_TEST})
 
 if(USE_SYSTEM_LIBRARIES)
     set(ENV{CMAKE_USE_SYSTEM_PROTOBUF} ON)
-    set(ENV{CMAKE_USE_SYSTEM_BOOST} ON)
     set(ENV{CMAKE_USE_SYSTEM_RE2} ON)
 else()
     set(ENV{CMAKE_USE_SYSTEM_PROTOBUF} ${USE_SYSTEM_PROTOBUF})
-    set(ENV{CMAKE_USE_SYSTEM_BOOST} ${USE_SYSTEM_BOOST})
     set(ENV{CMAKE_USE_SYSTEM_RE2} OFF)
 endif()
 
@@ -52,5 +35,6 @@ if(ENABLE_CLANG_TIDY)
         --warnings-as-errors=*
         # --exclude-header-filter=.*\.conan2.*
         --use-color
-        -p=${CMAKE_BINARY_DIR})
+        -p=${CMAKE_BINARY_DIR}
+    )
 endif()

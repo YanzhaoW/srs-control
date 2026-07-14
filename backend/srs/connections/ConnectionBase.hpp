@@ -31,6 +31,12 @@ namespace srs::connection
         {
         }
 
+        /**
+         * @brief Register the send action in the socket.
+         *
+         * @param self Deduce this self reference.
+         * @param socket The FecCommandSocket to register
+         */
         void send_message_from(this auto&& self, const std::shared_ptr<FecCommandSocket>& socket)
         {
             self.communicate(self.get_suffix(), common::NULL_ADDRESS, socket);

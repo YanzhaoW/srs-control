@@ -262,18 +262,23 @@ namespace srs::connection
     {
         auto waiting_action = [](auto socket, std::chrono::seconds waiting_time) -> asio::awaitable<void>
         {
-            const auto _ = ExitLogger{ "waiting_action" };
+            auto is_finished = false;
             spdlog::trace("Waiting local socket with port {} to finish listening ...", socket->get_port());
+            auto timer = asio::system_timer{ co_await asio::this_coro::executor };
             if (socket->is_finished())
             {
-                spdlog::trace("Local socket with port {} finished listening.", socket->get_port());
-                co_return;
+                spdlog::trace("Local socket with port {} finished listening and is cancelled immediately.",
+                              socket->get_port());
+                timer.expires_after(std::chrono::seconds::min());
+                is_finished = true;
             }
-            auto timer = asio::system_timer{ co_await asio::this_coro::executor };
-            timer.expires_after(waiting_time);
+            else
+            {
+                timer.expires_after(waiting_time);
+            }
             [[maybe_unused]] auto err_code = co_await timer.async_wait(asio::as_tuple(asio::use_awaitable));
             socket->cancel_timer_.cancel();
-            if (not socket->is_finished())
+            if (not is_finished and not socket->is_finished())
             {
                 socket->print_error();
             }

@@ -35,11 +35,12 @@ jobs:
         with:
           fetch-depth: 1
           submodules: 'true'
+
+      - uses: './.github/actions/configure_conan'
+
       - name: install and env vars
         run: |
-          brew install boost conan nodejs tree
-          echo "PARENT_DIR=$PWD" >> $GITHUB_ENV
-          echo "CONAN_HOME=$PWD/.conan2" >> $GITHUB_ENV
+          brew install boost pipx conan nodejs tree protobuf re2
           echo "CMAKE_FRAMEWORK_PATH=/System/Library/Frameworks" >> $GITHUB_ENV
           brew list
 
@@ -57,14 +58,6 @@ jobs:
             echo "TEST_NAME=\"${{ matrix.os }}-appleclang-Debug (pr.${PULL_NR})\"" >> $GITHUB_ENV
           fi
 
-      - name: restore cache
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ${{ env.PARENT_DIR }}/.conan2
-          key: ${{ matrix.os }}-Debug
-
       - name: build-test-submit
         run: |
           export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
@@ -76,7 +69,7 @@ jobs:
             -DCTEST_CONFIGURATION_TYPE=Debug\
             -DCTEST_BUILD_NAME=${{ env.TEST_NAME }}\
             -DCTEST_SITE="Github CI/CD"\
-            -DADDITIONAL_CONFIGURE_OPTIONS="-DUSE_SYSTEM_BOOST=ON"\
+            -DADDITIONAL_CONFIGURE_OPTIONS="-DUSE_SYSTEM_LIBRARIES=ON"\
             -DCONFIGURE_PRESET=default\
             --output-on-failure
 
@@ -90,7 +83,7 @@ jobs:
       matrix:
         base-image: [fedora]
         build-type: [Debug]
-        compiler: [gcc, clang, libc++]
+        compiler: [gcc, clang]
     name: ${{ matrix.base-image }}-${{ matrix.compiler }}
     container:
       image: ghcr.io/yanzhaow/srs_env:${{ matrix.base-image }}
@@ -109,6 +102,7 @@ jobs:
           ctest -S cmake/ci/project_ctest.cmake -VV\
             -DTEST_MODEL=${TEST_MODEL}\
             -DCTEST_CONFIGURATION_TYPE=${{ matrix.build-type }}\
+            -DADDITIONAL_CONFIGURE_OPTIONS="-DUSE_SYSTEM_LIBRARIES=ON"\
             -DCTEST_BUILD_NAME=${{ env.TEST_NAME }}\
             -DCTEST_SITE="Github CI/CD"\
             -DCONFIGURE_PRESET="${{ matrix.compiler }}"\

@@ -68,6 +68,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: 'recursive'
+
       - name: recover envs
         run: |
           echo "SHA_NAME=${GITHUB_SHA::7}" >> $GITHUB_ENV
@@ -85,13 +86,25 @@ jobs:
           echo "ROOT_TAG=${ROOT_TAG}" >> $GITHUB_ENV
           echo "DISABLE_ROOT=${DISABLE_ROOT}" >> $GITHUB_ENV
 
-      - name: set cc and cxx
+      - name: for debians
         if: matrix.os != 'fedora'
         run: |
+          apt update -y
+          apt install -y python3-pip python3-venv
+          python3 -m pip install --user --upgrade pipx
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
 
       - uses: './.github/actions/configure_conan'
+
+      - name: restore cache
+        if: matrix.os != 'fedora' && github.event_name != 'pull_request'
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.CONAN_HOME }}
+          key: ${{ matrix.os }}-${{ matrix.preset }}
 
       - name: build
         run: |
