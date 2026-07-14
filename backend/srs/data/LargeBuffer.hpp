@@ -49,11 +49,7 @@ namespace srs
          * other object.
          * @param other Other LargeBuffer object to be swapped.
          */
-        explicit LargeBuffer(LargeBuffer&& other) noexcept
-        {
-            data_.swap(other.data_);
-            std::swap(size_, other.size_);
-        }
+        explicit LargeBuffer(LargeBuffer&& other) noexcept = default;
 
         /**
          * @brief Default copy assignment. Very slow and should be avoided.
@@ -67,12 +63,7 @@ namespace srs
          * other object.
          * @param other Other LargeBuffer object to be swapped.
          */
-        auto operator=(LargeBuffer&& other) noexcept -> LargeBuffer&
-        {
-            data_.swap(other.data_);
-            std::swap(size_, other.size_);
-            return *this;
-        }
+        auto operator=(LargeBuffer&& other) noexcept -> LargeBuffer& = default;
 
         /**
          * @brief Default destructor.

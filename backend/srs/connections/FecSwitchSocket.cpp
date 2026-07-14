@@ -75,9 +75,14 @@ namespace srs::connection
 
     void FecCommandSocket::launch_send_actions()
     {
-        [[maybe_unused]] auto res = asio::experimental::make_parallel_group(std::move(action_queue_))
-                                        .async_wait(asio::experimental::wait_for_all(), asio::use_future)
-                                        .get();
+        // [[maybe_unused]] auto res = asio::experimental::make_parallel_group(std::move(action_queue_))
+        //                                 .async_wait(asio::experimental::wait_for_all(), asio::use_future)
+        //                                 .get();
+        // TODO: what's the best here: detached or use_future.get()?
+        for (auto& action : action_queue_)
+        {
+            std::move(action)(asio::detached);
+        }
     }
 
     void FecCommandSocket::deregister_connection(const UDPEndpoint& endpoint,

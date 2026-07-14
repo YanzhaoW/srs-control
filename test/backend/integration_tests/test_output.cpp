@@ -64,7 +64,7 @@ auto main(int argc, char** argv) -> int
             }
             return {};
         }();
-        auto json_filepath = home_dir.empty() ? "" : std::format("{}/.config/srs-control/config.json", getenv("HOME"));
+        auto json_filepath = home_dir.empty() ? "" : srs::common::get_default_config_path().string();
         argv = cli_args.ensure_utf8(argv);
         auto app_config = srs::Config{};
 
