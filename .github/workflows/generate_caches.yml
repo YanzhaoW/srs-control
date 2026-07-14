@@ -33,17 +33,19 @@ jobs:
           fetch-depth: 1
           submodules: 'true'
 
-      - uses: './.github/actions/configure_conan'
-
       - name: set cc and cxx
         if: matrix.os != 'fedora'
         run: |
+          apt update -y
+          apt install -y python3-pip python3-venv
+          python3 -m pip install --user --upgrade pipx
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
 
+      - uses: './.github/actions/configure_conan'
+
       - name: build
         run: |
-          conan config install utils/settings/conan/settings_user.yml
           cmake --preset ${{ matrix.preset }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
