@@ -98,7 +98,7 @@ jobs:
       - uses: './.github/actions/configure_conan'
 
       - name: restore cache
-        if: matrix.os != 'fedora' && github.event_name != 'pull_request'
+        if: matrix.os != 'fedora' && github.event_name == 'pull_request'
         id: cache-restore
         uses: actions/cache/restore@v4
         with:

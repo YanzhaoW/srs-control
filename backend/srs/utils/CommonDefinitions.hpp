@@ -57,10 +57,10 @@ namespace srs::common
 
     // Log parameters
     constexpr auto rotating_file_nums = 5;
-    const auto file_max_size = 1048576 * 10; //!< file size limited to 5 MB.
-    const auto exit_logger_begin = std::string_view{ "------->>" };
-    const auto exit_logger_end = std::string_view{ "<<-------" };
-    const auto file_logger_new_instance_str =
+    constexpr auto file_max_size = 1048576 * 10; //!< file size limited to 5 MB.
+    constexpr auto exit_logger_begin = std::string_view{ "------->>" };
+    constexpr auto exit_logger_end = std::string_view{ "<<-------" };
+    constexpr auto file_logger_new_instance_str =
         std::string_view{ "----------------------new log instance----------------------" };
 
     /**

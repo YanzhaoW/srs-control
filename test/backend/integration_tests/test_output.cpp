@@ -15,7 +15,9 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <format>
+#include <memory>
 #include <spdlog/common.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <string_view>
@@ -92,7 +94,15 @@ auto main(int argc, char** argv) -> int
         cli_args.parse(argc, argv);
 
         auto app = srs::App{};
-        spdlog::set_level(spdlog_level);
+
+        for (auto sink : spdlog::default_logger()->sinks())
+        {
+            if (auto console_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(sink);
+                console_sink != nullptr)
+            {
+                console_sink->set_level(spdlog_level);
+            }
+        }
 
         auto world = srs::test::World{ app,
                                        { .is_continue = is_continuous_output,

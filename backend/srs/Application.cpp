@@ -55,6 +55,7 @@ namespace srs
 
         auto logger =
             std::make_shared<spdlog::logger>("multi_sink", spdlog::sinks_init_list{ console_sink, file_sink });
+        logger->set_level(spdlog::level::trace);
 
         console_sink->set_level(spdlog::level::off);
         logger->info("");

@@ -5,8 +5,6 @@ import os
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain
 
-# from conan.tools.cmake import cmake_layout
-
 PROTOBUF_OPTIONS = {
     "with_zlib": True,
     "with_rtti": False,
@@ -31,12 +29,7 @@ class CompressorRecipe(ConanFile):
         # self.requires("glaze/7.8.4")  # type: ignore
         self.requires("concurrentqueue/1.0.5")  # type: ignore
         self.requires("asio/1.38.0")  # type: ignore
-
-        if os.environ["CMAKE_USE_SYSTEM_RE2"] == "OFF":
-            print("---- Conan: compiling RE2 from the conan package manager.")
-            self.requires("re2/20251105")  # type: ignore
-        else:
-            print("---- Conan: using RE2 from the local system.")
+        self.requires("ctre/3.11.0")
 
         if os.environ["CMAKE_ENABLE_TEST"] == "ON":
             self.requires("catch2/3.15.1")
@@ -53,9 +46,6 @@ class CompressorRecipe(ConanFile):
         tc = CMakeToolchain(self)
         tc.user_presets_path = ""
         tc.generate()
-
-    # def layout(self):
-    #     cmake_layout(self)
 
     def build_requirements(self):
         if os.environ["CMAKE_USE_SYSTEM_PROTOBUF"] == "OFF":
