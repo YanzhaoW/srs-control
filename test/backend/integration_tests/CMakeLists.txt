@@ -66,7 +66,7 @@ if(NOT APPLE)
     add_test(
         NAME IntegrationTestBinOutputMultiDataPorts
         COMMAND
-            ctest_output -l trace -o test_output.bin -c
+            ctest_output -l trace -o test_multi_output.bin -c
             ${CMAKE_CURRENT_SOURCE_DIR}/test_config_multi_data_ports.json
     )
     set_tests_properties(

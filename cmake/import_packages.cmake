@@ -20,7 +20,7 @@ find_package(magic_enum REQUIRED CONFIG)
 find_package(Taskflow REQUIRED CONFIG)
 
 # find_package(glaze REQUIRED CONFIG)
-find_package(re2 REQUIRED CONFIG)
+find_package(ctre REQUIRED CONFIG)
 
 # set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(protobuf CONFIG COMPONENTS libprotobuf protoc)
@@ -31,9 +31,6 @@ if(NOT protobuf_FOUND)
 else()
     message(STATUS "Couldn't find protobuf with config mode.")
 endif()
-
-# message(STATUS "Protobuf version: ${Protobuf_VERSION}")
-# message(STATUS "protoc: ${Protobuf_PROTOC_EXECUTABLE}")
 
 if(ENABLE_TEST)
     find_package(Catch2 CONFIG REQUIRED)

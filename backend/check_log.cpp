@@ -1,21 +1,47 @@
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include <CLI/CLI.hpp>
+#include <array>
 #include <cassert>
+#include <concepts>
+#include <cstdio>
 #include <cstdlib>
+#include <ctre.hpp>
+#include <ctre/wrapper.hpp>
 #include <exception>
 #include <fmt/base.h>
+#include <fmt/compile.h>
 #include <format>
 #include <fstream>
 #include <ios>
 #include <iterator>
 #include <print>
 #include <ranges>
-#include <re2/re2.h>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
+
+namespace
+{
+    template <std::regular_invocable<> auto fmt, std::regular_invocable<> auto str>
+    consteval auto compile_time_format_size()
+    {
+        const auto output_str = fmt::format(FMT_COMPILE(fmt()), str());
+        return output_str.size();
+    }
+
+    template <std::regular_invocable<> auto fmt, std::regular_invocable<> auto str>
+    consteval auto compile_time_format()
+    {
+        constexpr auto size = compile_time_format_size<fmt, str>();
+        auto static_str = std::array<char, size>{};
+        fmt::format_to(static_str.data(), FMT_COMPILE(fmt()), str());
+        return static_str;
+    }
+
+} // namespace
 
 namespace srs
 {
@@ -56,15 +82,21 @@ namespace srs
             }
         }
 
-        void print()
+        auto summarize() -> bool
         {
+            if (call_map_.empty())
+            {
+                std::println(stderr, "Error: No functions are recorded!");
+                return true;
+            }
+
             auto filter_view =
                 call_map_ | std::views::filter([](const auto& pair) -> bool { return pair.second != 0; });
 
             if (std::ranges::distance(filter_view.begin(), filter_view.end()) == 0)
             {
                 std::println("All recorded scopes have exited correctly!");
-                return;
+                return true;
             }
 
             std::println("Following recorded scopes didn't exit:");
@@ -72,6 +104,7 @@ namespace srs
             {
                 std::println("\t{}", key);
             }
+            return false;
         }
 
         void print_last_log()
@@ -84,22 +117,22 @@ namespace srs
 
         void analysis()
         {
-            auto key_str = std::string{};
-            auto begin_re = RE2{ std::format("\\[.*\\]\\[.+\\]\\[\\d+\\] {} (.*)", srs::common::exit_logger_begin) };
-            auto end_re = RE2{ std::format("\\[.*\\]\\[.+\\]\\[\\d+\\] {} (.*)", srs::common::exit_logger_end) };
+
+            constexpr auto begin_str = compile_time_format<[] { return "\\[.*\\]\\[.+\\]\\[\\d+\\] {} (.*)"; },
+                                                           [] { return srs::common::exit_logger_begin; }>();
+            constexpr auto end_str = compile_time_format<[] { return "\\[.*\\]\\[.+\\]\\[\\d+\\] {} (.*)"; },
+                                                         [] { return srs::common::exit_logger_end; }>();
             for (const auto& line_str : content_ | std::views::take(line_counter_))
             {
-                if (RE2::FullMatch(line_str, begin_re, &key_str))
+                if (auto is_match = ctre::match<begin_str>(line_str))
                 {
-                    auto entry = call_map_.try_emplace(key_str, 0).first;
+                    auto entry = call_map_.try_emplace(std::string{ is_match.get<1>().to_view() }, 0).first;
                     ++(entry->second);
-                    key_str.clear();
                 }
-                else if (RE2::FullMatch(line_str, end_re, &key_str))
+                else if (auto is_match = ctre::match<end_str>(line_str))
                 {
-                    auto entry = call_map_.try_emplace(key_str, 0).first;
+                    auto entry = call_map_.try_emplace(std::string{ is_match.get<1>().to_view() }, 0).first;
                     --(entry->second);
-                    key_str.clear();
                 }
             }
         }
@@ -158,7 +191,10 @@ auto main(int argc, char** argv) -> int
         }
 
         log_file.analysis();
-        log_file.print();
+        if (not log_file.summarize())
+        {
+            return EXIT_FAILURE;
+        }
     }
     catch (const CLI::ParseError& e)
     {

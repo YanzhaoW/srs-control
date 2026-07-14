@@ -9,8 +9,10 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <format>
+#include <memory>
 #include <print>
 #include <spdlog/common.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <utility>
@@ -135,7 +137,14 @@ auto main(int argc, char** argv) -> int
 
         auto app = srs::App{};
 
-        spdlog::default_logger()->set_level(spdlog_level);
+        for (auto sink : spdlog::default_logger()->sinks())
+        {
+            if (auto console_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(sink);
+                console_sink != nullptr)
+            {
+                console_sink->set_level(spdlog_level);
+            }
+        }
 
         auto is_not_ok = srs::config::set_config_from_file(app_config, json_filepath, true);
 

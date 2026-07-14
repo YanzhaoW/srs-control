@@ -37,10 +37,11 @@ target_link_libraries(
         CLI11::CLI11
         asio::asio
         magic_enum::magic_enum
-        re2::re2
+        ctre::ctre
         spdlog::spdlog
         srscpp
 )
+target_compile_features(srs_check PRIVATE cxx_std_23)
 
 set_target_properties(srs_check PROPERTIES OUTPUT_NAME "srs-check")
 
