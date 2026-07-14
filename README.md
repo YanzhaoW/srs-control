@@ -1,11 +1,12 @@
 # SRS-control - Data acquisition for SRS FEC & VMM3
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/7e8c956af1bc46c7836524f1ace32c11)](https://app.codacy.com/gh/YanzhaoW/srs-control/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![codecov](https://codecov.io/gh/YanzhaoW/srs-control/graph/badge.svg?token=4G5AUUZ0LU)](https://codecov.io/gh/YanzhaoW/srs-control)
 [![CI pipeline](https://github.com/YanzhaoW/srs-control/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/YanzhaoW/srs-control/actions?query=branch%3Adev)
 [![Github Releases](https://img.shields.io/github/release/YanzhaoW/srs-control.svg)](https://github.com/YanzhaoW/srs-control/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![dashboard](https://img.shields.io/badge/dashboard-srs-blue?labelColor=gray&style=flat)](https://my.cdash.org/index.php?project=srs-control)
 [![DOI](https://zenodo.org/badge/857919042.svg)](https://doi.org/10.5281/zenodo.21283259)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 SRS-control is a data acquisition program for SRS FEC and VMM3 systems. It provides the `srs-control` command-line tool and library APIs for communicating with SRS hardware and data processing in your own applications.
 
