@@ -15,9 +15,14 @@ Welcome to SRS-control documentation
     :maxdepth: 2
     :caption: Program design
 
+    program_designs/general
+    program_designs/application
+    program_designs/workflow
+    program_designs/connections
+
 .. toctree::
     :maxdepth: 2
     :caption: Advanced topics
 
-    program_design
     reference
+    Doxygen index <https://web-docs.gsi.de/~yanwang/srs/annotated.html>

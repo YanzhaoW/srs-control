@@ -131,7 +131,8 @@ namespace srs::workflow
             writers_.set_output_filenames(filenames);
         }
 
-        void stop();
+        void stop_monitor() { monitor_.stop(); }
+        void stop_workflow();
 
       private:
         using enum common::DataPrintMode;

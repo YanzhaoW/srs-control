@@ -4,11 +4,16 @@ add_executable(unit_test_srs_backend)
 
 target_sources(
     unit_test_srs_backend
+    PUBLIC FILE_SET HEADERS BASE_DIRS ${CMAKE_SOURCE_DIR}/backend
     PRIVATE UnitTestWriter.cpp UnitTestStruct.cpp UnitTestConfig.cpp
 )
 target_link_libraries(
     unit_test_srs_backend
-    PRIVATE Catch2::Catch2WithMain test_utility
+    PRIVATE
+        Catch2::Catch2WithMain
+        srs::main
+        ${THIRD_PARTY_LIBRARIES}
+        ${PRIVATE_THIRD_PARTY_LIBRARIES}
 )
 target_compile_definitions(
     unit_test_srs_backend

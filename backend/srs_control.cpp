@@ -51,6 +51,7 @@ auto main(int argc, char** argv) -> int
         auto is_root_version_print = false;
         auto is_dump_needed = false;
         auto n_output_split = 1;
+        auto runtime_sec = std::size_t{ 0 };
         const auto home_dir = []() -> std::string
         {
             const auto* home_var = getenv("HOME");
@@ -84,6 +85,10 @@ auto main(int argc, char** argv) -> int
                         fmt::format("Set log level\nAvailable options: [{}]", fmt::join(SPDLOG_LOG_NAMES, ", ")))
             ->transform(CLI::CheckedTransformer(spdlog_map, CLI::ignore_case).description(""))
             ->default_str(get_enum_dashed_name(spdlog_level));
+
+        cli_args.add_option("-r, --run-time", runtime_sec, "Set the runtime of the application. Non-stop if 0")
+            ->expected(0, 1)
+            ->capture_default_str();
 
         cli_args
             .add_option("-p, --print-mode",
@@ -135,7 +140,15 @@ auto main(int argc, char** argv) -> int
             return EXIT_FAILURE;
         }
 
-        auto app = srs::App{};
+        auto is_not_ok = srs::config::set_config_from_file(app_config, json_filepath, true);
+
+        if (is_not_ok)
+        {
+            spdlog::error("{}", is_not_ok.value());
+            return EXIT_FAILURE;
+        }
+
+        auto app = srs::App{ std::move(app_config) };
 
         for (auto sink : spdlog::default_logger()->sinks())
         {
@@ -146,17 +159,9 @@ auto main(int argc, char** argv) -> int
             }
         }
 
-        auto is_not_ok = srs::config::set_config_from_file(app_config, json_filepath, true);
-
-        if (is_not_ok)
-        {
-            spdlog::error("{}", is_not_ok.value());
-            return EXIT_FAILURE;
-        }
-
-        app.set_options(std::move(app_config));
         app.set_print_mode(print_mode);
         app.set_output_filenames(output_filenames, n_output_split);
+        app.set_runtime_sec(runtime_sec);
 
         app.init();
 

@@ -1,7 +1,9 @@
-#include "SRSEmulator.hpp"
+#include "FECEmulator.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/Connections.hpp"
 #include "srs/converters/SerializableBuffer.hpp"
+#include "srs/emulators/RandomizeStruct.hpp"
+#include "srs/emulators/World.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/ExitLogger.hpp"
 #include "srs/writers/UDPWriter.hpp"
@@ -16,16 +18,17 @@
 #include <asio/ip/address_v4.hpp>
 #include <asio/ip/basic_endpoint.hpp>
 #include <asio/ip/udp.hpp>
-#include <asio/system_timer.hpp>
+#include <asio/steady_timer.hpp>
 #include <asio/this_coro.hpp>
 #include <asio/use_awaitable.hpp>
 #include <asio/use_future.hpp>
 #include <chrono>
 #include <cstddef>
+#include <expected>
 #include <fmt/ranges.h>
 #include <magic_enum/magic_enum.hpp>
 #include <map>
-#include <memory>
+#include <random>
 #include <ranges>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -33,13 +36,13 @@
 #include <utility>
 #include <vector>
 
-namespace srs::test
+namespace srs::emulator
 {
     namespace
     {
-        auto get_msg_from_receive_type(SRSEmulator::ReceiveType rec_type) -> std::string
+        auto get_msg_from_receive_type(FECEmulator::ReceiveType rec_type) -> std::string
         {
-            using enum SRSEmulator::ReceiveType;
+            using enum FECEmulator::ReceiveType;
             switch (rec_type)
             {
                 case invalid:
@@ -55,10 +58,10 @@ namespace srs::test
             }
             return {};
         }
-        auto get_send_msg_from_receive_type(SRSEmulator::ReceiveType rec_type) -> std::string
+        auto get_send_msg_from_receive_type(FECEmulator::ReceiveType rec_type) -> std::string
         {
             auto buffer = process::SerializableMsgBuffer{};
-            using enum SRSEmulator::ReceiveType;
+            using enum FECEmulator::ReceiveType;
             switch (rec_type)
             {
                 case invalid:
@@ -79,10 +82,10 @@ namespace srs::test
             return {};
         }
 
-        auto check_receive_msg_type(std::string_view msg) -> SRSEmulator::ReceiveType
+        auto check_receive_msg_type(std::string_view msg) -> FECEmulator::ReceiveType
         {
-            using enum SRSEmulator::ReceiveType;
-            static const auto msg_map = std::map<std::string, SRSEmulator::ReceiveType>{
+            using enum FECEmulator::ReceiveType;
+            static const auto msg_map = std::map<std::string, FECEmulator::ReceiveType>{
                 { get_send_msg_from_receive_type(acq_on), acq_on },
                 { get_send_msg_from_receive_type(acq_off), acq_off },
             };
@@ -106,13 +109,14 @@ namespace srs::test
         }
     } // namespace
 
-    SRSEmulator::SRSEmulator(const Config& config, IOContextType& io_context)
+    FECEmulator::FECEmulator(const Config& config, World& world, IOContextType& io_context)
         : io_context_{ &io_context }
         , config_{ config }
         , udp_socket_{ io_context,
                        asio::ip::udp::endpoint{ asio::ip::make_address_v4(config_.ip),
-                                                static_cast<asio::ip::port_type>(config_.listen_port) } }
-        , frame_reader_{ std::string{ config.filename } }
+                                                static_cast<asio::ip::port_type>(config_.port) } }
+        , struct_randomizer_{ Randomizer::Config{ .n_hits = config.n_hits, .n_markers = config.n_markers } }
+        , world_{ &world }
     {
         spdlog::debug("Emulator: binds to a local udp socket with port number: {} and ip address: {}",
                       udp_socket_.local_endpoint().port(),
@@ -120,37 +124,37 @@ namespace srs::test
         data_sender_wait_timer_->expires_at(std::chrono::system_clock::time_point::max());
     }
 
-    void SRSEmulator::wait_for_connection()
+    void FECEmulator::wait_for_connection()
     {
-        // NOLINTBEGIN (clang-analyzer-core.CallAndMessage)
-        asio::co_spawn(*io_context_, listen_coro(), asio::detached);
-        // NOLINTEND (clang-analyzer-core.CallAndMessage)
-        // io_context_.join();
-    }
+        spdlog::info("FEC with {} is active.", udp_socket_.local_endpoint());
 
-    void SRSEmulator::wait_for_data_sender()
-    {
-        const auto _ = ExitLogger{ config_.ip };
-        auto timer_waiter = [](std::shared_ptr<asio::system_timer> timer) -> asio::awaitable<void>
-        { [[maybe_unused]] auto [err] = co_await timer->async_wait(asio::as_tuple(asio::use_awaitable)); };
-        asio::co_spawn(*io_context_, timer_waiter(data_sender_wait_timer_), asio::use_future).get();
-    }
-
-    void SRSEmulator::do_if_acq_on(asio::any_io_executor& executor)
-    {
-        if (is_idle_.load())
+        if (config_.is_sent_data_only)
         {
-            is_idle_.store(true);
-
-            // spdlog::trace("Server: start_send_data spawning ...");
-            asio::co_spawn(executor, start_send_data(), asio::detached);
-            // spdlog::trace("Server: start_send_data spawned!");
+            do_if_acq_on(io_context_->get_executor());
+        }
+        else
+        {
+            // NOLINTBEGIN (clang-analyzer-core.CallAndMessage)
+            asio::co_spawn(*io_context_, listen_coro(), asio::detached);
+            // NOLINTEND (clang-analyzer-core.CallAndMessage)
         }
     }
 
-    void SRSEmulator::do_if_acq_off() { is_shutdown_.store(true); }
+    void FECEmulator::do_if_acq_on(asio::any_io_executor executor)
+    {
+        spdlog::info("FEC with {} is switched on. Start sending data.", udp_socket_.local_endpoint());
+        is_switched_off_.store(false);
+        asio::co_spawn(executor, start_send_data(), asio::detached);
+        // spdlog::trace("Server: start_send_data spawned!");
+    }
 
-    auto SRSEmulator::send_response(connection::udp::endpoint endpoint, ReceiveType result_type)
+    void FECEmulator::do_if_acq_off()
+    {
+        spdlog::info("FEC with {} is switched off. Stop sending data.", udp_socket_.local_endpoint());
+        is_switched_off_.store(true);
+    }
+
+    auto FECEmulator::send_response(connection::udp::endpoint endpoint, ReceiveType result_type)
         -> asio::awaitable<void>
     {
         const auto _ = ExitLogger{ config_.ip };
@@ -160,15 +164,18 @@ namespace srs::test
         spdlog::trace("SRS server: sent the data {:02x} to the remote point {}", fmt::join(msg, " "), endpoint);
     }
 
-    auto SRSEmulator::listen_coro() -> asio::awaitable<void>
+    auto FECEmulator::listen_coro() -> asio::awaitable<void>
     {
-        const auto _ = ExitLogger{ config_.ip };
         auto msg_buffer = std::vector<char>{};
         msg_buffer.resize(common::SMALL_READ_MSG_BUFFER_SIZE);
         auto executor = co_await asio::this_coro::executor;
         for (;;)
         {
             spdlog::trace("Emulator: listening on the local port {}", udp_socket_.local_endpoint());
+            if (is_switched_off_.load())
+            {
+                spdlog::info("FEC with {} is ready for connections.", udp_socket_.local_endpoint());
+            }
             auto remote_endpoint = asio::ip::udp::endpoint{};
             auto msg_size =
                 co_await udp_socket_.async_receive_from(asio::buffer(msg_buffer), remote_endpoint, asio::use_awaitable);
@@ -190,62 +197,81 @@ namespace srs::test
                     break;
                 case acq_off:
                     do_if_acq_off();
-                    spdlog::trace("SRS server: existing coroutine");
-                    co_return;
+                    if (not world_->get_config().non_stop)
+                    {
+                        co_return;
+                    }
                     break;
             }
         }
+        spdlog::info("Existing emulator");
     }
 
-    auto SRSEmulator::start_send_data() -> asio::awaitable<void>
+    auto FECEmulator::construct_binary_data() -> std::expected<std::size_t, std::string_view>
     {
-        const auto _ = ExitLogger{ config_.ip };
-        spdlog::info("Emulator: Delay time is set to be {} ns.", delay_time_.count());
-        auto total_size = std::size_t{ 0 };
-        // auto executor = co_await asio::this_coro::executor;
-        auto connection = connection::UDPWriterConnection{ *io_context_,
-                                                           asio::ip::udp::endpoint{
-                                                               asio::ip::make_address("127.0.0.1"),
-                                                               static_cast<asio::ip::port_type>(config_.data_port) } };
-        // auto send_coro =
-        //     common::create_coro_task([&connection]() { return connection.send_continuous_message(); }, executor);
+        const auto frame_counter = world_->request_frame_counter();
 
-        spdlog::info("Emulator: Starting to send data to port {} from ip {} ...", config_.data_port, config_.ip);
+        struct_randomizer_.randomize_data_struct(data_struct_, { .frame_counter = frame_counter, .fec_id = fec_id_ });
+        return struct_serializer_.convert(&data_struct_);
+    }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+#endif
+    auto FECEmulator::start_send_data() -> asio::awaitable<void>
+    {
+        auto device = std::random_device{};
+        auto rand_gen = std::mt19937{ device() };
+        auto distrib = std::uniform_int_distribution<std::chrono::nanoseconds::rep>{ std::chrono::nanoseconds::rep{},
+                                                                                     delay_time_ };
+        const auto _ = ExitLogger{ config_.ip };
+        auto total_size = std::size_t{ 0 };
+        auto connection = connection::UDPWriterConnection{ *io_context_,
+                                                           asio::ip::udp::endpoint{ asio::ip::make_address("127.0.0.1"),
+                                                                                    static_cast<asio::ip::port_type>(
+                                                                                        config_.remote_data_port) } };
+
+        spdlog::debug(
+            "Emulator: Starting to send data to port {} from ip {} ...", config_.remote_data_port, config_.ip);
         data_sending_control_.expires_after(std::chrono::seconds{ 1 });
         co_await data_sending_control_.async_wait(asio::use_awaitable);
-        data_sending_control_.expires_after(delay_time_ * config_.server_idx / config_.n_servers);
-        co_await data_sending_control_.async_wait(asio::use_awaitable);
-        while (not is_shutdown_.load())
-        {
-            auto read_str = frame_reader_.read_one_frame();
-            if (not read_str.has_value())
-            {
-                spdlog::critical("Emulator: error occurred from the reading the frame with msg: {}", read_str.error());
-                break;
-            }
-            // Check if reached the end of the input file. If so, restarting from beginning.
-            if (read_str.value().empty())
-            {
-                if (not is_continue_.load())
-                {
-                    break;
-                }
-                frame_reader_.reset();
-                auto read_str = frame_reader_.read_one_frame();
-            }
 
-            data_sending_control_.expires_after(delay_time_);
+        auto executor = co_await asio::this_coro::executor;
+
+        using asio::experimental::awaitable_operators::operator||;
+        auto cancel_timer_ = asio::steady_timer{ executor };
+        cancel_timer_.expires_at(asio::steady_timer::time_point::max());
+
+        while (not is_switched_off_.load())
+        {
+            const auto time_ns = distrib(rand_gen);
+            data_sending_control_.expires_after(std::chrono::nanoseconds{ time_ns });
             co_await data_sending_control_.async_wait(asio::use_awaitable);
 
-            if (read_str.value().empty())
+            auto res = construct_binary_data();
+            if (not res)
             {
-                continue;
+                spdlog::error("{}", res.error());
+                break;
             }
-            auto send_size = connection.send_sync_message(read_str.value());
+            auto read_str = struct_serializer_();
+
+            auto send_size = connection.send_sync_message(read_str);
             total_size += send_size;
             ++n_frames_sent_;
+
+            data_sending_control_.expires_after(std::chrono::nanoseconds{ delay_time_ - time_ns });
+            auto res_timer = co_await (data_sending_control_.async_wait(asio::use_awaitable) ||
+                                       cancel_timer_.async_wait(asio::use_awaitable));
+            if (res_timer.index() == 1)
+            {
+                spdlog::debug("Runtime has reached. Cancelling FEC data sending.");
+                break;
+            }
         }
-        spdlog::info(
+        connection.close();
+        spdlog::debug(
             "Emulator: reaching the end of send_data coroutine. Sent number of frames: {} and total data size: "
             "{} from {}",
             n_frames_sent_,
@@ -253,6 +279,11 @@ namespace srs::test
             udp_socket_.local_endpoint());
         data_sender_wait_timer_->cancel();
         data_sender_wait_timer_->expires_after(std::chrono::seconds{ 0 });
+        cancel_timer_.cancel();
+        cancel_timer_.expires_after(std::chrono::seconds{ 0 });
     }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
-} // namespace srs::test
+} // namespace srs::emulator

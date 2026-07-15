@@ -8,13 +8,16 @@
 #include <algorithm>
 #include <asio/awaitable.hpp>
 #include <asio/deferred.hpp>
+#include <asio/detached.hpp>
 #include <asio/experimental/cancellation_condition.hpp>
 #include <asio/experimental/parallel_group.hpp>
 #include <asio/impl/co_spawn.hpp>
 #include <asio/strand.hpp>
 #include <asio/use_future.hpp>
+#include <chrono>
 #include <cstddef>
 #include <fmt/base.h>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <memory>
 #include <mutex>
@@ -60,10 +63,6 @@ namespace srs::connection
     void FecCommandSocket::register_send_action_imp(asio::awaitable<void> action,
                                                     const std::shared_ptr<SmallConnection>& connection)
     {
-        auto time = get_time_us();
-        spdlog::debug(
-            "Registering data sent to the remote endpoint {} at time {} us", connection->get_remote_endpoint(), time);
-        // asio::co_spawn(strand_, std::move(action), asio::detached);
         auto co_action = asio::co_spawn(strand_, std::move(action), asio::deferred);
         action_queue_.push_back(std::move(co_action));
 
@@ -75,14 +74,22 @@ namespace srs::connection
 
     void FecCommandSocket::launch_send_actions()
     {
+        start_time_ = std::chrono::steady_clock::now();
+
+        // NOTE: Use the make_parallel_group causes the thread sanitizer reporting a possible data racing, but has the
+        // fastest sending sequence. Use detached or use_future inside a for loop prevents the reporting, but has slower
+        // sending sequence. Possible a false positive from the thread sanitizer.
+
+        asio::experimental::make_parallel_group(std::move(action_queue_))
+            .async_wait(asio::experimental::wait_for_all(), asio::detached);
         // [[maybe_unused]] auto res = asio::experimental::make_parallel_group(std::move(action_queue_))
         //                                 .async_wait(asio::experimental::wait_for_all(), asio::use_future)
         //                                 .get();
-        // TODO: what's the best here: detached or use_future.get()?
-        for (auto& action : action_queue_)
-        {
-            std::move(action)(asio::detached);
-        }
+
+        // for (auto& action : action_queue_)
+        // {
+        //     std::move(action)(asio::detached);
+        // }
     }
 
     void FecCommandSocket::deregister_connection(const UDPEndpoint& endpoint,
@@ -170,5 +177,23 @@ namespace srs::connection
 
         return std::ranges::all_of(all_connections_ | std::views::values,
                                    [](const auto& connections) -> bool { return connections.empty(); });
+    }
+
+    void FecCommandSocket::print_time_statistics() const
+    {
+        spdlog::trace("Time statistics for local command socket {}:\n"
+                      "\t|{:^25}|{:^25}|\n"
+                      "{}",
+                      get_socket().local_endpoint(),
+                      "Sending timepoint (us)",
+                      "Duration (us)",
+                      fmt::join(time_stamps_ | std::views::transform(
+                                                   [](const auto& start_end)
+                                                   {
+                                                       return fmt::format("\t|{:^25}|{:^25}|",
+                                                                          start_end.first,
+                                                                          start_end.second - start_end.first);
+                                                   }),
+                                "\n"));
     }
 } // namespace srs::connection

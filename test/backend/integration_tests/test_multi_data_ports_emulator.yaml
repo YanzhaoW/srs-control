@@ -1,0 +1,34 @@
+frame_wait_time_ns: 100000
+n_threads: 2
+non_stop: false
+FECs:
+  - ip: '127.0.0.1'
+    port: 6600
+    is_sent_data_only: false
+    remote_data_port: 6006
+    n_hits:
+      min: 0
+      max: 100
+    n_markers:
+      min: 0
+      max: 100
+  - ip: '127.0.0.2'
+    port: 6600
+    is_sent_data_only: false
+    remote_data_port: 6005
+    n_hits:
+      min: 0
+      max: 100
+    n_markers:
+      min: 0
+      max: 100
+  - ip: '127.0.0.3'
+    port: 6600
+    is_sent_data_only: false
+    remote_data_port: 6004
+    n_hits:
+      min: 0
+      max: 100
+    n_markers:
+      min: 0
+      max: 100

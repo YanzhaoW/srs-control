@@ -92,7 +92,7 @@ namespace srs::workflow
                                                                    static_cast<double>(buffer_size) * 100.;
 
             set_speed_string();
-            console_->info("read (buf)|write|drop rate: {} ({:>2.0f}%) | {} | {} {}. Press \"Ctrl-C\" to stop \r",
+            console_->info("read (buf)|write|drop rate: {} ({:>2.0f}%) | {} | {} {}. \r",
                            read_speed_string_,
                            frame_rate,
                            write_speed_string_,
@@ -166,7 +166,7 @@ namespace srs::workflow
     }
     // DataProcessor::~DataProcessor() = default;
 
-    void Handler::stop()
+    void Handler::stop_workflow()
     {
         auto _ = ExitLogger{};
         // stop may be called before start, where the task_diagram_ is constructed. To prevent task_diagram_ to be
@@ -181,7 +181,6 @@ namespace srs::workflow
         if (is_stopped_.compare_exchange_strong(expected, true))
         {
             const auto _ = ExitLogger{ "scope" };
-            monitor_.stop();
 
             while (not task_diagram_->is_taskflow_abort_ready())
             {

@@ -10,7 +10,6 @@
 
 SRS-control is a data acquisition program for SRS FEC and VMM3 systems. It provides the `srs-control` command-line tool and library APIs for communicating with SRS hardware and data processing in your own applications.
 
-
 Please check the full documentation of this project: [srs-contorl documentation](https://yanzhaow.github.io/srs-control/).
 
 Reference of the internal code implementation can be checked from this [Doxygen documentation](https://web-docs.gsi.de/~yanwang/srs).
@@ -43,10 +42,11 @@ Options:
                               Available options: [all, acq-on, acq-off, read-only, none]
   -l,--log-level ENUM [info]  Set log level
                               Available options: [trace, debug, info, warn, err, critical, off, n-levels]
+  -r,--run-time UINT [0]      Set the runtime of the application. Non-stop if 0
   -p,--print-mode ENUM [print-speed]
                               Set data print mode
                               Available options: [print-speed, print-header, print-raw, print-all]
-  -c,--config-file TEXT [/Users/edwin/.config/srs-control/config.yaml]
+  -c,--config-file TEXT [~/.config/srs-control/config.yaml]
                               Set the path of the JSON config file
   -s,--split-output INT [1]   Splitting the output data into different files.
   --dump-config TEXT [~/.config/srs-control/config.yaml]
@@ -91,6 +91,9 @@ output_split: 1
 # Time (milliseconds) to wait after turning off FECs
 time_wait_after_acq_off_ms: 1000
 
+# Enable thread ID display from the console outputs
+show_thread_id: false
+
 # Enabling warnings when data drop occur
 warn_if_data_drop: false
 
@@ -99,6 +102,24 @@ data_print_mode: print_speed
 ```
 
 See [Configuration](https://yanzhaow.github.io/srs-control/executable.html#configuration) for detailed information.
+
+## Testing and emulators
+
+Emulators for FEC devices can be run with
+
+```bash
+srs-fec-emualtor emulator.yaml
+```
+
+This will launch multiple emulated FEC devices according to the setup in the configuration file, waiting for connections from `srs-control`.
+
+To receive the data from those emulators, simply run the `srs-cotrol`:
+
+```bash
+srs-control -c config.yaml
+```
+
+See [Command line tools](https://yanzhaow.github.io/srs-control/executable.html#srs-control) for detailed information.
 
 ## Acknowledgments
 

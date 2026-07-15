@@ -47,6 +47,7 @@ namespace srs::connection
         void close()
         {
             auto error = std::error_code{};
+            socket_.shutdown(asio::ip::udp::socket::shutdown_send, error);
             socket_.close(error);
             if (error)
             {
@@ -54,27 +55,6 @@ namespace srs::connection
                              socket_.local_endpoint(),
                              error.message());
             }
-        }
-
-        auto send_continuous_message() -> asio::experimental::coro<OutputType(std::optional<InputType>)>
-        {
-            auto total_size = std::size_t{};
-            spdlog::debug("UDP: Starting to send data to the remote point {}", remote_endpoint_);
-            auto msg = co_yield OutputType{};
-            while (true)
-            {
-                if (not msg.has_value())
-                {
-                    break;
-                }
-                const auto read_size =
-                    (not msg.value().empty()) ? socket_.send_to(asio::buffer(msg.value()), remote_endpoint_) : 0;
-                total_size += read_size;
-                msg = co_yield read_size;
-            }
-            close();
-            spdlog::debug("UDP: Stopped sending the message. Sent bytes: {}", total_size);
-            co_return;
         }
 
       private:

@@ -54,3 +54,22 @@ if(ROOT_FOUND)
 else()
     message(STATUS "ROOT depenedency is disabled!")
 endif()
+
+set(PRIVATE_THIRD_PARTY_LIBRARIES
+    $<BUILD_LOCAL_INTERFACE:asio::asio>
+    $<BUILD_LOCAL_INTERFACE:fmt::fmt-header-only>
+    $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
+    $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
+    $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>
+    $<BUILD_LOCAL_INTERFACE:Taskflow::Taskflow>
+    $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>
+    $<BUILD_LOCAL_INTERFACE:concurrentqueue::concurrentqueue>
+)
+
+set(THIRD_PARTY_LIBRARIES
+    CLI11::CLI11
+    asio::asio
+    glaze::glaze
+    magic_enum::magic_enum
+    spdlog::spdlog
+)

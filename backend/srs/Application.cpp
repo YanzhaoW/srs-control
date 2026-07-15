@@ -47,7 +47,14 @@ namespace srs
         auto log_file = common::get_default_log_path();
 
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-        console_sink->set_pattern("[%H:%M:%S][%^%=6l%$][%t] %v");
+        if (config_.show_thread_id)
+        {
+            console_sink->set_pattern("[%H:%M:%S][%^%=6l%$][%t] %v");
+        }
+        else
+        {
+            console_sink->set_pattern("[%H:%M:%S][%^%=6l%$] %v");
+        }
         auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
             log_file.string(), common::file_max_size, common::rotating_file_nums, false);
         file_sink->set_level(spdlog::level::trace);
@@ -70,8 +77,9 @@ namespace srs
         spdlog::info("Welcome to SRS Application");
     }
 
-    App::App()
-        : io_work_guard_{ asio::make_work_guard(io_context_) }
+    App::App(Config config)
+        : config_{ std::move(config) }
+        , io_work_guard_{ asio::make_work_guard(io_context_) }
         , fec_strand_{ asio::make_strand(io_context_.get_executor()) }
     {
         init_spdlog();
@@ -85,7 +93,7 @@ namespace srs
             switch_off_status == std::future_status::ready)
         {
             spdlog::info(fmt::format(fg(fmt::color::light_green) | fmt::emphasis::bold,
-                                     "FECs have been switched off successfully! 🥳"));
+                                     "🥳 FECs have been switched off successfully!"));
         }
         else if (switch_off_status == std::future_status::timeout)
         {
@@ -144,6 +152,35 @@ namespace srs
         }
     }
 
+    void App::set_cancel_method()
+    {
+        if (runtime_sec_ == 0)
+        {
+            spdlog::info(
+                fmt::format(fmt::emphasis::bold,
+                            "📢 Application is running in non-stop mode. Press \"Ctrl-C\" to stop the application!"));
+            signal_set_.async_wait(
+                [this](const std::error_code& error, auto)
+                {
+                    const auto _ = ExitLogger{ "signal" };
+                    spdlog::info("Calling SIGINT from monitoring thread");
+                    if (error == asio::error::operation_aborted)
+                    {
+                        return;
+                    }
+                    exit_and_switch_off();
+                });
+        }
+        else
+        {
+            spdlog::info(fmt::format(fmt::emphasis::bold,
+                                     "📢 Application is running in stop mode and will stop after {} seconds!",
+                                     runtime_sec_));
+            cancel_timer_.expires_after(std::chrono::seconds{ runtime_sec_ });
+            cancel_timer_.async_wait([this](const std::error_code&) { exit_and_switch_off(); });
+        }
+    }
+
     void App::init()
     {
         const auto _ = ExitLogger{};
@@ -154,17 +191,9 @@ namespace srs
 
         set_remote_fec_endpoints();
         check_port_number_validity();
-        signal_set_.async_wait(
-            [this](const std::error_code& error, auto)
-            {
-                const auto _ = ExitLogger{ "signal" };
-                spdlog::info("Calling SIGINT from monitoring thread");
-                if (error == asio::error::operation_aborted)
-                {
-                    return;
-                }
-                exit_and_switch_off();
-            });
+
+        set_cancel_method();
+
         auto current_loc = std::source_location::current();
         auto monitoring_action = [this, current_loc]()
         {
@@ -213,10 +242,12 @@ namespace srs
         signal_set_.cancel(err);
         signal_set_.clear(err);
 
+        workflow_handler_->stop_monitor();
+
         if (auto switch_on_status = wait_for_switch_action(switch_on_future_);
             switch_on_status == std::future_status::ready)
         {
-            spdlog::debug("Application: FECs has been switched on successfully.");
+            spdlog::debug("Application: FECs have been switched on successfully.");
             switch_off();
         }
         else if (switch_on_status == std::future_status::timeout)
@@ -238,7 +269,7 @@ namespace srs
         // Turn off SRS data acquisition
         wait_for_reading_finish();
 
-        workflow_handler_->stop();
+        workflow_handler_->stop_workflow();
     }
 
     void App::set_print_mode(common::DataPrintMode mode) { config_.data_print_mode = mode; }
@@ -287,7 +318,7 @@ namespace srs
 
     void App::switch_off()
     {
-        spdlog::info(fmt::format(fmt::emphasis::bold, "Please wait until FEC devices are switched off ‼️"));
+        spdlog::info(fmt::format(fmt::emphasis::bold, "❗ Please wait until FEC devices are switched off"));
         switch_off_future_ = switch_FECs<connection::Stopper>("Stopper");
     }
 

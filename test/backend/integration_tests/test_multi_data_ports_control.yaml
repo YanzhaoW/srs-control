@@ -1,0 +1,19 @@
+fec_control_local_port: 6007
+fec_control_remote_port: 6600
+fec_data_receive_ports:
+  - 6006
+  - 6005
+  - 6004
+
+data_buffer_size: 80000
+remote_fec_ips:
+  - '127.0.0.1'
+  - '127.0.0.2'
+  - '127.0.0.3'
+buffer_queue_capacity: 200
+output_filenames: []
+output_split: 1
+time_wait_after_acq_off_ms: 1000
+warn_if_data_drop: false
+show_thread_id: false
+data_print_mode: print_speed

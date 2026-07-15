@@ -173,7 +173,7 @@ auto main(int argc, char** argv) -> int
 
     try
     {
-        cli_args.add_option("-f, --file", default_log_filename, "Set the path to the log file")
+        cli_args.add_option("file", default_log_filename, "Set the path to the log file")
             ->capture_default_str()
             ->expected(0, 1);
         cli_args.add_flag("-l, --show-last-log", is_show_last_log, "Show last log content");
