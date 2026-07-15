@@ -11,17 +11,11 @@ endif()
 
 add_subdirectory(srs)
 
+#-------------------srs-control---------------
 add_executable(srs_control srs_control.cpp)
 target_link_libraries(
     srs_control
-    PRIVATE
-        CLI11::CLI11
-        asio::asio
-        glaze::glaze
-        magic_enum::magic_enum
-        spdlog::spdlog
-        srs_data
-        srscpp
+    PRIVATE ${THIRD_PARTY_LIBRARIES} srs::data srs::main
 )
 target_compile_definitions(
     srs_control
@@ -29,20 +23,30 @@ target_compile_definitions(
 )
 set_target_properties(srs_control PROPERTIES OUTPUT_NAME "srs-control")
 
-add_executable(srs_check check_log.cpp)
-
+#-------------------srs-check---------------
+add_executable(srs_check srs_check.cpp)
 target_link_libraries(
     srs_check
-    PRIVATE
-        CLI11::CLI11
-        asio::asio
-        magic_enum::magic_enum
-        ctre::ctre
-        spdlog::spdlog
-        srscpp
+    PRIVATE ${THIRD_PARTY_LIBRARIES} srs::data srs::main ctre::ctre
 )
 target_compile_features(srs_check PRIVATE cxx_std_23)
-
 set_target_properties(srs_check PROPERTIES OUTPUT_NAME "srs-check")
 
+#-------------------srs-fec-emulator---------------
+add_executable(srs_fec_emulator srs_fec_emulator.cpp)
+target_link_libraries(
+    srs_fec_emulator
+    PRIVATE
+        ${THIRD_PARTY_LIBRARIES}
+        srs::data
+        srs::main
+        ${PRIVATE_THIRD_PARTY_LIBRARIES}
+)
+target_compile_features(srs_fec_emulator PRIVATE cxx_std_23)
+set_target_properties(
+    srs_fec_emulator
+    PROPERTIES OUTPUT_NAME "srs-fec-emulator"
+)
+
+#-------------------installation---------------
 include(${CMAKE_SOURCE_DIR}/cmake/install_targets.cmake)

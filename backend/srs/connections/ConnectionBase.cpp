@@ -23,17 +23,16 @@ namespace srs::connection
         -> asio::awaitable<void>
     {
         const auto _ = ExitLogger{};
-        spdlog::debug("Connection {}: Sending data using external socket at time {} us...",
-                      connection->get_name(),
-                      socket->get_time_us());
+        const auto start_time = socket->get_time_us();
         auto data_size = co_await socket->get_socket().async_send_to(
             asio::buffer(connection->write_msg_buffer_.data()), connection->remote_endpoint_, asio::use_awaitable);
-        spdlog::debug("Connection {}: {} bytes data sent to the remote endpoint {} at time {} us: \n\t{:02x}",
+        const auto stop_time = socket->get_time_us();
+        spdlog::debug("Connection {}: {} bytes data sent to the remote endpoint {}: \n\t{:02x}",
                       connection->get_name(),
                       data_size,
                       connection->remote_endpoint_,
-                      socket->get_time_us(),
                       fmt::join(connection->write_msg_buffer_.data(), " "));
+        socket->log_time_stamps(start_time, stop_time);
         co_return;
     }
 

@@ -1,34 +1,20 @@
 add_library(srscpp SHARED)
-target_sources(srscpp PRIVATE Application.cpp)
+add_library(srs::main ALIAS srscpp)
 
 target_sources(
     srscpp
+    PRIVATE Application.cpp
     PUBLIC
         FILE_SET publicHeaders
             TYPE HEADERS
             BASE_DIRS ${CMAKE_SOURCE_DIR}/backend
-)
-
-target_sources(
-    srscpp
     PRIVATE
         FILE_SET privateHeaders
             TYPE HEADERS
             BASE_DIRS ${CMAKE_SOURCE_DIR}/backend
 )
 
-target_link_libraries(
-    srscpp
-    PRIVATE
-        $<BUILD_LOCAL_INTERFACE:asio::asio>
-        $<BUILD_LOCAL_INTERFACE:fmt::fmt-header-only>
-        $<BUILD_LOCAL_INTERFACE:gsl::gsl-lite>
-        $<BUILD_LOCAL_INTERFACE:magic_enum::magic_enum>
-        $<BUILD_LOCAL_INTERFACE:spdlog::spdlog>
-        $<BUILD_LOCAL_INTERFACE:Taskflow::Taskflow>
-        $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>
-        $<BUILD_LOCAL_INTERFACE:concurrentqueue::concurrentqueue>
-)
+target_link_libraries(srscpp PRIVATE ${PRIVATE_THIRD_PARTY_LIBRARIES})
 
 add_subdirectory(utils)
 add_subdirectory(data)
@@ -38,6 +24,7 @@ add_subdirectory(readers)
 add_subdirectory(connections)
 add_subdirectory(devices)
 add_subdirectory(workflow)
+add_subdirectory(emulators)
 
 target_sources(
     srscpp

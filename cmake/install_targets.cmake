@@ -49,9 +49,7 @@ install(
 
 # install executable
 
-install(TARGETS srs_control)
-
-install(TARGETS srs_check)
+install(TARGETS srs_control srs_check srs_fec_emulator)
 
 install(
     PROGRAMS

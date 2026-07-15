@@ -1,6 +1,7 @@
 #include "DataWriter.hpp"
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
+#include <algorithm>
 #include <asio/ip/udp.hpp>
 #include <asio/thread_pool.hpp>
 // #include <boost/thread/futures/wait_for_all.hpp>
@@ -85,10 +86,16 @@ namespace srs::writer
     auto Manager::generate_conversion_req_map() const -> std::map<process::DataConvertOptions, bool>
     {
         constexpr auto conversions = magic_enum::enum_values<process::DataConvertOptions>();
-        return std::views::transform(conversions,
-                                     [this](const auto conversion) -> std::pair<process::DataConvertOptions, bool>
-                                     { return std::pair{ conversion, is_convert_required(conversion) }; }) |
-               std::ranges::to<std::map<process::DataConvertOptions, bool>>();
+        auto convert_map =
+            std::views::transform(conversions,
+                                  [this](const auto conversion) -> std::pair<process::DataConvertOptions, bool>
+                                  { return std::pair{ conversion, is_convert_required(conversion) }; }) |
+            std::ranges::to<std::map<process::DataConvertOptions, bool>>();
+        if (not std::ranges::contains(convert_map | std::views::values, true))
+        {
+            convert_map[process::DataConvertOptions::none] = true;
+        }
+        return convert_map;
     }
 
     auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool

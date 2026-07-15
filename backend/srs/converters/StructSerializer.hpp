@@ -19,6 +19,11 @@ namespace srs::process
         auto convert(const StructData* input, std::vector<char>& output, std::vector<char>& compact_data_buffer)
             -> std::expected<std::size_t, std::string_view>;
 
+        auto convert(const StructData* input) -> std::expected<std::size_t, std::string_view>
+        {
+            return convert(input, output_data_[0], compact_data_buffer_[0]);
+        }
+
         auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
         {
             auto res =

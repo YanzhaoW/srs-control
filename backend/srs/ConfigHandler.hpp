@@ -43,11 +43,10 @@ namespace srs::config
         return invalid;
     }
 
-    inline auto output_config_to_json(const Config& app_config, std::string_view json_filename)
-        -> std::optional<std::string>
+    inline auto output_config_to_json(const auto& config, std::string_view json_filename) -> std::optional<std::string>
     {
         auto buffer = std::string{};
-        auto error_code = glz::write_file_json<glz::opts{ .prettify = true }>(app_config, json_filename, buffer);
+        auto error_code = glz::write_file_json<glz::opts{ .prettify = true }>(config, json_filename, buffer);
         if (error_code)
         {
             return fmt::format("Error occurred during writing the json file {}: {}",
@@ -57,10 +56,10 @@ namespace srs::config
         return {};
     }
 
-    inline auto set_config_from_json(Config& app_config, std::string_view json_filename) -> std::optional<std::string>
+    inline auto set_config_from_json(auto& config, std::string_view json_filename) -> std::optional<std::string>
     {
         auto buffer = std::string{};
-        auto error_code = glz::read_file_json(app_config, json_filename, buffer);
+        auto error_code = glz::read_file_json(config, json_filename, buffer);
         if (error_code)
         {
             return fmt::format("Error occurred during reading the json file {}: {}",
@@ -70,10 +69,10 @@ namespace srs::config
         return {};
     }
 
-    inline auto output_config_to_yaml(const Config& app_config, std::string_view filename) -> std::optional<std::string>
+    inline auto output_config_to_yaml(const auto& config, std::string_view filename) -> std::optional<std::string>
 
     {
-        auto error_code = glz::write_file_yaml<glz::yaml::yaml_opts{}>(app_config, filename);
+        auto error_code = glz::write_file_yaml<glz::yaml::yaml_opts{}>(config, filename);
         if (error_code)
         {
             return fmt::format(
@@ -82,7 +81,7 @@ namespace srs::config
         return {};
     }
 
-    inline auto set_config_from_yaml(Config& app_config, std::string_view filename) -> std::optional<std::string>
+    inline auto set_config_from_yaml(auto& app_config, std::string_view filename) -> std::optional<std::string>
     {
         auto error_code = glz::read_file_yaml(app_config, filename);
         if (error_code)
@@ -93,7 +92,7 @@ namespace srs::config
         return {};
     }
 
-    inline auto output_config_to_file(const Config& app_config, std::string_view filename, bool is_overwrite = false)
+    inline auto output_config_to_file(const auto& config, std::string_view filename, bool is_overwrite = false)
         -> std::optional<std::string>
     {
         if (not is_overwrite and std::filesystem::exists(filename))
@@ -110,9 +109,9 @@ namespace srs::config
         switch (file_type)
         {
             case yaml:
-                return output_config_to_yaml(app_config, filename);
+                return output_config_to_yaml(config, filename);
             case json:
-                return output_config_to_json(app_config, filename);
+                return output_config_to_json(config, filename);
             case invalid:
             default:
                 return fmt::format("Filename {:?} must have a suffix of .yml, .yaml or .json", filename);
@@ -120,7 +119,7 @@ namespace srs::config
         return {};
     }
 
-    inline auto set_config_from_file(Config& app_config, std::string_view filename, bool is_default_generated = true)
+    inline auto set_config_from_file(auto& config, std::string_view filename, bool is_default_generated = true)
         -> std::optional<std::string>
     {
         if (filename.empty())
@@ -134,7 +133,7 @@ namespace srs::config
             {
                 spdlog::warn("configuration file {:?} doesn't exist. Creating a new file with default values",
                              filename);
-                output_config_to_file(app_config, filename);
+                output_config_to_file(config, filename);
             }
             else
             {
@@ -147,10 +146,10 @@ namespace srs::config
             switch (file_type)
             {
                 case yaml:
-                    return set_config_from_yaml(app_config, filename);
+                    return set_config_from_yaml(config, filename);
                     break;
                 case json:
-                    return set_config_from_json(app_config, filename);
+                    return set_config_from_json(config, filename);
                     break;
                 case invalid:
                 default:

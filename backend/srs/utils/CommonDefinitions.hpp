@@ -84,6 +84,15 @@ namespace srs::common
         none,
     };
 
+    /**
+     * @brief Struct to store minimum and maximum values.
+     */
+    template <typename T>
+    struct MinMax
+    {
+        T min{}; //!< Minimum value
+        T max{}; //!< Maximum value
+    };
     using RawDelimSizeType = uint32_t;
 
 } // namespace srs::common

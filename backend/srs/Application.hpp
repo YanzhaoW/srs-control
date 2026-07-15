@@ -6,6 +6,7 @@
 #include <asio/executor_work_guard.hpp>
 #include <asio/ip/udp.hpp>
 #include <asio/signal_set.hpp>
+#include <asio/steady_timer.hpp>
 #include <asio/strand.hpp>
 #include <asio/thread_pool.hpp>
 #include <csignal>
@@ -89,7 +90,7 @@ namespace srs
          * 3. Set the logging format.
          * 4. Instantiation (memory allocation) of workflow_handler_.
          */
-        App();
+        App(Config config);
 
         App(const App&) = delete;
         App(App&&) = delete;
@@ -189,6 +190,11 @@ namespace srs
          */
         void set_options(Config options) { config_ = std::move(options); }
 
+        /**
+         * @brief Set the runtime in seconds.
+         */
+        void set_runtime_sec(std::size_t runtime_sec) { runtime_sec_ = runtime_sec; }
+
         void exit_and_switch_off();
 
         // internal usage
@@ -219,6 +225,11 @@ namespace srs
          */
         io_context_type io_context_{ 4 };
 
+        /** @brief Time duration (seconds) to stop the application. If value is zero, the application is in non-stop
+         * mode and must be stopped by pressing Ctrl-C.
+         */
+        std::size_t runtime_sec_{};
+
         /** @brief Asio io_context work guard.
          */
         asio::executor_work_guard<io_context_type::executor_type> io_work_guard_;
@@ -230,6 +241,10 @@ namespace srs
         /** @brief User signal handler for interrupts.
          */
         asio::signal_set signal_set_{ io_context_, SIGINT, SIGTERM };
+
+        /** @brief Cancelling timer.
+         */
+        asio::steady_timer cancel_timer_{ io_context_ };
 
         /** @brief FEC communication strand for synchronous communications.
          */
@@ -267,6 +282,7 @@ namespace srs
         void init_spdlog();
         void wait_for_reading_finish();
         void set_remote_fec_endpoints();
+        void set_cancel_method();
         void add_remote_fec_endpoint(std::string_view remote_ip, int port_number);
         static auto wait_for_switch_action(const SwitchFutureType& switch_future) -> SwitchFutureStatusType;
 

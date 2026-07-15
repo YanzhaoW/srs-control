@@ -64,6 +64,11 @@ namespace srs
         bool warn_if_data_drop = false;
 
         /**
+         * @brief Show thread ID from console printouts.
+         */
+        bool show_thread_id = false;
+
+        /**
          * @brief Set print mode.
          */
         common::DataPrintMode data_print_mode = srs::common::DataPrintMode::print_speed;

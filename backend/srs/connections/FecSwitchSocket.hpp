@@ -16,6 +16,7 @@
 #include <mutex>
 #include <span>
 #include <spdlog/spdlog.h>
+#include <utility>
 #include <vector>
 
 namespace srs::connection
@@ -27,15 +28,21 @@ namespace srs::connection
       public:
         using SmallConnection = CommandBase;
         using ConnectionType = SmallConnection;
+        using US = std::chrono::microseconds;
+        using USCount = decltype(US{}.count());
+        using StartEndTime = std::pair<USCount, USCount>;
 
         // getters:
         auto get_strand() -> auto& { return strand_; }
-        auto get_time_us() const -> auto
+        auto get_time_us() const -> USCount
         {
-            return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time_)
-                .count();
+            return std::chrono::duration_cast<US>(std::chrono::steady_clock::now() - start_time_).count();
         }
         void launch_send_actions();
+
+        void log_time_stamps(USCount start, USCount stop) { time_stamps_.emplace_back(start, stop); }
+
+        ~FecCommandSocket() { print_time_statistics(); }
 
       private:
         friend SpecialSocket;
@@ -45,6 +52,7 @@ namespace srs::connection
         std::map<UDPEndpoint, SmallConnections> all_connections_;
         std::vector<char> read_msg_buffer_;
         std::chrono::time_point<std::chrono::steady_clock> start_time_ = std::chrono::steady_clock::now();
+        std::vector<StartEndTime> time_stamps_;
 
         using ActionType = decltype(asio::co_spawn(strand_, asio::awaitable<void>(), asio::deferred));
         std::vector<ActionType> action_queue_;
@@ -60,6 +68,8 @@ namespace srs::connection
                                    std::span<char> response,
                                    SmallConnections& connections);
         void print_available_responses() const;
+
+        void print_time_statistics() const;
     };
 
 } // namespace srs::connection

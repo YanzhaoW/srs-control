@@ -78,16 +78,20 @@ namespace srs::workflow
                     {
                         const auto& conversion_req_map = writers_->generate_conversion_req_map();
                         spdlog::debug("Starting taskflow with enabled writers");
-                        spdlog::debug("Conversion requirements map: \n\t{}",
+                        spdlog::debug("Conversion requirements map: \n"
+                                      "\t|{:^30}|{:^30}|\n"
+                                      "{}",
+                                      "Conversions",
+                                      "Required",
                                       fmt::join(conversion_req_map | std::views::transform(
                                                                          [](const auto conv_req) -> std::string
                                                                          {
                                                                              return fmt::format(
-                                                                                 "conversion \t {:<20} \t required: {}",
+                                                                                 "\t|{:<30}|{:^29}|",
                                                                                  magic_enum::enum_name(conv_req.first),
-                                                                                 conv_req.second);
+                                                                                 conv_req.second ? "✅" : "❌");
                                                                          }),
-                                                "\n\t"));
+                                                "\n"));
                     })
                 .name("Starting");
 

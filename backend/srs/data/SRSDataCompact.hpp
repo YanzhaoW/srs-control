@@ -6,12 +6,21 @@
 namespace srs::process::internal
 {
     // Dev note: need to be of unsigned type to stop clang tidy from complaining
-    constexpr auto TDC_BIT_LENGTH = 8U;
     constexpr auto CHANNEL_NUM_BIT_LENGTH = 6U;
+    constexpr auto TDC_BIT_LENGTH = 8U;
     constexpr auto BC_ID_BIT_LENGTH = 12U;
     constexpr auto ADC_BIT_LENGTH = 10U;
     constexpr auto VMM_ID_BIT_LENGTH = 5U;
     constexpr auto OFFSET_BIT_LENGTH = 5U;
+
+    constexpr auto CHANNEL_NUM_BIT_MAX = (1ULL << CHANNEL_NUM_BIT_LENGTH) - 1;
+    constexpr auto TDC_BIT_MAX = (1ULL << TDC_BIT_LENGTH) - 1;
+    constexpr auto OFFSET_BIT_MAX = (1ULL << OFFSET_BIT_LENGTH) - 1;
+    constexpr auto VMM_ID_BIT_MAX = (1ULL << VMM_ID_BIT_LENGTH) - 1;
+    constexpr auto ADC_BIT_MAX = (1ULL << ADC_BIT_LENGTH) - 1;
+    constexpr auto BC_ID_BIT_MAX = (1ULL << BC_ID_BIT_LENGTH) - 1;
+    constexpr auto SRS_TIMESTAMP_MAX =
+        (1ULL << (common::SRS_TIMESTAMP_LOW_BIT_LENGTH + common::SRS_TIMESTAMP_HIGH_BIT_LENGTH)) - 1;
 
     struct HitDataCompact
     {

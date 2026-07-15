@@ -1,4 +1,5 @@
 add_library(srs_data SHARED)
+add_library(srs::data ALIAS srs_data)
 
 target_link_libraries(
     srs_data
