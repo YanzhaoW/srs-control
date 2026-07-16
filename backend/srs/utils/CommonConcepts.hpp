@@ -5,6 +5,7 @@
 #include <concepts>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -39,4 +40,36 @@ namespace srs
         std::is_reference_v<OutputType>;
         { converter(0) } -> std::same_as<OutputType>;
     };
+
+    template <typename T>
+    concept ConverterType = requires { T::converter_type; };
+
+    template <typename T>
+    concept SinkType = requires { T::writer_type; };
+
+    template <typename T>
+    struct is_optional_type : std::false_type
+    {
+    };
+
+    template <typename T>
+    struct is_optional_type<std::optional<T>> : std::true_type
+    {
+    };
+
+    template <typename T>
+    struct remove_optional
+    {
+        using type = T;
+    };
+
+    template <typename T>
+    struct remove_optional<std::optional<T>>
+    {
+        using type = T;
+    };
+
+    template <typename T>
+    using remove_optional_t = remove_optional<T>::type;
+
 }; // namespace srs

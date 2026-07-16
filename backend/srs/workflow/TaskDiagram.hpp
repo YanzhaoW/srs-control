@@ -7,8 +7,10 @@
 #include "srs/converters/StructToProtoConverter.hpp"
 #include "srs/data/BufferQueue.hpp"
 #include "srs/data/LargeBuffer.hpp"
-#include "srs/writers/DataWriter.hpp"
-#include <algorithm>
+#include "srs/data/SRSDataStructs.hpp"
+#include "srs/sinks/Manager.hpp"
+#include "srs/utils/CommonConcepts.hpp"
+#include "srs/workflow/TaskReport.hpp"
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -18,6 +20,7 @@
 #include <taskflow/core/executor.hpp>
 #include <taskflow/core/task.hpp>
 #include <taskflow/core/taskflow.hpp>
+#include <utility>
 #include <vector>
 
 namespace srs::workflow
@@ -35,7 +38,7 @@ namespace srs::workflow
          * @param data_processor Pointer to srs::workflow::Handler
          * @param n_lines Number of pipelines
          */
-        explicit TaskDiagram(Handler& data_processor, std::size_t n_lines = 1);
+        explicit TaskDiagram(AnalysisHandle& data_processor, std::size_t n_lines = 1);
 
         using InputType = bool;
         using OutputType = std::size_t;
@@ -55,7 +58,14 @@ namespace srs::workflow
         [[nodiscard]] auto get_data_bytes() const -> uint64_t { return total_read_data_bytes_.load(); }
         [[nodiscard]] auto get_n_lines() const -> std::size_t { return n_lines_; }
 
-        auto get_struct_data() -> const auto* { return struct_deserializer_converter_(0); }
+        auto get_struct_data() -> const StructData*
+        {
+            if (struct_deserializer_converter_)
+            {
+                return struct_deserializer_converter_.value()(0);
+            }
+            return nullptr;
+        }
 
       private:
         std::atomic<bool> is_done_ = false;
@@ -67,29 +77,34 @@ namespace srs::workflow
         std::vector<std::atomic<bool>> is_pipeline_stopped_;
         std::vector<LargeBuffer> raw_data_;
 
-        process::Raw2DelimRawConverter raw_to_delim_raw_converter_;
-        process::StructDeserializer struct_deserializer_converter_;
-        process::Struct2ProtoConverter struct_to_proto_converter_;
-        process::ProtoSerializer proto_serializer_converter_;
-        process::ProtoDelimSerializer proto_delim_serializer_converter_;
+        std::optional<process::Raw2DelimRawConverter> raw_to_delim_raw_converter_;
+        std::optional<process::StructDeserializer> struct_deserializer_converter_;
+        std::optional<process::Struct2ProtoConverter> struct_to_proto_converter_;
+        std::optional<process::ProtoSerializer> proto_serializer_converter_;
+        std::optional<process::ProtoDelimSerializer> proto_delim_serializer_converter_;
 
         std::atomic<uint64_t> total_read_data_bytes_ = 0;
-        gsl::not_null<writer::Manager*> writers_;
+        gsl::not_null<sink::Manager*> sinks_;
+        TaskReport* report_;
 
         void construct_taskflow_line(tf::Taskflow& taskflow, std::size_t line_number);
 
-        // TODO: Add converter concept here
-        auto create_task(auto& converter, tf::Taskflow& taskflow, std::size_t line_number) -> std::optional<tf::Task>
-        {
-            auto is_required = std::ranges::all_of(converter.DataConvertOptions,
-                                                   [this](auto converter_option)
-                                                   { return writers_->is_convert_required(converter_option); });
-            if (not is_required)
-            {
-                return {};
-            }
-            return taskflow.emplace([this, line_number, &converter]() { converter.run_task(*this, line_number); })
-                .name(converter.get_name_str());
-        }
+        template <typename PrevConverter, typename ThisTask>
+        auto emplace_to_taskflow(ThisTask& current_task,
+                                 std::pair<const PrevConverter&, tf::Task>& prev_task,
+                                 tf::Taskflow& taskflow,
+                                 std::size_t line_number) -> std::optional<std::pair<const ThisTask&, tf::Task>>;
+
+        template <typename PrevConverter, ConverterType ThisTask>
+        auto create_task_imp(std::optional<ThisTask>& current_task,
+                             std::optional<std::pair<const PrevConverter&, tf::Task>>& prev_task,
+                             tf::Taskflow& taskflow,
+                             std::size_t line_number) -> std::optional<std::pair<const ThisTask&, tf::Task>>;
+
+        template <typename PrevConverter, SinkType ThisTask>
+        auto create_task_imp(ThisTask& current_task,
+                             std::optional<std::pair<const PrevConverter&, tf::Task>>& prev_task,
+                             tf::Taskflow& taskflow,
+                             std::size_t line_number) -> std::optional<std::pair<const ThisTask&, tf::Task>>;
     };
 } // namespace srs::workflow

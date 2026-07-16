@@ -1,9 +1,11 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
+#include "srs/sinks/DataWriterOptions.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonConcepts.hpp"
+#include "srs/utils/UDPFormatters.hpp" // IWYU pragma: keep
+#include "srs/workflow/BaseTask.hpp"
 #include <asio/buffer.hpp>
 #include <asio/experimental/coro.hpp>
 #include <asio/ip/udp.hpp>
@@ -12,10 +14,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
-#include <optional>
 #include <spdlog/spdlog.h>
-#include <srs/connections/ConnectionBase.hpp>
-#include <srs/writers/DataWriterOptions.hpp>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -65,9 +64,9 @@ namespace srs::connection
     };
 } // namespace srs::connection
 
-namespace srs::writer
+namespace srs::sink
 {
-    class UDP : public process::WriterTask<DataWriterOption::udp, std::string_view, std::size_t>
+    class UDP : public process::SinkTask<DataWriterOption::udp, std::string_view, std::size_t>
     {
       public:
         UDP(io_context_type& io_context,
@@ -104,4 +103,4 @@ namespace srs::writer
         using enum process::DataConvertOptions;
     };
 
-} // namespace srs::writer
+} // namespace srs::sink

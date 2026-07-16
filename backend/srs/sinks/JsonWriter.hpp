@@ -1,10 +1,10 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
+#include "srs/sinks/DataWriterOptions.hpp"
 #include "srs/utils/CommonConcepts.hpp"
-#include "srs/writers/DataWriterOptions.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <asio/any_io_executor.hpp>
 #include <asio/thread_pool.hpp>
 #include <asio/use_awaitable.hpp>
@@ -21,7 +21,7 @@
 #include <string_view>
 #include <vector>
 
-namespace srs::writer
+namespace srs::sink
 {
     struct CompactExportData
     {
@@ -44,7 +44,7 @@ namespace srs::writer
         void fill_marker_data(const std::vector<MarkerData>& markers);
     };
 
-    class Json : public process::WriterTask<DataWriterOption::json, const StructData*, std::size_t>
+    class Json : public process::SinkTask<DataWriterOption::json, const StructData*, std::size_t>
     {
       public:
         static constexpr auto IsStructType = true;
@@ -89,4 +89,4 @@ namespace srs::writer
         void write_json(const StructData& data_struct, std::size_t line_num);
     };
 
-} // namespace srs::writer
+} // namespace srs::sink

@@ -4,7 +4,7 @@
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/ExitLogger.hpp"
-#include "srs/workflow/Handler.hpp"
+#include "srs/workflow/AnalysisHandle.hpp"
 #include <asio/awaitable.hpp>
 #include <asio/detached.hpp>
 #include <asio/impl/co_spawn.hpp>
@@ -16,7 +16,7 @@ namespace srs::connection
     DataSocket::DataSocket(int port_number,
                            io_context_type& io_context,
                            std::size_t buffer_size,
-                           workflow::Handler& workflow)
+                           workflow::AnalysisHandle& workflow)
         : SpecialSocket(port_number, io_context)
         , buffer_size_{ buffer_size }
         , read_msg_buffer_{ buffer_size_ }

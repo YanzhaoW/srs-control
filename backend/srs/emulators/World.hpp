@@ -35,6 +35,7 @@ namespace srs::emulator
         void launch();
 
         auto request_frame_counter() -> uint32_t { return frame_counter_++; }
+        void reset_frame_counter() { return frame_counter_.store(0); }
 
         auto get_config() const -> const Config& { return config_; }
 

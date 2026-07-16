@@ -1,9 +1,9 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonConcepts.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <cstddef>
 #include <expected>
 #include <string_view>

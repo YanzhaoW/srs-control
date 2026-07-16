@@ -14,7 +14,6 @@
 #include <glaze/yaml/write.hpp>
 #include <optional>
 #include <spdlog/spdlog.h>
-#include <srs/devices/Configuration.hpp>
 #include <string>
 #include <string_view>
 

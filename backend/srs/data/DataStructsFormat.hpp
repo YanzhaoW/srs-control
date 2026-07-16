@@ -1,7 +1,7 @@
+#include "srs/data/SRSDataStructs.hpp"
 #include <fmt/base.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
-#include <srs/data/SRSDataStructs.hpp>
 
 template <>
 class fmt::formatter<srs::ReceiveDataHeader>

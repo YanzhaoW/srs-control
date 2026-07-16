@@ -1,9 +1,9 @@
 #pragma once
 
-#include "DataConverterBase.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/data/message.pb.h"
 #include "srs/utils/CommonConcepts.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <cassert>
 #include <concepts>
 #include <cstddef>

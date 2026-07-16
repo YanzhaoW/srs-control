@@ -1,8 +1,8 @@
 #pragma once
 
-#include <srs/data/SRSDataStructs.hpp>
-#include <srs/readers/ProtoMsgReader.hpp>
-#include <srs/readers/RawFrameReader.hpp>
+#include "srs/data/SRSDataStructs.hpp"    // IWYU pragma: export
+#include "srs/readers/ProtoMsgReader.hpp" // IWYU pragma: export
+#include "srs/readers/RawFrameReader.hpp" // IWYU pragma: export
 
 namespace srs
 {

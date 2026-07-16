@@ -16,7 +16,6 @@
 #include <spdlog/spdlog.h>
 #include <string>
 #include <utility>
-#include <vector>
 
 #ifdef HAS_ROOT
 #include <TROOT.h>
@@ -46,11 +45,9 @@ auto main(int argc, char** argv) -> int
 
         auto spdlog_level = spdlog::level::info;
         auto print_mode = srs::common::DataPrintMode::print_speed;
-        auto output_filenames = std::vector<std::string>{ "" };
         auto is_version_print = false;
         auto is_root_version_print = false;
         auto is_dump_needed = false;
-        auto n_output_split = 1;
         auto runtime_sec = std::size_t{ 0 };
         const auto home_dir = []() -> std::string
         {
@@ -63,11 +60,21 @@ auto main(int argc, char** argv) -> int
         }();
         auto json_filepath = home_dir.empty() ? "" : srs::common::get_default_config_path().string();
         auto action_mode_enum = srs::common::ActionMode::all;
+
         auto dump_config_callback = [&json_filepath, &is_dump_needed](const std::string& filename)
         {
             is_dump_needed = true;
             json_filepath = filename;
         };
+        auto set_config_callback = [&app_config](const std::string& filename)
+        {
+            auto is_not_ok = srs::config::set_config_from_file(app_config, filename, true);
+            if (is_not_ok)
+            {
+                throw CLI::ValidationError("--config-file", is_not_ok.value());
+            }
+        };
+
         cli_args.add_flag("-v, --version", is_version_print, "Show the current version");
         cli_args.add_flag("--root-version", is_root_version_print, "Show the ROOT version if used");
 
@@ -97,9 +104,14 @@ auto main(int argc, char** argv) -> int
             ->transform(CLI::CheckedTransformer(print_mode_map, CLI::ignore_case).description(""))
             ->default_str(get_enum_dashed_name(print_mode));
 
-        cli_args.add_option("-c, --config-file", json_filepath, "Set the path of the JSON config file")
-            ->capture_default_str();
-        cli_args.add_option("-s, --split-output", n_output_split, "Splitting the output data into different files.")
+        cli_args
+            .add_option_function<std::string>(
+                "-c, --config-file", set_config_callback, "Configure the application with the JSON config file")
+            ->expected(0, 1)
+            ->default_val(json_filepath);
+        cli_args
+            .add_option(
+                "-s, --split-output", app_config.output_split, "Splitting the output data into different files.")
             ->capture_default_str();
         cli_args
             .add_option_function<std::string>(
@@ -108,7 +120,7 @@ auto main(int argc, char** argv) -> int
             ->run_callback_for_default()
             ->expected(0, 1);
 
-        cli_args.add_option("-o, --output-files", output_filenames, "Set output file (or socket) names")
+        cli_args.add_option("-o, --output-files", app_config.output_filenames, "Set output file (or socket) names")
             ->capture_default_str()
             ->expected(0, -1);
         cli_args.parse(argc, argv);
@@ -140,14 +152,6 @@ auto main(int argc, char** argv) -> int
             return EXIT_FAILURE;
         }
 
-        auto is_not_ok = srs::config::set_config_from_file(app_config, json_filepath, true);
-
-        if (is_not_ok)
-        {
-            spdlog::error("{}", is_not_ok.value());
-            return EXIT_FAILURE;
-        }
-
         auto app = srs::App{ std::move(app_config) };
 
         for (auto sink : spdlog::default_logger()->sinks())
@@ -160,7 +164,6 @@ auto main(int argc, char** argv) -> int
         }
 
         app.set_print_mode(print_mode);
-        app.set_output_filenames(output_filenames, n_output_split);
         app.set_runtime_sec(runtime_sec);
 
         app.init();

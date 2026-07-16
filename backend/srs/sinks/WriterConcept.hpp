@@ -1,12 +1,12 @@
 #pragma once
 
-#include "srs/converters/DataConverterBase.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <concepts>
 #include <cstddef>
 #include <expected>
 #include <string_view>
 
-namespace srs::writer
+namespace srs::sink
 {
 
     namespace internal
@@ -33,4 +33,4 @@ namespace srs::writer
         requires not std::copyable<T>;
         requires std::movable<T>;
     };
-} // namespace srs::writer
+} // namespace srs::sink

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/data/message.pb.h"
 #include "srs/utils/CommonConcepts.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <asio/any_io_executor.hpp>
 #include <asio/thread_pool.hpp>
 #include <cassert>

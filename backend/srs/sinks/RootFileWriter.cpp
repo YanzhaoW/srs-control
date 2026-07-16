@@ -1,8 +1,8 @@
 #ifdef HAS_ROOT
 #include "RootFileWriter.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonFunctions.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <TFile.h>
 #include <TTree.h>
 #include <cstddef>
@@ -11,11 +11,11 @@
 #include <spdlog/spdlog.h>
 #include <string>
 
-namespace srs::writer
+namespace srs::sink
 {
 
     RootFile::RootFile(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines)
-        : WriterTask{ "RootFile", convert_mode, n_lines }
+        : SinkTask{ "RootFile", convert_mode, n_lines }
         , base_filename_{ filename }
     {
         root_files_.resize(n_lines);
@@ -42,5 +42,5 @@ namespace srs::writer
             spdlog::info("Writer: Root file {:?} is Closed.", root_file->GetName());
         }
     }
-} // namespace srs::writer
+} // namespace srs::sink
 #endif
