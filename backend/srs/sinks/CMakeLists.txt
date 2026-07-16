@@ -2,7 +2,8 @@ target_sources(
     srscpp
     PRIVATE
         BinaryFileWriter.cpp
-        DataWriter.cpp
+        Manager.cpp
+        FrameCountChecker.cpp
         JsonWriter.cpp
         RootFileWriter.cpp
         UDPWriter.cpp
@@ -13,8 +14,9 @@ target_sources(
         FILE_SET privateHeaders
             FILES
                 BinaryFileWriter.hpp
-                DataWriter.hpp
+                Manager.hpp
                 DataWriterOptions.hpp
+                FrameCountChecker.hpp
                 JsonWriter.hpp
                 RootFileWriter.hpp
                 UDPWriter.hpp

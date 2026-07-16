@@ -1,7 +1,7 @@
 #pragma once
 
+#include "srs/utils/CommonDefinitions.hpp"
 #include <cstddef>
-#include <srs/utils/CommonDefinitions.hpp>
 #include <string>
 #include <vector>
 
@@ -57,6 +57,11 @@ namespace srs
          * @brief time (milliseconds) to wait after turning off the srs and before stopping data reading
          */
         std::size_t time_wait_after_acq_off_ms = 1000;
+
+        /**
+         * @brief Enable frame counter checking to detect frame drop.
+         */
+        bool enable_frame_counter_check = false;
 
         /**
          * @brief Enable warnings when possible data drop occurs.

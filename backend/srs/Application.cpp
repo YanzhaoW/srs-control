@@ -4,10 +4,11 @@
 #include "srs/connections/DataSocket.hpp"
 #include "srs/connections/FecSwitchSocket.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
+#include "srs/devices/Configuration.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/CommonFunctions.hpp"
 #include "srs/utils/ExitLogger.hpp"
-#include "srs/workflow/Handler.hpp"
+#include "srs/workflow/AnalysisHandle.hpp"
 
 #include "spdlog/sinks/rotating_file_sink.h"
 #include <algorithm>
@@ -36,6 +37,7 @@
 #include <string_view>
 #include <system_error>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace srs
@@ -81,6 +83,7 @@ namespace srs
         : config_{ std::move(config) }
         , io_work_guard_{ asio::make_work_guard(io_context_) }
         , fec_strand_{ asio::make_strand(io_context_.get_executor()) }
+        , report_{ std::make_unique<workflow::TaskReport>() }
     {
         init_spdlog();
     }
@@ -139,8 +142,8 @@ namespace srs
             const auto bytes = socket->get_n_bytes();
             const auto avg_time = static_cast<double>(total_time) / static_cast<double>(records);
             const auto byte_per_frame = static_cast<double>(bytes) / static_cast<double>(records);
-            spdlog::trace(
-                "statistics from data socket with port number: {} \n\t Average time per frame: {:.2f} ns\n\t Average "
+            spdlog::debug(
+                "Statistics from data socket with port number: {} \n\t Average time per frame: {:.2f} ns\n\t Average "
                 "bytes per frame: {:.0f}",
                 socket->get_port(),
                 avg_time,
@@ -184,9 +187,8 @@ namespace srs
     void App::init()
     {
         const auto _ = ExitLogger{};
-        workflow_handler_ = std::make_unique<workflow::Handler>(this);
+        workflow_handler_ = std::make_unique<workflow::AnalysisHandle>(this, config_.output_split);
         workflow_handler_->set_print_mode(config_.data_print_mode);
-        workflow_handler_->set_n_pipelines(config_.output_split);
         workflow_handler_->set_output_filenames(config_.output_filenames);
 
         set_remote_fec_endpoints();
@@ -369,7 +371,7 @@ namespace srs
             [this]()
             {
                 spdlog::info("Starting input data analysis workflow ...");
-                workflow_handler_->start();
+                workflow_handler_->start(io_context_.get_executor());
             });
     }
 

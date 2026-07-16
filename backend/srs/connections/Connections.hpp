@@ -11,7 +11,7 @@
 
 namespace srs::workflow
 {
-    class Handler;
+    class AnalysisHandle;
 }
 
 namespace srs::connection

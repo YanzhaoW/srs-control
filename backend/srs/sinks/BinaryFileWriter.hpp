@@ -1,9 +1,9 @@
 #pragma once
 
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
+#include "srs/sinks/DataWriterOptions.hpp"
 #include "srs/utils/CommonConcepts.hpp"
-#include "srs/writers/DataWriterOptions.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <cassert>
 #include <cstddef>
 #include <fmt/format.h>
@@ -13,18 +13,18 @@
 #include <string_view>
 #include <vector>
 
-namespace srs::writer
+namespace srs::sink
 {
-    class BinaryFile : public process::WriterTask<DataWriterOption::bin, std::string_view, std::size_t>
+    class BinaryFile : public process::SinkTask<DataWriterOption::bin, std::string_view, std::size_t>
     {
       public:
         static constexpr auto IsStructType = false;
 
         BinaryFile(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines);
         BinaryFile(const BinaryFile&) = delete;
-        BinaryFile(BinaryFile&&) = default;
+        BinaryFile(BinaryFile&&) noexcept = default;
         BinaryFile& operator=(const BinaryFile&) = delete;
-        BinaryFile& operator=(BinaryFile&&) = default;
+        BinaryFile& operator=(BinaryFile&&) noexcept = default;
         ~BinaryFile();
 
         auto run(const OutputTo<InputType> auto& prev_data_converter, std::size_t line_number = 0) -> RunResult
@@ -49,4 +49,4 @@ namespace srs::writer
         std::vector<std::ofstream> output_streams_;
     };
 
-} // namespace srs::writer
+} // namespace srs::sink

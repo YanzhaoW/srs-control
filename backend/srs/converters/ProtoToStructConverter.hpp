@@ -1,8 +1,8 @@
 #pragma once
 
+#include "srs/data/SRSDataStructs.hpp"
+#include "srs/data/message.pb.h"
 #include <cstdint>
-#include <srs/data/SRSDataStructs.hpp>
-#include <srs/data/message.pb.h>
 
 namespace srs::process
 {

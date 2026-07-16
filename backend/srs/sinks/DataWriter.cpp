@@ -1,28 +1,31 @@
 #include "DataWriter.hpp"
 #include "DataWriterOptions.hpp"
+#include "FrameCountChecker.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
+#include "srs/sinks/BinaryFileWriter.hpp"
+#include "srs/sinks/JsonWriter.hpp"
+#include "srs/sinks/UDPWriter.hpp"
+#include "srs/workflow/AnalysisHandle.hpp"
 #include <algorithm>
 #include <asio/ip/udp.hpp>
 #include <asio/thread_pool.hpp>
-// #include <boost/thread/futures/wait_for_all.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <map>
 #include <memory>
 #include <optional>
 #include <ranges>
 #include <spdlog/spdlog.h>
-#include <srs/workflow/Handler.hpp>
-#include <srs/writers/BinaryFileWriter.hpp>
-#include <srs/writers/JsonWriter.hpp>
-#include <srs/writers/RootFileWriter.hpp>
-#include <srs/writers/UDPWriter.hpp>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
 #include <vector>
 
-namespace srs::writer
+#ifdef HAS_ROOT
+#include "srs/sinks/RootFileWriter.hpp"
+#endif
+
+namespace srs::sink
 {
     namespace
     {
@@ -67,7 +70,7 @@ namespace srs::writer
 
     } // namespace
 
-    Manager::Manager(workflow::Handler* processor)
+    Manager::Manager(workflow::AnalysisHandle* processor)
         : workflow_handler_{ processor }
     {
     }
@@ -77,9 +80,8 @@ namespace srs::writer
     auto Manager::is_convert_required(process::DataConvertOptions dependee) const -> bool
     {
         auto is_required = false;
-        do_for_each_writer(
-            [&is_required, dependee](std::string_view, auto& writer)
-            { is_required |= convert_option_has_dependency(dependee, writer.get_required_conversion()); });
+        do_for_each_sink([&is_required, dependee](std::string_view, auto& writer)
+                         { is_required |= convert_option_has_dependency(dependee, writer.get_required_conversion()); });
         return is_required;
     }
 
@@ -98,6 +100,14 @@ namespace srs::writer
         return convert_map;
     }
 
+    void Manager::enable_frame_count_checker()
+    {
+        if (frame_count_checker_ == nullptr)
+        {
+            frame_count_checker_ = std::make_unique<FrameCountChecker>(workflow_handler_->get_n_lines());
+        }
+    }
+
     auto Manager::add_binary_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
     {
         return binary_files_
@@ -108,7 +118,7 @@ namespace srs::writer
 
     auto Manager::add_udp_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool
     {
-        auto& app = workflow_handler_->get_app();
+        auto& app = workflow_handler_->get_app_ref();
         auto endpoint = convert_str_to_endpoint(app.get_io_context(), filename);
         if (endpoint.has_value())
         {
@@ -190,4 +200,4 @@ namespace srs::writer
             }
         }
     }
-} // namespace srs::writer
+} // namespace srs::sink

@@ -1,32 +1,32 @@
 #pragma once
 
-#include "srs/writers/BinaryFileWriter.hpp"
-#include "srs/writers/JsonWriter.hpp"
-#ifdef HAS_ROOT
-#include "srs/writers/RootFileWriter.hpp"
-#endif
-#include "srs/writers/UDPWriter.hpp"
+#include "srs/converters/DataConvertOptions.hpp"
+#include "srs/sinks/BinaryFileWriter.hpp"
+#include "srs/sinks/DataWriterOptions.hpp"
+#include "srs/sinks/FrameCountChecker.hpp"
+#include "srs/sinks/JsonWriter.hpp"
+#include "srs/sinks/UDPWriter.hpp"
 #include <concepts>
 #include <map>
 #include <memory>
 #include <spdlog/spdlog.h>
-
-#include <srs/converters/DataConvertOptions.hpp>
-#include <srs/data/SRSDataStructs.hpp>
-#include <srs/writers/DataWriterOptions.hpp>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#ifdef HAS_ROOT
+#include "srs/sinks/RootFileWriter.hpp"
+#endif
+
 namespace srs::workflow
 {
-    class Handler;
+    class AnalysisHandle;
 } // namespace srs::workflow
 
-namespace srs::writer
+namespace srs::sink
 {
     template <typename T>
-    concept WriterVisitor =
+    concept SinkVisitor =
 #ifdef HAS_ROOT
         requires(T visitor, BinaryFile& binary_file, BinaryFile& UDP_file, BinaryFile& JSON_file, RootFile& root_file)
 #else
@@ -47,7 +47,7 @@ namespace srs::writer
         using enum DataWriterOption;
         using enum process::DataConvertOptions;
 
-        explicit Manager(workflow::Handler* processor);
+        explicit Manager(workflow::AnalysisHandle* processor);
 
         ~Manager();
         Manager(const Manager&) = delete;
@@ -57,22 +57,26 @@ namespace srs::writer
 
         void write_with(auto make_future);
         void set_output_filenames(const std::vector<std::string>& filenames);
+        void enable_frame_count_checker();
+
         [[nodiscard]] auto get_binary_writers() const -> const auto& { return binary_files_; }
-        void do_for_each_writer(WriterVisitor auto visitor);
-        void do_for_each_writer(WriterVisitor auto visitor) const;
+        void do_for_each_sink(SinkVisitor auto visitor);
+        void do_for_each_sink(SinkVisitor auto visitor) const;
 
         // Getter:
         [[nodiscard]] auto is_convert_required(process::DataConvertOptions dependee) const -> bool;
         [[nodiscard]] auto generate_conversion_req_map() const -> std::map<process::DataConvertOptions, bool>;
+        [[nodiscard]] auto get_frame_count_checker() const -> const auto* { return frame_count_checker_.get(); }
 
       private:
         std::map<std::string, std::unique_ptr<BinaryFile>> binary_files_;
+        std::unique_ptr<FrameCountChecker> frame_count_checker_;
         std::map<std::string, std::unique_ptr<UDP>> udp_files_;
         std::map<std::string, std::unique_ptr<Json>> json_files_;
 #ifdef HAS_ROOT
         std::map<std::string, std::unique_ptr<RootFile>> root_files_;
 #endif
-        workflow::Handler* workflow_handler_ = nullptr;
+        workflow::AnalysisHandle* workflow_handler_ = nullptr;
 
         auto add_binary_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
         auto add_udp_file(const std::string& filename, process::DataConvertOptions prev_conversion) -> bool;
@@ -97,23 +101,31 @@ namespace srs::writer
         }
     };
 
-    void Manager::do_for_each_writer(WriterVisitor auto visitor)
+    void Manager::do_for_each_sink(SinkVisitor auto visitor)
     {
         for_each_file(binary_files_, visitor);
         for_each_file(udp_files_, visitor);
         for_each_file(json_files_, visitor);
+        if (frame_count_checker_ != nullptr)
+        {
+            visitor("FrameCountChecker", *frame_count_checker_);
+        }
 #ifdef HAS_ROOT
         for_each_file(root_files_, visitor);
 #endif
     }
 
-    void Manager::do_for_each_writer(WriterVisitor auto visitor) const
+    void Manager::do_for_each_sink(SinkVisitor auto visitor) const
     {
         for_each_file(binary_files_, visitor);
         for_each_file(udp_files_, visitor);
         for_each_file(json_files_, visitor);
+        if (frame_count_checker_ != nullptr)
+        {
+            visitor("FrameCountChecker", *frame_count_checker_);
+        }
 #ifdef HAS_ROOT
         for_each_file(root_files_, visitor);
 #endif
     }
-} // namespace srs::writer
+} // namespace srs::sink

@@ -34,7 +34,7 @@ namespace srs::connection
         std::size_t buffer_size_ = common::LARGE_READ_MSG_BUFFER_SIZE;
         LargeBuffer read_msg_buffer_;
         gsl::not_null<io_context_type*> io_context_;
-        gsl::not_null<workflow::Handler*> workflow_handler_;
+        gsl::not_null<workflow::AnalysisHandle*> workflow_handler_;
         BufferQueue::Token token_;
 
         void register_send_action_imp(asio::awaitable<void> action, const std::shared_ptr<ConnectionType>& connection);
@@ -43,6 +43,9 @@ namespace srs::connection
         static auto is_finished() -> bool { return false; };
         static void print_error() {};
 
-        DataSocket(int port_number, io_context_type& io_context, std::size_t buffer_size, workflow::Handler& workflow);
+        DataSocket(int port_number,
+                   io_context_type& io_context,
+                   std::size_t buffer_size,
+                   workflow::AnalysisHandle& workflow);
     };
 } // namespace srs::connection

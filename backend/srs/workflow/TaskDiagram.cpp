@@ -1,15 +1,17 @@
 #include "srs/workflow/TaskDiagram.hpp"
-#include "srs/Application.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/data/BufferQueue.hpp"
+#include "srs/utils/CommonConcepts.hpp"
 #include "srs/utils/ExitLogger.hpp"
-#include "srs/workflow/Handler.hpp"
+#include "srs/workflow/AnalysisHandle.hpp"
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <magic_enum/magic_enum.hpp>
 #include <optional>
 #include <ranges>
 #include <spdlog/spdlog.h>
@@ -25,16 +27,13 @@
 
 namespace srs::workflow
 {
-    TaskDiagram::TaskDiagram(Handler& handle, std::size_t n_lines)
+    TaskDiagram::TaskDiagram(AnalysisHandle& handle, std::size_t n_lines)
         : n_lines_{ n_lines }
         , is_pipeline_stopped_{ std::vector<std::atomic<bool>>(n_lines_) }
-        , raw_to_delim_raw_converter_{ n_lines }
-        , struct_deserializer_converter_{ n_lines }
-        , struct_to_proto_converter_{ n_lines }
-        , proto_serializer_converter_{ n_lines }
-        , proto_delim_serializer_converter_{ n_lines }
-        , writers_{ handle.get_writer() }
+        , sinks_{ &handle.get_sink_manager_ref() }
+        , report_{ &handle.get_app_ref().get_report() }
     {
+        assert(report_ != nullptr);
         const auto buffer_size = handle.get_buffer_queue().get_config().buffer_size;
         consumer_tokens_.reserve(n_lines_);
         for (auto _ : std::views::iota(std::size_t{ 0 }, n_lines_))
@@ -76,7 +75,7 @@ namespace srs::workflow
                 .emplace(
                     [this]()
                     {
-                        const auto& conversion_req_map = writers_->generate_conversion_req_map();
+                        const auto& conversion_req_map = sinks_->generate_conversion_req_map();
                         spdlog::debug("Starting taskflow with enabled writers");
                         spdlog::debug("Conversion requirements map: \n"
                                       "\t|{:^30}|{:^30}|\n"
@@ -127,75 +126,110 @@ namespace srs::workflow
         return res;
     }
 
+    template <typename PrevConverter, typename ThisTask>
+    auto TaskDiagram::emplace_to_taskflow(ThisTask& current_task,
+                                          std::pair<const PrevConverter&, tf::Task>& prev_task,
+                                          tf::Taskflow& taskflow,
+                                          std::size_t line_number)
+        -> std::optional<std::pair<const ThisTask&, tf::Task>>
+    {
+        current_task.set_report(report_);
+        // NOTE: This is where the previous converter and current task is connected.
+        auto task = taskflow
+                        .emplace([line_number, &current_task, &prev_converter = prev_task.first]()
+                                 { [[maybe_unused]] auto res = current_task.run_once(prev_converter, line_number); })
+                        .name(current_task.get_name_str());
+        if (not prev_task.second.empty())
+        {
+            prev_task.second.precede(task);
+        }
+        return std::pair<const ThisTask&, tf::Task>{ current_task, task };
+    }
+
+    template <typename PrevConverter, ConverterType ThisTask>
+    auto TaskDiagram::create_task_imp(std::optional<ThisTask>& current_task,
+                                      std::optional<std::pair<const PrevConverter&, tf::Task>>& prev_task,
+                                      tf::Taskflow& taskflow,
+                                      std::size_t line_number) -> std::optional<std::pair<const ThisTask&, tf::Task>>
+    {
+        if (not prev_task.has_value())
+        {
+            return {};
+        }
+        auto is_required = sinks_->is_convert_required(ThisTask::converter_type);
+        if (not is_required)
+        {
+            return {};
+        }
+        if (not current_task)
+        {
+            current_task.emplace(n_lines_);
+        }
+        return emplace_to_taskflow(current_task.value(), prev_task.value(), taskflow, line_number);
+    }
+
+    template <typename PrevConverter, SinkType ThisTask>
+    auto TaskDiagram::create_task_imp(ThisTask& current_task,
+                                      std::optional<std::pair<const PrevConverter&, tf::Task>>& prev_task,
+                                      tf::Taskflow& taskflow,
+                                      std::size_t line_number) -> std::optional<std::pair<const ThisTask&, tf::Task>>
+    {
+        if (not prev_task.has_value())
+        {
+            return {};
+        }
+        return emplace_to_taskflow(current_task, prev_task.value(), taskflow, line_number);
+    }
+
     void TaskDiagram::construct_taskflow_line(tf::Taskflow& taskflow, std::size_t line_number)
     {
-        // TODO: Add converter concept here
-        auto create_task = [writers = writers_, line_number, &taskflow]<typename PrevConverter, typename ThisConverter>(
-                               ThisConverter& converter,
+        auto create_task = [line_number, &taskflow, this]<typename PrevConverter, typename ThisTask>(
+                               ThisTask& current_task,
                                std::optional<std::pair<const PrevConverter&, tf::Task>>& prev_task)
-            -> std::optional<std::pair<const ThisConverter&, tf::Task>>
-        {
-            if (not prev_task.has_value())
-            {
-                return {};
-            }
-            auto is_required = writers->is_convert_required(converter.get_required_conversion());
-            if (not is_required)
-            {
-                return {};
-            }
-            auto task = taskflow
-                            .emplace([line_number, &converter, &prev_converter = prev_task.value().first]()
-                                     { [[maybe_unused]] auto res = converter.run(prev_converter, line_number); })
-                            .name(converter.get_name_str());
-            if (not prev_task.value().second.empty())
-            {
-                prev_task.value().second.precede(task);
-            }
-            return std::pair<const ThisConverter&, tf::Task>{ converter, task };
-        };
+            -> std::optional<std::pair<const remove_optional_t<ThisTask>&, tf::Task>>
+        { return create_task_imp(current_task, prev_task, taskflow, line_number); };
 
         auto empty_task = std::optional{ std::pair<const TaskDiagram&, tf::Task>{ *this, tf::Task{} } };
         auto raw_delimiter_task = create_task(raw_to_delim_raw_converter_, empty_task);
         auto struct_deser_task = create_task(struct_deserializer_converter_, empty_task);
         auto struct_to_proto_task = create_task(struct_to_proto_converter_, struct_deser_task);
-        auto proto_deser_task = create_task(proto_serializer_converter_, struct_to_proto_task);
-        auto proto_delim_deser_task = create_task(proto_delim_serializer_converter_, struct_to_proto_task);
+        auto proto_serial_task = create_task(proto_serializer_converter_, struct_to_proto_task);
+        auto proto_delim_serial_task = create_task(proto_delim_serializer_converter_, struct_to_proto_task);
         // TODO: root_deser
 
-        writers_->do_for_each_writer(
+        sinks_->do_for_each_sink(
             [&create_task,
              &empty_task,
              &raw_delimiter_task,
              &struct_deser_task,
-             &proto_deser_task,
-             &proto_delim_deser_task](std::string_view filename, auto& file_writer) -> void
+             &proto_serial_task,
+             &proto_delim_serial_task](std::string_view filename, auto& sink) -> void
             {
-                if constexpr (std::remove_cvref_t<decltype(file_writer)>::IsStructType)
+                if constexpr (std::remove_cvref_t<decltype(sink)>::IsStructType)
                 {
-                    create_task(file_writer, struct_deser_task);
+                    create_task(sink, struct_deser_task);
                 }
                 else
                 {
                     using enum process::DataConvertOptions;
-                    const auto convert_mode = file_writer.get_required_conversion();
+                    const auto convert_mode = sink.get_required_conversion();
                     switch (convert_mode)
                     {
                         case raw:
-                            create_task(file_writer, empty_task);
+                            create_task(sink, empty_task);
                             break;
                         case raw_frame:
-                            create_task(file_writer, raw_delimiter_task);
+                            create_task(sink, raw_delimiter_task);
                             break;
                         case proto:
-                            create_task(file_writer, proto_deser_task);
+                            create_task(sink, proto_serial_task);
                             break;
                         case proto_frame:
-                            create_task(file_writer, proto_delim_deser_task);
+                            create_task(sink, proto_delim_serial_task);
                             break;
                         default:
-                            spdlog::warn("unrecognized conversion  {}from the file {}", convert_mode, filename);
-                            create_task(file_writer, empty_task);
+                            spdlog::warn("unrecognized conversion {} from the file {}", convert_mode, filename);
+                            create_task(sink, empty_task);
                             break;
                     }
                 }

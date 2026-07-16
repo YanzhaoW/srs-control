@@ -1,7 +1,7 @@
 #pragma once
 
+#include "srs/utils/CommonDefinitions.hpp"
 #include <cstdint>
-#include <srs/utils/CommonDefinitions.hpp>
 
 namespace srs::process::internal
 {

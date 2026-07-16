@@ -3,7 +3,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/7e8c956af1bc46c7836524f1ace32c11)](https://app.codacy.com/gh/YanzhaoW/srs-control/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![codecov](https://codecov.io/gh/YanzhaoW/srs-control/graph/badge.svg?token=4G5AUUZ0LU)](https://codecov.io/gh/YanzhaoW/srs-control)
 [![CI pipeline](https://github.com/YanzhaoW/srs-control/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/YanzhaoW/srs-control/actions?query=branch%3Adev)
-[![Github Releases](https://img.shields.io/github/release/YanzhaoW/srs-control.svg)](https://github.com/YanzhaoW/srs-control/releases)
+[![Github Releases](https://img.shields.io/github/v/release/YanzhaoW/srs-control.svg)](https://github.com/YanzhaoW/srs-control/releases)
 [![dashboard](https://img.shields.io/badge/dashboard-srs-blue?labelColor=gray&style=flat)](https://my.cdash.org/index.php?project=srs-control)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21346083.svg)](https://doi.org/10.5281/zenodo.21346083)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,8 +11,6 @@
 SRS-control is a data acquisition program for SRS FEC and VMM3 systems. It provides the `srs-control` command-line tool and library APIs for communicating with SRS hardware and data processing in your own applications.
 
 Please check the full documentation of this project: [srs-contorl documentation](https://yanzhaow.github.io/srs-control/).
-
-Reference of the internal code implementation can be checked from this [Doxygen documentation](https://web-docs.gsi.de/~yanwang/srs).
 
 ## Installation
 
@@ -90,6 +88,9 @@ output_split: 1
 
 # Time (milliseconds) to wait after turning off FECs
 time_wait_after_acq_off_ms: 1000
+
+# Enable additional data drop detection by checking the continuity of frame IDs.
+enable_frame_counter_check: false
 
 # Enable thread ID display from the console outputs
 show_thread_id: false

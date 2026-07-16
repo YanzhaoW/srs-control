@@ -13,7 +13,6 @@ target_sources(
     PRIVATE
         FILE_SET privateHeaders
             FILES
-                DataConvertOptions.hpp
                 ProtoSerializer.hpp
                 SerializableBuffer.hpp
                 StructDeserializer.hpp

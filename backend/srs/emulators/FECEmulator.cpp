@@ -4,9 +4,9 @@
 #include "srs/converters/SerializableBuffer.hpp"
 #include "srs/emulators/RandomizeStruct.hpp"
 #include "srs/emulators/World.hpp"
+#include "srs/sinks/UDPWriter.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/ExitLogger.hpp"
-#include "srs/writers/UDPWriter.hpp"
 #include <algorithm>
 #include <asio/any_io_executor.hpp>
 #include <asio/as_tuple.hpp>
@@ -143,6 +143,7 @@ namespace srs::emulator
     void FECEmulator::do_if_acq_on(asio::any_io_executor executor)
     {
         spdlog::info("FEC with {} is switched on. Start sending data.", udp_socket_.local_endpoint());
+        world_->reset_frame_counter();
         is_switched_off_.store(false);
         asio::co_spawn(executor, start_send_data(), asio::detached);
         // spdlog::trace("Server: start_send_data spawned!");

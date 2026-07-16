@@ -4,6 +4,7 @@
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonConcepts.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <asio/any_io_executor.hpp>
 #include <asio/thread_pool.hpp>
 #include <bitset>
@@ -13,9 +14,6 @@
 #include <string_view>
 #include <vector>
 #include <zpp_bits.h>
-
-#include <srs/Application.hpp>
-#include <srs/converters/DataConverterBase.hpp>
 
 namespace srs::workflow
 {

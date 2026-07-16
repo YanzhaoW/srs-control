@@ -1,8 +1,8 @@
+#include "srs/readers/ProtoMsgReader.hpp"
+#include "srs/converters/ProtoDeserializer.hpp"
+#include "srs/converters/ProtoToStructConverter.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include <memory>
-#include <srs/converters/ProtoDeserializer.hpp>
-#include <srs/converters/ProtoToStructConverter.hpp>
-#include <srs/readers/ProtoMsgReader.hpp>
 #include <string_view>
 
 namespace srs::reader

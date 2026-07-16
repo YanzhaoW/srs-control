@@ -3,10 +3,10 @@
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/utils/CommonConcepts.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <cassert>
 #include <cstddef>
 #include <spdlog/spdlog.h>
-#include <srs/converters/DataConverterBase.hpp>
 #include <string_view>
 #include <vector>
 

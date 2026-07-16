@@ -3,9 +3,9 @@
 #ifdef HAS_ROOT
 #include "DataWriterOptions.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonConcepts.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <TFile.h>
 #include <TSystem.h>
 #include <TTree.h>
@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 
-namespace srs::writer
+namespace srs::sink
 {
-    class RootFile : public process::WriterTask<DataWriterOption::root, const StructData*, std::size_t>
+    class RootFile : public process::SinkTask<DataWriterOption::root, const StructData*, std::size_t>
     {
       public:
         static constexpr auto IsStructType = true;
@@ -49,6 +49,6 @@ namespace srs::writer
         std::vector<OutputType> output_data_;
     };
 
-} // namespace srs::writer
+} // namespace srs::sink
 
 #endif

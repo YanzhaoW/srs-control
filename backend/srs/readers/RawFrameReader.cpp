@@ -1,3 +1,4 @@
+#include "srs/readers/RawFrameReader.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include <array>
 #include <cstddef>
@@ -7,7 +8,6 @@
 #include <fstream>
 #include <ios>
 #include <spdlog/spdlog.h>
-#include <srs/readers/RawFrameReader.hpp>
 #include <stdexcept>
 #include <string>
 #include <string_view>

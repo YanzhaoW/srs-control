@@ -22,12 +22,12 @@
 #include <utility>
 #include <vector>
 
-// #include <srs/devices/Fec.hpp>
 namespace srs
 {
     namespace workflow
     {
-        class Handler;
+        class AnalysisHandle;
+        class TaskReport;
     } // namespace workflow
 
     namespace connection
@@ -207,6 +207,7 @@ namespace srs
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
         [[nodiscard]] auto get_config() const -> const auto& { return config_; }
         [[nodiscard]] auto get_config_ref() -> auto& { return config_; }
+        [[nodiscard]] auto get_report() -> workflow::TaskReport& { return *report_; }
 
         // called by ExitHelper
         void action_after_destructor();
@@ -268,9 +269,11 @@ namespace srs
          */
         internal::AppExitHelper exit_helper_{ this };
 
+        std::unique_ptr<workflow::TaskReport> report_;
+
         /** @brief The handler to the analysis working flow.
          */
-        std::unique_ptr<workflow::Handler> workflow_handler_;
+        std::unique_ptr<workflow::AnalysisHandle> workflow_handler_;
 
         /** @brief Communication to the main input data stream.
          */

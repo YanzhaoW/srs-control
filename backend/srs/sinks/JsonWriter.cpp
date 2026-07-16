@@ -1,8 +1,8 @@
 #include "JsonWriter.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/utils/CommonFunctions.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace srs::writer
+namespace srs::sink
 {
     void CompactExportData::set_value(const StructData& data_struct)
     {
@@ -60,7 +60,7 @@ namespace srs::writer
     }
 
     Json::Json(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines)
-        : WriterTask{ "JSONWriter", convert_mode, n_lines }
+        : SinkTask{ "JSONWriter", convert_mode, n_lines }
         , filename_{ filename }
     {
         assert(n_lines > 0);
@@ -120,4 +120,4 @@ namespace srs::writer
         file_streams_[line_num] << string_buffers_[line_num];
         string_buffers_[line_num].clear();
     }
-} // namespace srs::writer
+} // namespace srs::sink

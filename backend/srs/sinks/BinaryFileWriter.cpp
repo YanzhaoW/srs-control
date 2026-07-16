@@ -1,7 +1,7 @@
 #include "BinaryFileWriter.hpp"
 #include "srs/converters/DataConvertOptions.hpp"
-#include "srs/converters/DataConverterBase.hpp"
 #include "srs/utils/CommonFunctions.hpp"
+#include "srs/workflow/BaseTask.hpp"
 #include <cassert>
 #include <cstddef>
 #include <fmt/format.h>
@@ -12,10 +12,10 @@
 #include <stdexcept>
 #include <string>
 
-namespace srs::writer
+namespace srs::sink
 {
     BinaryFile::BinaryFile(const std::string& filename, process::DataConvertOptions convert_mode, std::size_t n_lines)
-        : WriterTask{ "BinaryWriter", convert_mode, n_lines }
+        : SinkTask{ "BinaryWriter", convert_mode, n_lines }
         , file_name_{ filename }
     {
         assert(n_lines > 0);
@@ -53,4 +53,4 @@ namespace srs::writer
             file_stream.close();
         }
     }
-} // namespace srs::writer
+} // namespace srs::sink
