@@ -1,6 +1,7 @@
 #include "BufferQueue.hpp"
 #include "srs/data/LargeBuffer.hpp"
-#include <chrono>
+#include "srs/utils/AppReport.hpp"
+#include <atomic>
 #include <cstddef>
 #include <fmt/format.h>
 #include <iterator>
@@ -59,25 +60,36 @@ namespace srs
     }
 
     // NOTE: try_enqueue will use move constructor, which performs swap operator
-    auto BufferQueue::try_emplace(LargeBuffer& element, Token& token) -> bool
+    auto BufferQueue::enqueue(LargeBuffer& element, Token& token) -> bool
     {
-        time_point_ = clock_.now();
-        auto is_pushed = valid_buffer_queue_.try_enqueue(token.first, std::move(element));
-        if (is_pushed and not trash_buffer_queue_.try_dequeue(token.second, element))
+        if (not valid_buffer_queue_.try_enqueue(token.first, std::move(element)))
         {
-            ++n_trash_recycle_failures_empty_;
+            ++n_valid_buffer_full_failures_;
+            return false;
+        }
+
+        if (not trash_buffer_queue_.try_dequeue(token.second, element))
+        {
+            ++n_trash_recycle_empty_failures_;
             element.resize(config_.buffer_size);
         }
-        return is_pushed;
+        return true;
     }
 
     // block
-    void BufferQueue::pop(LargeBuffer& element, Token& token)
+    void BufferQueue::dequeue(LargeBuffer& element, Token& token)
     {
         if (not trash_buffer_queue_.try_enqueue(token.first, std::move(element)))
         {
-            ++n_trash_recycle_failures_full_;
+            ++n_trash_recycle_full_failures_;
         }
         valid_buffer_queue_.wait_dequeue(token.second, element);
+    }
+
+    void BufferQueue::register_report(AppReport& report)
+    {
+        report.register_queue_result({ .empty_trash = n_trash_recycle_empty_failures_.load(std::memory_order_relaxed),
+                                       .full_trash = n_trash_recycle_full_failures_.load(std::memory_order_relaxed),
+                                       .full_valid = n_valid_buffer_full_failures_.load(std::memory_order_relaxed) });
     }
 } // namespace srs

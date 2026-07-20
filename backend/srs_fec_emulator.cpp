@@ -75,6 +75,12 @@ auto main(int argc, char** argv) -> int
 
     auto is_not_ok = srs::config::set_config_from_file(config, config_filepath);
 
+    if (is_not_ok)
+    {
+        spdlog::error("{}", is_not_ok.value());
+        return EXIT_FAILURE;
+    }
+
     auto world = srs::emulator::World{ config };
 
     world.init();

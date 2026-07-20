@@ -2,14 +2,15 @@
 
 #include "srs/data/LargeBuffer.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
+#include <atomic>
 #include <blockingconcurrentqueue.h>
-#include <chrono>
 #include <concurrentqueue.h>
 #include <cstddef>
 #include <utility>
 
 namespace srs
 {
+    class AppReport;
     /**
      * @brief Class to manage the production and consumption of #LargeBuffer asynchronously.
      *
@@ -60,7 +61,7 @@ namespace srs
          * @param element The buffer object to be pushed and replaced.
          * @return True if the pushing succeeds.
          */
-        auto try_emplace(LargeBuffer& element, Token& token) -> bool;
+        auto enqueue(LargeBuffer& element, Token& token) -> bool;
 
         // block
         /**
@@ -69,7 +70,7 @@ namespace srs
          *
          * @param element The buffer object to be pushed and replaced.
          */
-        void pop(LargeBuffer& element, Token& token);
+        void dequeue(LargeBuffer& element, Token& token);
 
         /**
          * @brief Get the current size in the valid buffer queue.
@@ -88,8 +89,7 @@ namespace srs
          */
         auto capacity() const -> auto { return config_.queue_capacity; }
 
-        auto get_n_trash_recycle_failures_empty() const -> auto { return n_trash_recycle_failures_empty_; }
-        auto get_n_trash_recycle_failures_full() const -> auto { return n_trash_recycle_failures_full_; }
+        void register_report(AppReport& report);
 
         /**
          * @brief Getter of the config object.
@@ -121,15 +121,13 @@ namespace srs
 
       private:
         Config config_;
-        std::size_t n_trash_recycle_failures_empty_ = 0;
-        std::size_t n_trash_recycle_failures_full_ = 0;
+        std::atomic<std::size_t> n_trash_recycle_empty_failures_ = 0;
+        std::atomic<std::size_t> n_trash_recycle_full_failures_ = 0;
+        std::atomic<std::size_t> n_valid_buffer_full_failures_ = 0;
         moodycamel::BlockingConcurrentQueue<LargeBuffer> valid_buffer_queue_;
         moodycamel::ConcurrentQueue<LargeBuffer> trash_buffer_queue_;
         moodycamel::ProducerToken internal_valid_buffer_token_{ valid_buffer_queue_ };
         moodycamel::ProducerToken internal_trash_buffer_token_{ trash_buffer_queue_ };
-
-        std::chrono::steady_clock clock_;
-        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> time_point_;
 
         void print_memory_pre_allocation();
     };

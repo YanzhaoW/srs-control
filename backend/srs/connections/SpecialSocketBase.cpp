@@ -1,6 +1,7 @@
 #include "SpecialSocketBase.hpp"
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/utils/CommonAlias.hpp"
+#include "srs/utils/UDPFormatters.hpp" // IWYU pragma: keep
 #include <asio/as_tuple.hpp>
 #include <asio/awaitable.hpp>
 #include <asio/ip/basic_endpoint.hpp>
@@ -10,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <spdlog/spdlog.h>
+#include <system_error>
 
 namespace srs::connection
 {
@@ -27,14 +29,24 @@ namespace srs::connection
         // NOLINTBEGIN (clang-analyzer-core.NullDereference)
         [[maybe_unused]] auto err_code = co_await cancel_timer_.async_wait(asio::as_tuple(asio::use_awaitable));
         // NOLINTEND (clang-analyzer-core.NullDereference)
-        spdlog::trace("Coroutine for the local socket with port {} is cancelled.", port_number_);
+        spdlog::trace("Coroutine for the socket with local endpoint {} is cancelled.", socket_->local_endpoint());
     }
 
-    void SpecialSocket::bind_socket()
+    auto SpecialSocket::bind_socket() -> std::error_code
     {
-        socket_->bind(udp::endpoint{ udp::v4(), static_cast<asio::ip::port_type>(port_number_) }, socket_ec_);
+        auto local_endpoint = udp::endpoint{ udp::v4(), static_cast<asio::ip::port_type>(port_number_) };
+        spdlog::trace("Binding a socket to the local endpoint {}.", local_endpoint);
+        auto ec = std::error_code{};
+        socket_->bind(local_endpoint, ec);
+        return ec;
     }
-    void SpecialSocket::close_socket() { socket_->close(); }
+
+    auto SpecialSocket::close_socket() -> std::error_code
+    {
+        auto err = std::error_code{};
+        socket_->close(err);
+        return err;
+    }
 
     auto SpecialSocket::wait_for_listen_finish(std::chrono::seconds time) -> std::optional<std::future_status>
     {

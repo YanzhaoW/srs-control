@@ -9,6 +9,7 @@
 #include <asio/detached.hpp>
 #include <asio/impl/co_spawn.hpp>
 #include <cstddef>
+#include <fmt/format.h>
 #include <memory>
 
 namespace srs::connection
@@ -45,5 +46,17 @@ namespace srs::connection
         const auto _ = ExitLogger{};
         auto& timer = get_cancel_timer();
         timer.cancel();
+    }
+
+    void DataSocket::before_socket_close()
+    {
+        if (auto* report = get_report(); report != nullptr)
+        {
+            auto stat = AppReport::FrameReadingStat{};
+            stat.n_frames = get_n_records();
+            stat.total_bytes_read = get_n_bytes();
+            stat.total_time_ns = get_total_time_ns();
+            report->register_frame_reading_result(fmt::format("{}", get_socket().local_endpoint()), stat);
+        }
     }
 } // namespace srs::connection

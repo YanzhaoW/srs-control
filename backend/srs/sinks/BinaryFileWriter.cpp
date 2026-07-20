@@ -35,17 +35,14 @@ namespace srs::sink
     BinaryFile::~BinaryFile()
     {
         close();
-        spdlog::debug(
-            "Writer: Binary file {} data size written: \n\t{}",
-            file_name_,
-            fmt::join(
-                std::views::zip(std::views::iota(0), output_data_) |
-                    std::views::transform(
-                        [](const auto& idex_data_size) -> std::string
-                        { return fmt::format("{}: {}", std::get<0>(idex_data_size), std::get<1>(idex_data_size)); }),
-                "\n\t"));
+
+        if (auto* report = get_report(); report != nullptr)
+        {
+            report->register_output_sink_result(file_name_, output_data_);
+        }
         spdlog::info("Writer: Binary file writer with the base name {:?} is closed successfully.", file_name_);
     }
+
     void BinaryFile::close()
     {
         for (auto& file_stream : output_streams_)

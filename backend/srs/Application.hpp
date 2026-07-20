@@ -24,10 +24,10 @@
 
 namespace srs
 {
+    class AppReport;
     namespace workflow
     {
         class AnalysisHandle;
-        class TaskReport;
     } // namespace workflow
 
     namespace connection
@@ -207,7 +207,7 @@ namespace srs
         [[nodiscard]] auto get_workflow_handler() const -> const auto& { return *workflow_handler_; };
         [[nodiscard]] auto get_config() const -> const auto& { return config_; }
         [[nodiscard]] auto get_config_ref() -> auto& { return config_; }
-        [[nodiscard]] auto get_report() -> workflow::TaskReport& { return *report_; }
+        [[nodiscard]] auto get_report() -> AppReport& { return *report_; }
 
         // called by ExitHelper
         void action_after_destructor();
@@ -221,6 +221,8 @@ namespace srs
         Config config_;
 
         // Destructors are called in the inverse order
+
+        std::unique_ptr<AppReport> report_;
 
         /** @brief Asio io_context that manages the task scheduling and network IO.
          */
@@ -268,8 +270,6 @@ namespace srs
          *
          */
         internal::AppExitHelper exit_helper_{ this };
-
-        std::unique_ptr<workflow::TaskReport> report_;
 
         /** @brief The handler to the analysis working flow.
          */

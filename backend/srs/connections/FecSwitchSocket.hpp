@@ -2,6 +2,7 @@
 
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/SpecialSocketBase.hpp"
+#include "srs/utils/AppReport.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include <asio/awaitable.hpp>
 #include <asio/deferred.hpp>
@@ -16,6 +17,7 @@
 #include <mutex>
 #include <span>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -40,9 +42,12 @@ namespace srs::connection
         }
         void launch_send_actions();
 
-        void log_time_stamps(USCount start, USCount stop) { time_stamps_.emplace_back(start, stop); }
+        void log_time_stamps(std::string remote_port, AppReport::FecSwitchStat stat)
+        {
+            time_stamps_.emplace_back(std::move(remote_port), stat);
+        }
 
-        ~FecCommandSocket() { print_time_statistics(); }
+        void before_socket_close() { register_report(); }
 
       private:
         friend SpecialSocket;
@@ -52,10 +57,13 @@ namespace srs::connection
         std::map<UDPEndpoint, SmallConnections> all_connections_;
         std::vector<char> read_msg_buffer_;
         std::chrono::time_point<std::chrono::steady_clock> start_time_ = std::chrono::steady_clock::now();
-        std::vector<StartEndTime> time_stamps_;
+        std::vector<std::pair<std::string, AppReport::FecSwitchStat>> time_stamps_;
 
         using ActionType = decltype(asio::co_spawn(strand_, asio::awaitable<void>(), asio::deferred));
         std::vector<ActionType> action_queue_;
+
+        // constructor
+        explicit FecCommandSocket(int port_number, io_context_type& io_context);
 
         void register_send_action_imp(asio::awaitable<void> action, const std::shared_ptr<SmallConnection>& connection);
         auto get_response_msg_buffer() -> std::span<char> { return std::span{ read_msg_buffer_ }; }
@@ -63,13 +71,12 @@ namespace srs::connection
         void print_error() const;
         void response_handler(const UDPEndpoint& endpoint, std::size_t read_size);
 
-        explicit FecCommandSocket(int port_number, io_context_type& io_context);
         void deregister_connection(const UDPEndpoint& endpoint,
                                    std::span<char> response,
                                    SmallConnections& connections);
         void print_available_responses() const;
 
-        void print_time_statistics() const;
+        void register_report();
     };
 
 } // namespace srs::connection

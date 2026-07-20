@@ -27,6 +27,7 @@
 #include <future>
 #include <initializer_list>
 #include <memory>
+#include <print>
 #include <source_location>
 #include <spdlog/common.h>
 #include <spdlog/logger.h>
@@ -81,9 +82,9 @@ namespace srs
 
     App::App(Config config)
         : config_{ std::move(config) }
+        , report_{ std::make_unique<AppReport>() }
         , io_work_guard_{ asio::make_work_guard(io_context_) }
         , fec_strand_{ asio::make_strand(io_context_.get_executor()) }
-        , report_{ std::make_unique<workflow::TaskReport>() }
     {
         init_spdlog();
     }
@@ -130,25 +131,6 @@ namespace srs
 
     void App::print_statistics() const
     {
-
-        for (const auto& socket : data_sockets_)
-        {
-            if (socket == nullptr)
-            {
-                continue;
-            }
-            const auto records = socket->get_n_records();
-            const auto total_time = socket->get_total_time_ns();
-            const auto bytes = socket->get_n_bytes();
-            const auto avg_time = static_cast<double>(total_time) / static_cast<double>(records);
-            const auto byte_per_frame = static_cast<double>(bytes) / static_cast<double>(records);
-            spdlog::debug(
-                "Statistics from data socket with port number: {} \n\t Average time per frame: {:.2f} ns\n\t Average "
-                "bytes per frame: {:.0f}",
-                socket->get_port(),
-                avg_time,
-                byte_per_frame);
-        }
         if (workflow_handler_ != nullptr)
         {
             workflow_handler_->print_statistics();
@@ -166,7 +148,8 @@ namespace srs
                 [this](const std::error_code& error, auto)
                 {
                     const auto _ = ExitLogger{ "signal" };
-                    spdlog::info("Calling SIGINT from monitoring thread");
+                    std::println("\n");
+                    spdlog::info("Calling SIGINT from the user input");
                     if (error == asio::error::operation_aborted)
                     {
                         return;
@@ -180,7 +163,12 @@ namespace srs
                                      "📢 Application is running in stop mode and will stop after {} seconds!",
                                      runtime_sec_));
             cancel_timer_.expires_after(std::chrono::seconds{ runtime_sec_ });
-            cancel_timer_.async_wait([this](const std::error_code&) { exit_and_switch_off(); });
+            cancel_timer_.async_wait(
+                [this](const std::error_code&)
+                {
+                    std::println("\n");
+                    exit_and_switch_off();
+                });
         }
     }
 
@@ -234,7 +222,6 @@ namespace srs
     // This will be called by Ctrl-C interrupt
     void App::exit_and_switch_off()
     {
-        fmt::println("");
         spdlog::debug("Application: exiting ...");
         auto _ = ExitLogger{};
         spdlog::default_logger()->flush();
@@ -303,6 +290,7 @@ namespace srs
             .transform(
                 [this, connection_name](const std::shared_ptr<connection::FecCommandSocket>& socket)
                 {
+                    socket->set_report(report_.get());
                     for (const auto& remote_endpoint : remote_fec_endpoints_)
                     {
                         spdlog::info("Switching {} FEC device with remote endpoint {} ...", T::tag, remote_endpoint);
@@ -351,6 +339,7 @@ namespace srs
                     .transform(
                         [this](auto socket)
                         {
+                            socket->set_report(report_.get());
                             spdlog::debug("data stream is using the buffer size: {}", config_.data_buffer_size);
                             data_sockets_.push_back(std::move(socket));
                         });

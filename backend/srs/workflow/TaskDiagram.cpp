@@ -52,7 +52,7 @@ namespace srs::workflow
     auto TaskDiagram::run_task(BufferQueue& buffer_queue, std::size_t line_number) -> bool
     {
         // raw_data_[line_number].clear();
-        buffer_queue.pop(raw_data_[line_number], consumer_tokens_[line_number]);
+        buffer_queue.dequeue(raw_data_[line_number], consumer_tokens_[line_number]);
         if (not raw_data_[line_number].is_empty())
         {
             total_read_data_bytes_ += raw_data_[line_number].get_size();
@@ -96,7 +96,8 @@ namespace srs::workflow
 
         auto main_pipeline =
             tf::Pipeline{ n_lines_,
-                          tf::Pipe{ tf::PipeType::SERIAL, []([[maybe_unused]] tf::Pipeflow& pipeflow) {} },
+                          tf::Pipe{ tf::PipeType::SERIAL,
+                                    [this]([[maybe_unused]] tf::Pipeflow& pipeflow) { last_time_ = clock_.now(); } },
                           tf::Pipe{ tf::PipeType::PARALLEL,
                                     [this, &buffer_queue]([[maybe_unused]] tf::Pipeflow& pipeflow)
                                     {
@@ -108,7 +109,13 @@ namespace srs::workflow
                                         tf_executor_.corun(taskflow_lines_[pipeflow.line()]);
                                         is_pipeline_stopped_[pipeflow.line()].store(true);
                                     } },
-                          tf::Pipe{ tf::PipeType::SERIAL, []([[maybe_unused]] tf::Pipeflow& pipeflow) {} } };
+                          tf::Pipe{ tf::PipeType::SERIAL,
+                                    [this]([[maybe_unused]] tf::Pipeflow& pipeflow)
+                                    {
+                                        ++(stat_.total_sample_size);
+                                        stat_.total_time_ms +=
+                                            static_cast<double>((clock_.now() - last_time_).count()) / 1e6;
+                                    } } };
 
         auto pipeline_task = main_taskflow_.composed_of(main_pipeline).name("Main pipeline");
         starting_task.precede(pipeline_task);

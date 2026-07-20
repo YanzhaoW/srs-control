@@ -98,10 +98,10 @@ namespace srs::connection
     {
         if (connections.empty())
         {
-            spdlog::debug("Response from the remote endpoint {} to the local port {} is received. But no further "
+            spdlog::debug("Response from the remote endpoint {} to the local endpoint {} is received. But no further "
                           "message from the endpoint is not required anymore!",
                           endpoint,
-                          get_port());
+                          get_socket().local_endpoint());
             return;
         }
         auto res = remove_once_if(connections,
@@ -112,16 +112,16 @@ namespace srs::connection
                                   });
         if (res)
         {
-            spdlog::debug("Response from the remote endpoint {} is recognized by the local socket with port {}",
+            spdlog::debug("Response from the remote endpoint {} is recognized by the local endpoint {}",
                           endpoint,
-                          get_port());
+                          get_socket().local_endpoint());
             // print_available_responses();
         }
         else
         {
-            spdlog::warn("From remote endpoint: {}, local socket with port {} received an unrecognized msg: {:02x}",
+            spdlog::warn("From remote endpoint {}, socket with local endpoint {} received an unrecognized msg: {:02x}",
                          endpoint,
-                         get_port(),
+                         get_socket().local_endpoint(),
                          fmt::join(response, " "));
             print_available_responses();
         }
@@ -179,21 +179,12 @@ namespace srs::connection
                                    [](const auto& connections) -> bool { return connections.empty(); });
     }
 
-    void FecCommandSocket::print_time_statistics() const
+    void FecCommandSocket::register_report()
     {
-        spdlog::trace("Time statistics for local command socket {}:\n"
-                      "\t|{:^25}|{:^25}|\n"
-                      "{}",
-                      get_socket().local_endpoint(),
-                      "Sending timepoint (us)",
-                      "Duration (us)",
-                      fmt::join(time_stamps_ | std::views::transform(
-                                                   [](const auto& start_end)
-                                                   {
-                                                       return fmt::format("\t|{:^25}|{:^25}|",
-                                                                          start_end.first,
-                                                                          start_end.second - start_end.first);
-                                                   }),
-                                "\n"));
+        if (auto* report = get_report(); report != nullptr)
+        {
+            report->register_switch_socket_result(fmt::format("{}", get_socket().local_endpoint()),
+                                                  std::move(time_stamps_));
+        }
     }
 } // namespace srs::connection

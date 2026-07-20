@@ -1,6 +1,6 @@
 target_sources(
     srscpp
-    PRIVATE AnalysisHandle.cpp DataMonitor.cpp TaskDiagram.cpp TaskReport.cpp
+    PRIVATE AnalysisHandle.cpp DataMonitor.cpp TaskDiagram.cpp
     PRIVATE
         FILE_SET privateHeaders
             FILES
@@ -9,5 +9,4 @@ target_sources(
                 DataMonitor.hpp
                 FrameMissMonitor.hpp
                 TaskDiagram.hpp
-                TaskReport.hpp
 )

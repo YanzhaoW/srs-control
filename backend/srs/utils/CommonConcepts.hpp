@@ -5,9 +5,11 @@
 #include <concepts>
 #include <fstream>
 #include <iterator>
+#include <map>
 #include <optional>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace srs
 {
@@ -54,6 +56,26 @@ namespace srs
 
     template <typename T>
     struct is_optional_type<std::optional<T>> : std::true_type
+    {
+    };
+
+    template <typename T>
+    struct is_vector_type : std::false_type
+    {
+    };
+
+    template <typename T>
+    struct is_vector_type<std::vector<T>> : std::true_type
+    {
+    };
+
+    template <typename T>
+    struct is_map_type : std::false_type
+    {
+    };
+
+    template <typename T, typename U>
+    struct is_map_type<std::map<T, U>> : std::true_type
     {
     };
 
