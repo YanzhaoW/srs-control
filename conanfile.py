@@ -19,20 +19,21 @@ class CompressorRecipe(ConanFile):
     generators = "CMakeDeps"
 
     def requirements(self):
-        self.requires("gsl-lite/0.41.0")  # type: ignore
-        self.requires("cli11/2.4.2")  # type: ignore
+        self.requires("gsl-lite/0.41.0")        # type: ignore
+        self.requires("cli11/2.4.2")            # type: ignore
         self.requires("fmt/12.1.0", force=True, options={"header_only": True})  # type: ignore
-        self.requires("spdlog/1.17.0")  # type: ignore
-        self.requires("zpp_bits/4.4.24")  # type: ignore
-        self.requires("magic_enum/0.9.7")  # type: ignore
-        self.requires("taskflow/3.10.0")  # type: ignore
-        # self.requires("glaze/7.8.4")  # type: ignore
+        self.requires("spdlog/1.17.0")          # type: ignore
+        self.requires("zpp_bits/4.4.24")        # type: ignore
+        self.requires("magic_enum/0.9.7")       # type: ignore
+        self.requires("taskflow/3.10.0")        # type: ignore
+        # self.requires("glaze/7.8.4")          # type: ignore
         self.requires("concurrentqueue/1.0.5")  # type: ignore
-        self.requires("asio/1.38.0")  # type: ignore
-        self.requires("ctre/3.11.0")
+        self.requires("asio/1.38.0")            # type: ignore
+        self.requires("ctre/3.11.0")            # type: ignore
+        self.requires("tabulate/1.5")           # type: ignore
 
         if os.environ["CMAKE_ENABLE_TEST"] == "ON":
-            self.requires("catch2/3.15.1")
+            self.requires("catch2/3.15.1")# type: ignore
 
         if os.environ["CMAKE_USE_SYSTEM_PROTOBUF"] == "OFF":
             print(

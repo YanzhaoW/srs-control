@@ -27,6 +27,11 @@
 #include <utility>
 #include <variant>
 
+namespace srs
+{
+    class AppReport;
+}
+
 namespace srs::connection
 {
     class SpecialSocket;
@@ -99,6 +104,9 @@ namespace srs::connection
          */
         auto wait_for_listen_finish(std::chrono::seconds time) -> std::optional<std::future_status>;
 
+        void set_report(AppReport* report) { report_ = report; }
+        void before_socket_close() {}
+
         // getters:
 
         /**
@@ -114,13 +122,6 @@ namespace srs::connection
          * @return Port number.
          */
         [[nodiscard]] auto get_port() const -> int { return port_number_; }
-
-        /**
-         * @brief Getter the possible error during the socket binding.
-         *
-         * @return Error code from the binding.
-         */
-        [[nodiscard]] auto get_socket_error_code() const -> std::error_code { return socket_ec_; }
 
         /**
          * @brief Getter for the status of the listen action.
@@ -150,6 +151,8 @@ namespace srs::connection
          */
         auto get_total_time_ns() const -> std::uint64_t { return total_time_ns_; }
 
+        auto get_report() -> auto* { return report_; }
+
       protected:
         /**
          * @brief Projected constructor, which can only be called from the derived classes.
@@ -162,9 +165,9 @@ namespace srs::connection
 
       private:
         int port_number_ = 0;
+        AppReport* report_ = nullptr;
         std::unique_ptr<udp::socket> socket_;
         std::shared_future<std::variant<std::monostate, std::monostate>> listen_future_;
-        std::error_code socket_ec_;
         asio::system_timer cancel_timer_; //!< Used for cancel the unfinished coroutine
 
         // for the time measurement
@@ -175,8 +178,8 @@ namespace srs::connection
         std::uint64_t total_time_ns_ = 0;
 
         auto cancel_coroutine() -> asio::awaitable<void>;
-        void bind_socket();
-        void close_socket();
+        auto bind_socket() -> std::error_code;
+        auto close_socket() -> std::error_code;
 
         // NOTE: Coroutine should always be static to avoid lifetime issue.
         template <SpecialSocketDerived SocketType>
@@ -189,7 +192,7 @@ namespace srs::connection
     {
         auto socket =
             std::shared_ptr<SocketType>(new SocketType{ port_number, io_context, std::forward<Args>(args)... });
-        auto error_code = socket->get_socket_error_code();
+        auto error_code = socket->bind_socket();
         if (error_code)
         {
             spdlog::critical("Local socket failed to bind to the port {} due to the error: {}",
@@ -206,9 +209,8 @@ namespace srs::connection
     {
         const auto port_str = fmt::format("{}", socket->get_port());
         const auto _ = ExitLogger{ port_str };
-        socket->bind_socket();
         auto remote_endpoint = udp::endpoint{};
-        spdlog::debug("Local socket with port {} starts to listen ...", socket->get_port());
+        spdlog::debug("Local socket with endpoint {} starts to listen ...", socket->get_socket().local_endpoint());
         while (true)
         {
             const auto [err_code, receive_size] = co_await socket->get_socket().async_receive_from(
@@ -222,10 +224,22 @@ namespace srs::connection
             {
                 socket->response_handler(remote_endpoint, receive_size);
             }
+            else
+            {
+                break;
+            }
 
             ++socket->n_records_;
             socket->n_bytes += receive_size;
             socket->total_time_ns_ += static_cast<uint64_t>((socket->clock_.now() - socket->time_point_).count());
+        }
+
+        socket->before_socket_close();
+        if (auto err = socket->close_socket(); err)
+        {
+            spdlog::error("Error occurred when closing the socket with local endpoint {}: {}",
+                          socket->get_socket().local_endpoint(),
+                          err.message());
         }
         // TODO: close the socket here
         spdlog::trace("Coroutine for the local socket with port {} has existed.", socket->get_port());
@@ -269,7 +283,7 @@ namespace srs::connection
             {
                 spdlog::trace("Local socket with port {} finished listening and is cancelled immediately.",
                               socket->get_port());
-                timer.expires_after(std::chrono::seconds::min());
+                timer.expires_after(std::chrono::seconds(0));
                 is_finished = true;
             }
             else

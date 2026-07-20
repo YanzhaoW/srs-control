@@ -38,14 +38,19 @@ namespace srs::workflow
 
     void AnalysisHandle::print_statistics()
     {
-        spdlog::debug("statistics from the handler \n\t Average time per frame: {:.2f} ns\n\t Average bytes per "
-                      "frame: {:.0f}",
-                      get_average_ns_time_on_push(),
-                      get_average_byte_per_frame());
-        spdlog::debug("statistics from the buffer queue \n\tAttempt failed due to empty trash: {}\n\tAttempt "
-                      "failed due to full trash:: {}",
-                      buffer_queue_.get_n_trash_recycle_failures_empty(),
-                      buffer_queue_.get_n_trash_recycle_failures_full());
+
+        auto& report = app_->get_report();
+
+        task_diagram_->register_report(report);
+
+        auto frame_stat = AppReport::FrameReadingStat{};
+
+        frame_stat.total_time_ns = total_time_ns_;
+        frame_stat.total_bytes_read = total_read_data_bytes_;
+        frame_stat.n_frames = total_frame_counts_;
+        report.register_frame_reading_result("Workflow", frame_stat);
+
+        buffer_queue_.register_report(report);
     }
 
     void AnalysisHandle::start(asio::any_io_executor executor)
@@ -123,7 +128,7 @@ namespace srs::workflow
         ++total_frame_counts_;
 
         time_point_ = clock_.now();
-        auto is_success = buffer_queue_.try_emplace(read_data, token);
+        auto is_success = buffer_queue_.enqueue(read_data, token);
         total_time_ns_ += static_cast<uint64_t>((clock_.now() - time_point_).count());
 
         if (not is_success)

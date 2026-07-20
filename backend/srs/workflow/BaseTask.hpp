@@ -2,14 +2,13 @@
 
 #include "srs/converters/DataConvertOptions.hpp"
 #include "srs/sinks/DataWriterOptions.hpp"
+#include "srs/utils/AppReport.hpp"
 #include "srs/utils/CommonConcepts.hpp"
-#include "srs/workflow/TaskReport.hpp"
 #include <asio/experimental/coro.hpp>
 #include <asio/use_awaitable.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
-#include <cstdint>
 #include <expected>
 #include <fmt/ranges.h>
 #include <gsl/gsl-lite.hpp>
@@ -55,7 +54,7 @@ namespace srs::process
         [[nodiscard]] auto get_name() const -> std::string_view { return name_; };
         [[nodiscard]] auto get_name_str() const -> std::string { return std::string{ name_ }; };
 
-        void set_report(workflow::TaskReport* task_report)
+        void set_report(AppReport* task_report)
         {
             assert(task_report != nullptr);
             task_report_ = task_report;
@@ -72,16 +71,19 @@ namespace srs::process
             auto res = self.run(prev_data_converter, line_number);
 
             auto time_duration = self.clock_.now() - self.last_time_points_[line_number];
-            self.stats_[line_number].total_time += static_cast<uint64_t>(time_duration.count());
+            self.stats_[line_number].total_time_ms += static_cast<double>(time_duration.count()) / 1e6;
             ++(self.stats_[line_number].total_sample_size);
 
             return res;
         }
 
+      protected:
+        auto get_report() -> AppReport* { return task_report_; }
+
       private:
         process::DataConvertOptions previous_conversion_;
-        workflow::TaskReport* task_report_ = nullptr;
-        std::vector<workflow::TaskReport::Stat> stats_;
+        AppReport* task_report_ = nullptr;
+        std::vector<AppReport::TaskStat> stats_;
         std::chrono::steady_clock clock_;
         std::vector<std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds>> last_time_points_;
         std::string name_ = "empty";

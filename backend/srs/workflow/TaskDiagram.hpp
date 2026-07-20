@@ -9,9 +9,10 @@
 #include "srs/data/LargeBuffer.hpp"
 #include "srs/data/SRSDataStructs.hpp"
 #include "srs/sinks/Manager.hpp"
+#include "srs/utils/AppReport.hpp"
 #include "srs/utils/CommonConcepts.hpp"
-#include "srs/workflow/TaskReport.hpp"
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
@@ -67,6 +68,8 @@ namespace srs::workflow
             return nullptr;
         }
 
+        void register_report(AppReport& report) { report.register_task_result("Workflow", { stat_ }); }
+
       private:
         std::atomic<bool> is_done_ = false;
         std::size_t n_lines_ = 1;
@@ -84,8 +87,12 @@ namespace srs::workflow
         std::optional<process::ProtoDelimSerializer> proto_delim_serializer_converter_;
 
         std::atomic<uint64_t> total_read_data_bytes_ = 0;
+        AppReport::TaskStat stat_;
         gsl::not_null<sink::Manager*> sinks_;
-        TaskReport* report_;
+        AppReport* report_;
+
+        std::chrono::steady_clock clock_;
+        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> last_time_;
 
         void construct_taskflow_line(tf::Taskflow& taskflow, std::size_t line_number);
 

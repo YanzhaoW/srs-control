@@ -71,22 +71,24 @@ namespace srs::config
     inline auto output_config_to_yaml(const auto& config, std::string_view filename) -> std::optional<std::string>
 
     {
-        auto error_code = glz::write_file_yaml<glz::yaml::yaml_opts{}>(config, filename);
+        auto buffer = std::string{};
+        auto error_code = glz::write_file_yaml<glz::yaml::yaml_opts{}>(config, filename, buffer);
         if (error_code)
         {
             return fmt::format(
-                "Error occurred during writing the yaml file {}: {}", filename, glz::format_error(error_code));
+                "Error occurred during writing the yaml file {}: {}", filename, glz::format_error(error_code, buffer));
         }
         return {};
     }
 
     inline auto set_config_from_yaml(auto& app_config, std::string_view filename) -> std::optional<std::string>
     {
-        auto error_code = glz::read_file_yaml(app_config, filename);
+        auto buffer = std::string{};
+        auto error_code = glz::read_file_yaml(app_config, filename, buffer);
         if (error_code)
         {
             return fmt::format(
-                "Error occurred during reading the json file {}: {}", filename, glz::format_error(error_code));
+                "Error occurred during reading the json file {}: {}", filename, glz::format_error(error_code, buffer));
         }
         return {};
     }

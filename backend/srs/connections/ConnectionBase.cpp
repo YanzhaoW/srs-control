@@ -2,6 +2,7 @@
 #include "srs/connections/ConnectionTypeDef.hpp"
 #include "srs/connections/FecSwitchSocket.hpp"
 #include "srs/converters/SerializableBuffer.hpp"
+#include "srs/utils/AppReport.hpp"
 #include "srs/utils/CommonAlias.hpp"
 #include "srs/utils/CommonDefinitions.hpp"
 #include "srs/utils/ExitLogger.hpp"
@@ -11,6 +12,7 @@
 #include <cstdint>
 #include <fmt/base.h>
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <memory>
 #include <span>
@@ -23,16 +25,19 @@ namespace srs::connection
         -> asio::awaitable<void>
     {
         const auto _ = ExitLogger{};
-        const auto start_time = socket->get_time_us();
+        auto stat = AppReport::FecSwitchStat{};
+        stat.send_time = socket->get_time_us();
         auto data_size = co_await socket->get_socket().async_send_to(
             asio::buffer(connection->write_msg_buffer_.data()), connection->remote_endpoint_, asio::use_awaitable);
-        const auto stop_time = socket->get_time_us();
-        spdlog::debug("Connection {}: {} bytes data sent to the remote endpoint {}: \n\t{:02x}",
+        stat.receiv_time = socket->get_time_us();
+        spdlog::debug("Connection {}: {} bytes data sent from local endpoint {} to the remote endpoint {}: \n\t{:02x}",
                       connection->get_name(),
                       data_size,
+                      socket->get_socket().local_endpoint(),
                       connection->remote_endpoint_,
                       fmt::join(connection->write_msg_buffer_.data(), " "));
-        socket->log_time_stamps(start_time, stop_time);
+        stat.connection_name = connection->get_name();
+        socket->log_time_stamps(fmt::format("{}", connection->remote_endpoint_), stat);
         co_return;
     }
 

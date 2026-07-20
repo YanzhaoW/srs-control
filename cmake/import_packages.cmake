@@ -3,7 +3,7 @@ include(FetchContent)
 FetchContent_Declare(
     glaze
     GIT_REPOSITORY https://github.com/stephenberry/glaze.git
-    GIT_TAG v7.9.0
+    GIT_TAG v7.9.1
     GIT_SHALLOW TRUE
 )
 
@@ -18,6 +18,7 @@ find_package(CLI11 REQUIRED CONFIG)
 find_package(concurrentqueue REQUIRED)
 find_package(magic_enum REQUIRED CONFIG)
 find_package(Taskflow REQUIRED CONFIG)
+find_package(tabulate REQUIRED CONFIG)
 
 # find_package(glaze REQUIRED CONFIG)
 find_package(ctre REQUIRED CONFIG)
@@ -64,6 +65,7 @@ set(PRIVATE_THIRD_PARTY_LIBRARIES
     $<BUILD_LOCAL_INTERFACE:Taskflow::Taskflow>
     $<BUILD_LOCAL_INTERFACE:zpp_bits::zpp_bits>
     $<BUILD_LOCAL_INTERFACE:concurrentqueue::concurrentqueue>
+    $<BUILD_LOCAL_INTERFACE:tabulate::tabulate>
 )
 
 set(THIRD_PARTY_LIBRARIES

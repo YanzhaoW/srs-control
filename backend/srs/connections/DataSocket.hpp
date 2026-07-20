@@ -28,6 +28,7 @@ namespace srs::connection
          * @brief Cancel reading the data from the UDP socket.
          */
         void cancel();
+        void before_socket_close();
 
       private:
         friend SpecialSocket;
