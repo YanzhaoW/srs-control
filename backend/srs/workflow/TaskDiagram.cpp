@@ -46,6 +46,9 @@ namespace srs::workflow
         {
             is_pipe_stopped.store(true);
         }
+
+        stats_.resize(n_lines);
+        last_times_.resize(n_lines);
     }
 
     // blocking here with pop
@@ -96,8 +99,7 @@ namespace srs::workflow
 
         auto main_pipeline =
             tf::Pipeline{ n_lines_,
-                          tf::Pipe{ tf::PipeType::SERIAL,
-                                    [this]([[maybe_unused]] tf::Pipeflow& pipeflow) { last_time_ = clock_.now(); } },
+                          tf::Pipe{ tf::PipeType::SERIAL, []([[maybe_unused]] tf::Pipeflow& pipeflow) {} },
                           tf::Pipe{ tf::PipeType::PARALLEL,
                                     [this, &buffer_queue]([[maybe_unused]] tf::Pipeflow& pipeflow)
                                     {
@@ -106,16 +108,12 @@ namespace srs::workflow
                                             pipeflow.stop();
                                         }
                                         is_pipeline_stopped_[pipeflow.line()].store(false);
+                                        start_time_record(pipeflow.line());
                                         tf_executor_.corun(taskflow_lines_[pipeflow.line()]);
+                                        stop_time_record(pipeflow.line());
                                         is_pipeline_stopped_[pipeflow.line()].store(true);
                                     } },
-                          tf::Pipe{ tf::PipeType::SERIAL,
-                                    [this]([[maybe_unused]] tf::Pipeflow& pipeflow)
-                                    {
-                                        ++(stat_.total_sample_size);
-                                        stat_.total_time_ms +=
-                                            static_cast<double>((clock_.now() - last_time_).count()) / 1e6;
-                                    } } };
+                          tf::Pipe{ tf::PipeType::SERIAL, []([[maybe_unused]] tf::Pipeflow& pipeflow) {} } };
 
         auto pipeline_task = main_taskflow_.composed_of(main_pipeline).name("Main pipeline");
         starting_task.precede(pipeline_task);
