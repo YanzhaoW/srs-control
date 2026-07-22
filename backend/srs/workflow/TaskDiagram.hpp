@@ -12,6 +12,7 @@
 #include "srs/utils/AppReport.hpp"
 #include "srs/utils/CommonConcepts.hpp"
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -68,7 +69,7 @@ namespace srs::workflow
             return nullptr;
         }
 
-        void register_report(AppReport& report) { report.register_task_result("Workflow", { stat_ }); }
+        void register_report(AppReport& report) { report.register_task_result("Workflow", stats_); }
 
       private:
         std::atomic<bool> is_done_ = false;
@@ -87,14 +88,28 @@ namespace srs::workflow
         std::optional<process::ProtoDelimSerializer> proto_delim_serializer_converter_;
 
         std::atomic<uint64_t> total_read_data_bytes_ = 0;
-        AppReport::TaskStat stat_;
+        std::vector<AppReport::TaskStat> stats_;
+        using TimePoint = std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds>;
+        std::vector<TimePoint> last_times_;
+
         gsl::not_null<sink::Manager*> sinks_;
         AppReport* report_;
 
-        std::chrono::steady_clock clock_;
-        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> last_time_;
-
         void construct_taskflow_line(tf::Taskflow& taskflow, std::size_t line_number);
+
+        void start_time_record(std::size_t line_num)
+        {
+            assert(line_num < last_times_.size());
+            last_times_[line_num] = std::chrono::steady_clock::now();
+        }
+
+        void stop_time_record(std::size_t line_num)
+        {
+            assert(line_num < last_times_.size());
+            ++(stats_[line_num].total_sample_size);
+            stats_[line_num].total_time_ms +=
+                static_cast<double>((std::chrono::steady_clock::now() - last_times_[line_num]).count()) / 1e6;
+        }
 
         template <typename PrevConverter, typename ThisTask>
         auto emplace_to_taskflow(ThisTask& current_task,
