@@ -5,7 +5,7 @@
 [![CI pipeline](https://github.com/YanzhaoW/srs-control/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/YanzhaoW/srs-control/actions?query=branch%3Adev)
 [![Github Releases](https://img.shields.io/github/v/release/YanzhaoW/srs-control.svg)](https://github.com/YanzhaoW/srs-control/releases)
 [![dashboard](https://img.shields.io/badge/dashboard-srs-blue?labelColor=gray&style=flat)](https://my.cdash.org/index.php?project=srs-control)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21346083.svg)](https://doi.org/10.5281/zenodo.21346083)
+[![DOI](https://zenodo.org/badge/857919042.svg)](https://doi.org/10.5281/zenodo.21283259)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 SRS-control is a data acquisition program for SRS FEC and VMM3 systems. It provides the `srs-control` command-line tool and library APIs for communicating with SRS hardware and data processing in your own applications.

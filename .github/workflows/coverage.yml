@@ -42,9 +42,18 @@ jobs:
         shell: bash
 
       - name: Upload coverage reports to Codecov
+        if: github.event_name != 'pull_request'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.info
+          disable_search: true
+          name: codecov-test
+
+      - name: Upload coverage reports to Codecov
+        if: github.event_name == 'pull_request'
+        uses: codecov/codecov-action@v5
+        with:
           files: coverage.info
           disable_search: true
           name: codecov-test
