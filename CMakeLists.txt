@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(option_settings)
 include(check_submodules)
 
-project(srs-control VERSION 0.2.1 LANGUAGES CXX C)
+project(srs-control VERSION 0.2.2 LANGUAGES CXX C)
 
 include(CTest)
 enable_testing()
